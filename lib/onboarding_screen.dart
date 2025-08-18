@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:snow_app/logins/sing_up_in.dart';
+
+import 'package:snow_app/logins/login.dart';
+import 'package:snow_app/logins/sign_up.dart';
 
 
 class OnboardingScreen extends StatefulWidget {
@@ -179,7 +181,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const SignInPage(),
+                                      builder: (context) => const LoginPage(),
                                     ),
                                   );
                                 },

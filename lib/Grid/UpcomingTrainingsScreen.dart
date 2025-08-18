@@ -14,46 +14,100 @@ class UpcomingTrainingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF2FBFF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFEAF5FC),
-        elevation: 0,
-        // centerTitle: true,
-        title: Text(
-          'Trainings',
-          style: GoogleFonts.poppins(
-            fontSize: 22,
-            color: const Color(0xFF014576),
-            fontWeight: FontWeight.w600,
+    return Stack(
+      children: [
+        // Background image + gradient overlay
+        Positioned.fill(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xAA97DCEB),
+                      Color(0xAA5E9BC8),
+                      Color(0xAA97DCEB),
+                      Color(0xAA70A9EE),
+                      Color(0xAA97DCEB),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ),
-      body: ListView.builder(
-        itemCount: trainings.length,
-        itemBuilder: (context, index) {
-          final training = trainings[index];
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: gradientColors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+
+        // Foreground content
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              'TRAININGS',
+              style: GoogleFonts.poppins(
+                color: Color(0xFF014576),
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
+                shadows: [
+                  Shadow(
+                    blurRadius: 4,
+                    color: Color.fromARGB(150, 200, 240, 255),
+                    offset: Offset(1, 2),
+                  ),
+                ],
               ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.15),
-                  blurRadius: 10,
-                  offset: Offset(0, 6),
-                ),
-              ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+            iconTheme: const IconThemeData(color: Color(0xFF014576)),
+          ),
+
+          body: ListView.builder(
+            itemCount: trainings.length,
+            itemBuilder: (context, index) {
+              final training = trainings[index];
+              return Container(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 197, 219, 248),
+                      Color(0xFFEAF5FC),
+                      Color.fromARGB(255, 197, 219, 248)
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(2, 4),
+              ),
+                              ],
+                            ),
+                // decoration: BoxDecoration(
+                //   gradient: LinearGradient(
+                //     colors: gradientColors,
+                //     begin: Alignment.topLeft,
+                //     end: Alignment.bottomRight,
+                //   ),
+                //   borderRadius: BorderRadius.circular(20),
+                //   boxShadow: [
+                //     BoxShadow(
+                //       color: Colors.grey.withOpacity(0.15),
+                //       blurRadius: 10,
+                //       offset: Offset(0, 6),
+                //     ),
+                //   ],
+                // ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
@@ -87,7 +141,11 @@ class UpcomingTrainingsScreen extends StatelessWidget {
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                Icon(Icons.topic, size: 16, color: Colors.black54),
+                                Icon(
+                                  Icons.topic,
+                                  size: 16,
+                                  color: Colors.black54,
+                                ),
                                 SizedBox(width: 6),
                                 Text(
                                   training['topic']!,
@@ -101,8 +159,11 @@ class UpcomingTrainingsScreen extends StatelessWidget {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.calendar_today,
-                                    size: 14, color: Colors.black45),
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 14,
+                                  color: Colors.black45,
+                                ),
                                 SizedBox(width: 6),
                                 Text(
                                   training['date']!,
@@ -119,7 +180,8 @@ class UpcomingTrainingsScreen extends StatelessWidget {
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           elevation: 1,
-                          backgroundColor: const Color(0xFF4DB6AC),
+              
+                          backgroundColor: Color(0xFF014576),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -127,7 +189,9 @@ class UpcomingTrainingsScreen extends StatelessWidget {
                         onPressed: () {},
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           child: Text(
                             'Register',
                             style: GoogleFonts.poppins(
@@ -141,11 +205,11 @@ class UpcomingTrainingsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

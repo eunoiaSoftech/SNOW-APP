@@ -1,157 +1,141 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class AwardsScreen extends StatelessWidget {
+class AwardsScreen extends StatefulWidget {
+  @override
+  State<AwardsScreen> createState() => _AwardsScreenState();
+}
+
+class _AwardsScreenState extends State<AwardsScreen>
+    with SingleTickerProviderStateMixin {
   final List<Map<String, String>> awards = [
     {'title': 'Team Spirit', 'by': 'Management', 'image': 'assets/pic3.jpg'},
-    {
-      'title': 'Creative Excellence',
-      'by': 'SnowTech',
-      'image': 'assets/pic4.jpg',
-    },
-    {
-      'title': 'Leadership Star',
-      'by': 'Management',
-      'image': 'assets/pic5.jpg',
-    },
-    {'title': 'Best Performer', 'by': 'Gorukul', 'image': 'assets/pic1.jpg'},
-    {'title': 'Innovation Award', 'by': 'SnowTech', 'image': 'assets/pic2.jpg'},
+    {'title': 'Creative Excellence', 'by': 'SnowTech', 'image': 'assets/pic4.webp'},
+    {'title': 'Leadership Star', 'by': 'Management', 'image': 'assets/pic5.jpg'},
+    {'title': 'Best Performer', 'by': 'Gorukul', 'image': 'assets/pic1.webp'},
+    {'title': 'Innovation Award', 'by': 'SnowTech', 'image': 'assets/pic2.webp'},
   ];
-
-  final List<Color> gradientColors = [Color(0xFFEAF5FC), Color(0xFFD8E7FA)];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          'Awards',
-          style: GoogleFonts.poppins(
-            color: const Color(0xFF014576),
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
+    return Stack(
+      children: [
+        // Background with gradient
+        Positioned.fill(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xAA97DCEB),
+                      Color(0xAA5E9BC8),
+                      Color(0xAA97DCEB),
+                      Color(0xAA70A9EE),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        excludeHeaderSemantics: true,
-        // centerTitle: true,
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(0xAA97DCEB),
-                        Color(0xAA5E9BC8),
-                        Color(0xAA97DCEB),
-                        Color(0xAA70A9EE),
-                        Color(0xAA97DCEB),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              'AWARDS',
+              style: GoogleFonts.poppins(
+                color: Color(0xFF014576),
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                shadows: [
+                  Shadow(
+                    blurRadius: 4,
+                    color: Color.fromARGB(150, 200, 240, 255),
+                    offset: Offset(1, 2),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            iconTheme: IconThemeData(color: Color(0xFF014576)),
           ),
-          ListView.builder(
+          body: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             itemCount: awards.length,
-            padding: const EdgeInsets.all(16),
             itemBuilder: (context, index) {
               final award = awards[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: gradientColors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+              return AnimatedContainer(
+                duration: Duration(milliseconds: 400 + (index * 100)),
+                curve: Curves.easeOut,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                      offset: Offset(0, 4),
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16),
-                        ),
-                        child: award['image'] != null
-                            ? Image.asset(
-                                award['image']!,
-                                width: double.infinity,
-                                fit: BoxFit.fitWidth,
-                              )
-                            : Container(
-                                height: 180,
-                                width: double.infinity,
-                                color: Colors.grey[300],
-                                child: Icon(
-                                  Icons.image,
-                                  size: 60,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
+                      // No blur on image
+                      Image.asset(
+                        award['image']!,
+                        width: double.infinity,
+                        height: 220,
+                        fit: BoxFit.cover,
                       ),
 
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
+                      // Info section with light background and elevation
+                      Container(
+                        width: double.infinity,
+                        color: Colors.white.withOpacity(0.85),
+                        padding: const EdgeInsets.all(16),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
                                   Icons.emoji_events_rounded,
                                   color: Color(0xFF014576),
-                                  size: 20,
+                                  size: 22,
                                 ),
                                 SizedBox(width: 8),
-                                Expanded(
+                                Flexible(
                                   child: Text(
                                     award['title']!,
                                     style: GoogleFonts.poppins(
-                                      fontSize: 16,
+                                      fontSize: 17,
                                       fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF014576),
+                                      color: Color(0xFF014576),
                                     ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.person_pin_circle,
-                                  color: Colors.black45,
-                                  size: 18,
-                                ),
-                                SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    'Awarded by ${award['by']}',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 13,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: 6),
+                            Text(
+                              'Awarded by ${award['by']}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: Colors.black54,
+                              ),
                             ),
                           ],
                         ),
@@ -162,8 +146,8 @@ class AwardsScreen extends StatelessWidget {
               );
             },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
