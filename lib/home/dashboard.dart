@@ -121,15 +121,6 @@ class _SnowDashboardState extends State<SnowDashboard> {
     );
   }
 
-  // logout
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  // await prefs.setBool('isLoggedIn', false);
-  // Navigator.pushAndRemoveUntil(
-  //   context,
-  //   MaterialPageRoute(builder: (context) => const LoginPage()),
-  //   (Route<dynamic> route) => false,
-  // );
-
   Widget _buildDashboardContent() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -150,7 +141,7 @@ class _SnowDashboardState extends State<SnowDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "  Hello, ${capitalize(userName)}!",
+                      "  Hello, ${capitalize(userName)}",
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         color: const Color(0xFF014576),

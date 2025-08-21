@@ -1,42 +1,134 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Models/business_category.dart';
+import 'package:snow_app/Data/Repositories/referrals_repository.dart';
+import 'package:snow_app/Data/Repositories/common_repository.dart';
+import 'package:snow_app/core/result.dart';
+import '../core/api_client.dart';
 
 class RecordSBOGScreen extends StatefulWidget {
+  const RecordSBOGScreen({Key? key}) : super(key: key);
+
   @override
   _RecordSBOGScreenState createState() => _RecordSBOGScreenState();
 }
 
 class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
-  String? selectedLevel;
   final _formKey = GlobalKey<FormState>();
+  final _leadNameController = TextEditingController();
+  final _leadEmailController = TextEditingController();
+  final _leadPhoneController = TextEditingController();
+  final _messageController = TextEditingController();
 
-  final List<Color> gradientColors = [
-    Color(0xAA97DCEB),
-    Color(0xAA5E9BC8),
-    Color(0xAA97DCEB),
-    Color(0xAA70A9EE),
-    Color(0xAA97DCEB),
-  ];
+  bool _isLoading = false;
+  bool _isLoadingBusinesses = true;
+
+  final repository = ReferralsRepository(ApiClient.create());
+  final commonRepository = CommonRepository();
+
+  List<BusinessCategory> _businessList = [];
+  BusinessCategory? _selectedBusiness;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBusinessCategories();
+  }
+
+Future<void> _fetchBusinessCategories() async {
+  try {
+    setState(() => _isLoadingBusinesses = true);
+
+    final result = await commonRepository.fetchBusinessCategories();
+
+    if (result is Ok<List<BusinessCategory>>) {
+      setState(() {
+        _businessList = result.value;
+      });
+    } else if (result is Err) {
+      final errorValue = (result as Err).message ?? 'Failed to load categories';
+      setState(() => _isLoadingBusinesses = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            errorValue.toString(),
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    setState(() => _isLoadingBusinesses = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Something went wrong: $e',
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    setState(() => _isLoadingBusinesses = false);
+  }
+}
+
 
   Widget buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
-        text,
+        text.toUpperCase(),
         style: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF014576),
+          color: const Color(0xFF014576),
         ),
       ),
     );
+  }
+
+  void _submitForm() async {
+    if (!_formKey.currentState!.validate() || _selectedBusiness == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a business.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await repository.createSbog(
+        receiverId: _selectedBusiness!.id, // ✅ business id here
+        leadName: _leadNameController.text,
+        leadEmail: _leadEmailController.text,
+        leadPhone: _leadPhoneController.text,
+        message: _messageController.text,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background image + gradient overlay
+        // Background image with gradient
         Positioned.fill(
           child: Stack(
             fit: StackFit.expand,
@@ -60,8 +152,6 @@ class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
             ],
           ),
         ),
-
-        // Foreground content: Scaffold with transparent background
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
@@ -70,16 +160,9 @@ class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
             title: Text(
               "RECORD SBOG",
               style: GoogleFonts.poppins(
-                color: Color(0xFF014576),
+                color: const Color(0xFF014576),
                 fontWeight: FontWeight.w600,
                 fontSize: 20,
-                shadows: [
-                  Shadow(
-                    blurRadius: 4,
-                    color: Color.fromARGB(150, 200, 240, 255),
-                    offset: Offset(1, 2),
-                  ),
-                ],
               ),
             ),
             iconTheme: const IconThemeData(color: Color(0xFF014576)),
@@ -89,7 +172,7 @@ class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   colors: [Color(0xFFEAF5FC), Color(0xFFD8E7FA)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -98,7 +181,7 @@ class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 10,
-                    offset: Offset(2, 4),
+                    offset: const Offset(2, 4),
                   ),
                 ],
               ),
@@ -109,100 +192,61 @@ class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      buildLabel('TO'),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          hintText: 'Enter recipient name',
-                          hintStyle: GoogleFonts.poppins(),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade400),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      buildLabel('REFERRAL'),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          hintText: 'Enter referral info',
-                          hintStyle: GoogleFonts.poppins(),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade400),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      buildLabel('LEVEL'),
-                      DropdownButtonHideUnderline(
-                        child: Container(
-                          height: 55,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: Colors.grey.shade400),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: DropdownButtonFormField<String>(
-                            padding: EdgeInsets.only(top: 15, right: 10),
-                            isExpanded: true,
-                            icon: Icon(
-                              Icons.arrow_drop_up,
-                              color: Colors.black87,
+                      buildLabel('Select Business'),
+                      _isLoadingBusinesses
+                          ? const Center(child: CircularProgressIndicator())
+                          : DropdownButtonFormField<BusinessCategory>(
+                              value: _selectedBusiness,
+                              items: _businessList
+                                  .map((b) => DropdownMenuItem(
+                                        value: b,
+                                        child: Text(b.name,
+                                            style: GoogleFonts.poppins()),
+                                      ))
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedBusiness = value);
+                              },
+                              decoration: _inputDecoration('Choose business'),
+                              validator: (v) =>
+                                  v == null ? 'Please select a business' : null,
                             ),
-                            dropdownColor: Colors.white,
-                            style: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontSize: 16,
-                            ),
-                            value: selectedLevel,
-                            hint: Text(
-                              'Select level',
-                              style: GoogleFonts.poppins(color: Colors.black54),
-                            ),
-                            decoration: InputDecoration.collapsed(hintText: ''),
-                            borderRadius: BorderRadius.circular(12),
-                            items: ['Level 1', 'Level 2', 'Level 3']
-                                .map(
-                                  (e) => DropdownMenuItem<String>(
-                                    value: e,
-                                    child: Text(e, style: GoogleFonts.poppins()),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (val) => setState(() => selectedLevel = val),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      buildLabel('COMMENT'),
+                      const SizedBox(height: 16),
+
+                      buildLabel('Lead Name'),
                       TextFormField(
+                        controller: _leadNameController,
+                        decoration: _inputDecoration('Enter lead name'),
+                        validator: (v) => v!.isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      buildLabel('Lead Email'),
+                      TextFormField(
+                        controller: _leadEmailController,
+                        decoration: _inputDecoration('Enter lead email'),
+                        validator: (v) => v!.isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      buildLabel('Lead Phone'),
+                      TextFormField(
+                        controller: _leadPhoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: _inputDecoration('Enter lead phone'),
+                        validator: (v) => v!.isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      buildLabel('Message'),
+                      TextFormField(
+                        controller: _messageController,
                         maxLines: 5,
-                        decoration: InputDecoration(
-                          hintText: 'Write your thoughts here...',
-                          hintStyle: GoogleFonts.poppins(),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade400),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
+                        decoration: _inputDecoration('Write your message'),
+                        validator: (v) => v!.isEmpty ? 'Required' : null,
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
+
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -215,40 +259,26 @@ class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Form submitted!',
-                                  style: TextStyle(
-                                    color: Color(0xFF014576),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                backgroundColor: Colors.white,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
-                          },
+                          onPressed: _isLoading ? null : _submitForm,
                           child: Ink(
                             decoration: BoxDecoration(
-                              color: Color.fromARGB(170, 141, 188, 222),
+                              color: const Color.fromARGB(170, 141, 188, 222),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Container(
                               alignment: Alignment.center,
-                              child: Text(
-                                'Submit',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF014576),
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                    )
+                                  : Text(
+                                      'SUBMIT',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF014576),
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
@@ -261,6 +291,20 @@ class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: GoogleFonts.poppins(),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade400),
+      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      filled: true,
+      fillColor: Colors.white,
     );
   }
 }

@@ -5,6 +5,8 @@ import 'package:snow_app/spalsh_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+  print('✅ ✅ ✅ ✅  BASE URL: ${dotenv.env['BASE_URL']}'); 
+
   runApp(const SnowApp());
 }
 

@@ -4,6 +4,7 @@ import 'package:snow_app/Grid/AWARD.dart';
 import 'package:snow_app/Grid/RecordSFGScreen.dart';
 import 'package:snow_app/Grid/SnowMeetupForm.dart';
 import 'package:snow_app/Grid/UpcomingTrainingsScreen.dart';
+import 'package:snow_app/Grid/myreferral.dart';
 import 'package:snow_app/Grid/sbog.dart';
 
 class GradientGridScreen extends StatelessWidget {
@@ -21,7 +22,7 @@ class GradientGridScreen extends StatelessWidget {
 
     final List<Widget> screens = [
       UpcomingTrainingsScreen(),
-      RecordSBOGScreen(),
+      MyReferralsScreen(),
       RecordSFGScreen(),
       SnowMeetupScreen(),
       AwardsScreen(),
