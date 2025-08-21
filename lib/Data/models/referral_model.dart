@@ -40,12 +40,12 @@ class MyReferralsResponse {
   });
 
   factory MyReferralsResponse.fromJson(Map<String, dynamic> json) {
+    print("🧩 [Model] Parsing received_referrals: ${json['received_referrals']}");
+    final received = json['received_referrals'] as List<dynamic>?;
+
     return MyReferralsResponse(
       success: json['success'] ?? false,
-      referrals: (json['referrals'] as List<dynamic>?)
-              ?.map((e) => Referral.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      referrals: received?.map((e) => Referral.fromJson(e as Map<String, dynamic>)).toList() ?? [],
     );
   }
 }

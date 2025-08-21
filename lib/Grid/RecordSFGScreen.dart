@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../Data/Repositories/referrals_repository.dart';
+import '../core/api_client.dart';
+import '../Data/models/sfg_response.dart';
 
 class RecordSFGScreen extends StatefulWidget {
+  final int leadId;
+  const RecordSFGScreen({required this.leadId, super.key});
+
   @override
   _RecordSFGScreenState createState() => _RecordSFGScreenState();
 }
 
 class _RecordSFGScreenState extends State<RecordSFGScreen> {
   final _formKey = GlobalKey<FormState>();
-  String? selectedTo;
+  String? selectedStatus;
 
-  final TextEditingController amountController = TextEditingController(
-    text: ' e.g. 1000',
-  );
-  final TextEditingController commentController = TextEditingController(
-    text: 'Optional comment',
-  );
+  final TextEditingController commentController = TextEditingController();
+  bool _isSubmitting = false;
+
+  final repo = ReferralsRepository(ApiClient.create());
 
   final List<Color> gradientColors = [
     Color(0xAA97DCEB),
@@ -39,11 +43,47 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
     );
   }
 
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate() || selectedStatus == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a status')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final RecordSfgResponse response = await repo.createSSfg(
+        leadId: widget.leadId,
+        status: selectedStatus!,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context, true); // return true to trigger refresh
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to submit: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isSubmitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background image + gradient overlay
+        // Background image + gradient
         Positioned.fill(
           child: Stack(
             fit: StackFit.expand,
@@ -67,8 +107,6 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
             ],
           ),
         ),
-
-        // Foreground content: Scaffold with transparent background
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
@@ -80,13 +118,6 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
                 color: Color(0xFF014576),
                 fontWeight: FontWeight.w600,
                 fontSize: 20,
-                shadows: [
-                  Shadow(
-                    blurRadius: 4,
-                    color: Color.fromARGB(150, 200, 240, 255),
-                    offset: Offset(1, 2),
-                  ),
-                ],
               ),
             ),
             iconTheme: const IconThemeData(color: Color(0xFF014576)),
@@ -116,7 +147,7 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      buildLabel('TO'),
+                      buildLabel('STATUS'),
                       DropdownButtonHideUnderline(
                         child: Container(
                           height: 55,
@@ -129,62 +160,31 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
                           child: DropdownButtonFormField<String>(
                             padding: EdgeInsets.only(top: 15, right: 10),
                             isExpanded: true,
-                            icon: Icon(
-                              Icons.arrow_drop_up,
-                              color: Colors.black87,
-                            ),
+                            icon: Icon(Icons.arrow_drop_up, color: Colors.black87),
                             dropdownColor: Colors.white,
-                            style: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontSize: 16,
-                            ),
-                            value: selectedTo,
+                            style: GoogleFonts.poppins(color: Colors.black, fontSize: 16),
+                            value: selectedStatus,
                             hint: Text(
-                              'Select recipient',
+                              'Select status',
                               style: GoogleFonts.poppins(color: Colors.black54),
                             ),
                             decoration: InputDecoration.collapsed(hintText: ''),
                             borderRadius: BorderRadius.circular(12),
-                            items: ['Other IGLOO', 'Snow Vendor']
-                                .map(
-                                  (e) => DropdownMenuItem<String>(
-                                    value: e,
-                                    child: Text(
-                                      e,
-                                      style: GoogleFonts.poppins(),
-                                    ),
-                                  ),
-                                )
+                            items: ['successful', 'failed']
+                                .map((status) => DropdownMenuItem<String>(
+                                      value: status,
+                                      child: Text(status, style: GoogleFonts.poppins()),
+                                    ))
                                 .toList(),
-                            onChanged: (val) =>
-                                setState(() => selectedTo = val),
+                            onChanged: (val) => setState(() => selectedStatus = val),
                           ),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      buildLabel('AMOUNT'),
-                      TextFormField(
-                        controller: amountController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          hintText: 'Enter amount',
-                          hintStyle: GoogleFonts.poppins(),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade400),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
                         ),
                       ),
                       SizedBox(height: 16),
                       buildLabel('COMMENT'),
                       TextFormField(
                         controller: commentController,
-                        maxLines: 4,
+                        maxLines: 5,
                         decoration: InputDecoration(
                           hintText: 'Optional comment',
                           hintStyle: GoogleFonts.poppins(),
@@ -192,11 +192,9 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(color: Colors.grey.shade400),
                           ),
-
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-
                           filled: true,
                           fillColor: Colors.white,
                         ),
@@ -214,27 +212,7 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Form submitted!',
-                                    style: TextStyle(
-                                      color: Color(0xFF014576),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  backgroundColor: Colors.white,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                            }
-                          },
+                          onPressed: _isSubmitting ? null : _submitForm,
                           child: Ink(
                             decoration: BoxDecoration(
                               color: Color.fromARGB(170, 141, 188, 222),
@@ -242,14 +220,16 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
                             ),
                             child: Container(
                               alignment: Alignment.center,
-                              child: Text(
-                                'Submit',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF014576),
-                                ),
-                              ),
+                              child: _isSubmitting
+                                  ? CircularProgressIndicator(color: Colors.white)
+                                  : Text(
+                                      'Submit',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF014576),
+                                      ),
+                                    ),
                             ),
                           ),
                         ),

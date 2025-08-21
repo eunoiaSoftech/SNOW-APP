@@ -22,20 +22,27 @@ class _MyReferralsScreenState extends State<MyReferralsScreen> {
     _fetchReferrals();
   }
 
-  void _fetchReferrals() async {
-    try {
-      final response = await repository.getMyReferrals();
-      setState(() {
-        referrals = response.referrals ?? [];
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to fetch referrals: $e')));
-    }
+void _fetchReferrals() async {
+  print("🚀 [Screen] Fetching referrals...");
+  setState(() => _isLoading = true);
+
+  try {
+    final response = await repository.getMyReferrals();
+    print("✅ [Screen] Received response: $response");
+    setState(() {
+      referrals = response.referrals ?? [];
+      _isLoading = false;
+    });
+    print("📊 [Screen] Referrals list length: ${referrals.length}");
+  } catch (e) {
+    setState(() => _isLoading = false);
+    print("⚠️ [Screen] Failed to fetch referrals: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to fetch referrals: $e')),
+    );
   }
+}
+
 
   String formatDateTime(String dateTime) {
     try {

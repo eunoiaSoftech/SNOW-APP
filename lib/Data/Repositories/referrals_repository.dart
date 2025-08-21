@@ -41,19 +41,29 @@ class ReferralsRepository {
     }
   }
 
-  Future<MyReferralsResponse> getMyReferrals() async {
-    final (response, statusCode) = await apiClient.get(
-      "/referrals/received-referrals",
-    );
+Future<MyReferralsResponse> getMyReferrals() async {
+  print("🟢 [Repo] Starting getMyReferrals...");
+  final (response, statusCode) = await apiClient.get(
+    "/referrals/received-referrals",
+  );
+  print("🔵 [Repo] API responded with statusCode: $statusCode");
 
-    if (statusCode == 200) {
-      print("Fetched referrals successfully: ${response.data}");
-      return MyReferralsResponse.fromJson(response.data);
-    } else {
-      print("Failed to fetch referrals: ${response.data}");
-      throw Exception("Failed to fetch referrals: ${response.data}");
+  if (statusCode == 200) {
+    print("🟡 [Repo] Response Data: ${response.data}");
+    try {
+      final result = MyReferralsResponse.fromJson(response.data);
+      print("🟠 [Repo] Parsed ${result.referrals?.length ?? 0} referrals");
+      return result;
+    } catch (e) {
+      print("🔴 [Repo] Error parsing response: $e");
+      throw Exception("Failed to parse referrals: $e");
     }
+  } else {
+    print("🔴 [Repo] Failed to fetch referrals: ${response.data}");
+    throw Exception("Failed to fetch referrals: ${response.data}");
   }
+}
+
 
   Future<RecordSfgResponse> createSSfg({
     required int leadId,
@@ -80,17 +90,20 @@ class ReferralsRepository {
     }
   }
 
-  Future<Referral> getReceivedReferrals() async {
-    final (response, statusCode) = await apiClient.get(
-      "/referrals/received-referrals",
-    );
+  Future<List<Referral>> getReceivedReferrals() async {
+  final (response, statusCode) = await apiClient.get(
+    "/referrals/received-referrals",
+  );
 
-    if (statusCode == 200) {
-      print("Fetched referrals successfully: ${response.data}");
-      return Referral.fromJson(response.data);
-    } else {
-      print("Failed to fetch referrals: ${response.data}");
-      throw Exception("Failed to fetch referrals: ${response.data}");
-    }
+  if (statusCode == 200) {
+    print("Fetched referrals successfully: ${response.data}");
+
+    final data = response.data['received_referrals'] as List;
+    return data.map((e) => Referral.fromJson(e)).toList();
+  } else {
+    print("Failed to fetch referrals: ${response.data}");
+    throw Exception("Failed to fetch referrals: ${response.data}");
   }
+}
+
 }
