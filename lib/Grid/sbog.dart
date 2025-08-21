@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:snow_app/Data/Models/business_category.dart';
 import 'package:snow_app/Data/Repositories/referrals_repository.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
 import 'package:snow_app/core/result.dart';
+import '../Data/models/business_category.dart';
+import '../Data/models/business_item.dart';
 import '../core/api_client.dart';
 
 class RecordSBOGScreen extends StatefulWidget {
@@ -26,8 +27,8 @@ class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
   final repository = ReferralsRepository(ApiClient.create());
   final commonRepository = CommonRepository();
 
-  List<BusinessCategory> _businessList = [];
-  BusinessCategory? _selectedBusiness;
+  List<CustomBusinessItem> _businessList = [];
+  CustomBusinessItem? _selectedBusiness;
 
   @override
   void initState() {
@@ -39,9 +40,9 @@ Future<void> _fetchBusinessCategories() async {
   try {
     setState(() => _isLoadingBusinesses = true);
 
-    final result = await commonRepository.fetchBusinessCategories();
+    final result = await commonRepository.fetchBusiness();
 
-    if (result is Ok<List<BusinessCategory>>) {
+    if (result is Ok<List<CustomBusinessItem>>) {
       setState(() {
         _businessList = result.value;
       });
@@ -101,7 +102,7 @@ Future<void> _fetchBusinessCategories() async {
 
     try {
       final response = await repository.createSbog(
-        receiverId: _selectedBusiness!.id, // ✅ business id here
+        receiverId: _selectedBusiness!.id!,
         leadName: _leadNameController.text,
         leadEmail: _leadEmailController.text,
         leadPhone: _leadPhoneController.text,
@@ -195,12 +196,12 @@ Future<void> _fetchBusinessCategories() async {
                       buildLabel('Select Business'),
                       _isLoadingBusinesses
                           ? const Center(child: CircularProgressIndicator())
-                          : DropdownButtonFormField<BusinessCategory>(
+                          : DropdownButtonFormField<CustomBusinessItem>(
                               value: _selectedBusiness,
                               items: _businessList
                                   .map((b) => DropdownMenuItem(
                                         value: b,
-                                        child: Text(b.name,
+                                        child: Text(b.business?.name ?? '-',
                                             style: GoogleFonts.poppins()),
                                       ))
                                   .toList(),

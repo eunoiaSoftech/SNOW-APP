@@ -141,22 +141,22 @@ class _LoginScreenState extends State<LoginPage> {
                                   ),
                                 ),
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Forgot Password',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.facebook, color: Colors.blue),
-                            SizedBox(width: 16),
-                            Icon(Icons.g_mobiledata, color: Colors.red),
-                            SizedBox(width: 16),
-                            Icon(Icons.mail_outline, color: Colors.lightBlue),
-                          ],
-                        ),
+                        // const SizedBox(height: 12),
+                        // const Text(
+                        //   'Forgot Password',
+                        //   style: TextStyle(color: Colors.grey),
+                        // ),
+                        // const SizedBox(height: 20),
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.center,
+                        //   children: const [
+                        //     Icon(Icons.facebook, color: Colors.blue),
+                        //     SizedBox(width: 16),
+                        //     Icon(Icons.g_mobiledata, color: Colors.red),
+                        //     SizedBox(width: 16),
+                        //     Icon(Icons.mail_outline, color: Colors.lightBlue),
+                        //   ],
+                        // ),
                         const SizedBox(height: 20),
                         OutlinedButton(
                           onPressed: () {

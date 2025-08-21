@@ -27,7 +27,7 @@ void _fetchReferrals() async {
   setState(() => _isLoading = true);
 
   try {
-    final response = await repository.getMyReferrals();
+    final response = await repository.myCreatedSgob();
     print("✅ [Screen] Received response: $response");
     setState(() {
       referrals = response.referrals ?? [];
@@ -277,33 +277,6 @@ void _fetchReferrals() async {
                     ),
                   ],
                 ),
-                SizedBox(height: 14),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF014576),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => RecordSBOGScreen()),
-                      );
-                      _fetchReferrals(); // Refresh list after coming back
-                    },
-                    child: Text(
-                      "CREATE SBOG",
-                      style: GoogleFonts.montserrat(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -317,6 +290,29 @@ void _fetchReferrals() async {
                     ],
                   ),
                 ),
+          floatingActionButton: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF014576),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => RecordSBOGScreen()),
+              );
+              _fetchReferrals(); // Refresh list after coming back
+            },
+            child: Text(
+              "CREATE SBOG",
+              style: GoogleFonts.montserrat(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
       ],
     );

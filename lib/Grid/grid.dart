@@ -14,18 +14,18 @@ class GradientGridScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<String> boxTitles = [
-      'TRAININGS',
+      // 'TRAININGS',
       'RECORD SBOG',
       'RECORD SFG',
-      "SNOW MEETUP'S",
+      // "SNOW MEETUP'S",
       'AWARDS',
     ];
 
     final List<Widget> screens = [
-      UpcomingTrainingsScreen(),
+      // UpcomingTrainingsScreen(),
       MyReferralsScreen(),
       ReceivedReferralsScreen(),
-      SnowMeetupScreen(),
+      // SnowMeetupScreen(),
       AwardsScreen(),
     ];
 

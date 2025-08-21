@@ -1,6 +1,7 @@
 import 'package:snow_app/Data/models/referral_model.dart';
 import 'package:snow_app/Data/models/sfg_response.dart';
 import 'package:snow_app/core/api_client.dart';
+import '../models/my_created_sbog.dart';
 import '../models/sbog_response.dart';
 
 class ReferralsRepository {
@@ -8,7 +9,7 @@ class ReferralsRepository {
   ReferralsRepository(this.apiClient);
 
   Future<CreateSbogResponse> createSbog({
-    required int receiverId,
+    required String receiverId,
     required String leadName,
     required String leadEmail,
     required String leadPhone,
@@ -52,6 +53,29 @@ Future<MyReferralsResponse> getMyReferrals() async {
     print("🟡 [Repo] Response Data: ${response.data}");
     try {
       final result = MyReferralsResponse.fromJson(response.data);
+      print("🟠 [Repo] Parsed ${result.referrals?.length ?? 0} referrals");
+      return result;
+    } catch (e) {
+      print("🔴 [Repo] Error parsing response: $e");
+      throw Exception("Failed to parse referrals: $e");
+    }
+  } else {
+    print("🔴 [Repo] Failed to fetch referrals: ${response.data}");
+    throw Exception("Failed to fetch referrals: ${response.data}");
+  }
+}
+
+Future<MyCreatedSbog> myCreatedSgob() async {
+  print("🟢 [Repo] Starting getMyReferrals...");
+  final (response, statusCode) = await apiClient.get(
+    "/referrals/my-referrals",
+  );
+  print("🔵 [Repo] API responded with statusCode: $statusCode");
+
+  if (statusCode == 200) {
+    print("🟡 [Repo] Response Data: ${response.data}");
+    try {
+      final result = MyCreatedSbog.fromJson(response.data);
       print("🟠 [Repo] Parsed ${result.referrals?.length ?? 0} referrals");
       return result;
     } catch (e) {

@@ -71,11 +71,7 @@ class _SignUpPageState extends State<SignUpPage> {
     switch (res) {
       case Ok(value: final v):
         context.showToast(v.message);
-         Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => SnowDashboard()),
-          (Route<dynamic> route) => false,
-        );
+         Navigator.pop(context);
         break;
       case Err(message: final msg, code: final code):
         context.showToast('Signup failed ($code): $msg', bg: Colors.red);

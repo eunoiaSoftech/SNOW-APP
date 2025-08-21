@@ -423,24 +423,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             buildTextField('Email', _emailController),
                             buildTextField('Business', _businessController),
                             buildTextField('City', _cityController),
-                            if (_data?.registeredDate != null) ...[
-                              buildLabel('Registered On'),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.grey.shade400,
-                                  ),
-                                ),
-                                child: Text(
-                                  _data!.registeredDate!,
-                                  style: GoogleFonts.poppins(fontSize: 16),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
+                            // if (_data?.registeredDate != null) ...[
+                            //   buildLabel('Registered On'),
+                            //   Container(
+                            //     padding: const EdgeInsets.all(12),
+                            //     decoration: BoxDecoration(
+                            //       color: Colors.white,
+                            //       borderRadius: BorderRadius.circular(12),
+                            //       border: Border.all(
+                            //         color: Colors.grey.shade400,
+                            //       ),
+                            //     ),
+                            //     child: Text(
+                            //       _data!.registeredDate!,
+                            //       style: GoogleFonts.poppins(fontSize: 16),
+                            //     ),
+                            //   ),
+                            //   const SizedBox(height: 16),
+                            // ],
                             const SizedBox(height: 20),
                             SizedBox(
                               width: double.infinity,
