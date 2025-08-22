@@ -653,13 +653,13 @@ class _AwardsScreenState extends State<AwardsScreen>
                                           ],
                                         ),
                                       ),
-                                      IconButton(
-                                        icon: Icon(Icons.delete_forever),
-                                        color: Colors.redAccent,
-                                        tooltip: 'Delete award',
-                                        splashRadius: 22,
-                                        onPressed: () => _deleteAward(award.id),
-                                      ),
+                                      // IconButton(
+                                      //   icon: Icon(Icons.delete_forever),
+                                      //   color: Colors.redAccent,
+                                      //   tooltip: 'Delete award',
+                                      //   splashRadius: 22,
+                                      //   onPressed: () => _deleteAward(award.id),
+                                      // ),
                                     ],
                                   ),
 

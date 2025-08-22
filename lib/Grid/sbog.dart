@@ -197,21 +197,25 @@ Future<void> _fetchBusinessCategories() async {
                       _isLoadingBusinesses
                           ? const Center(child: CircularProgressIndicator())
                           : DropdownButtonFormField<CustomBusinessItem>(
-                              value: _selectedBusiness,
-                              items: _businessList
-                                  .map((b) => DropdownMenuItem(
-                                        value: b,
-                                        child: Text(b.business?.name ?? '-',
-                                            style: GoogleFonts.poppins()),
-                                      ))
-                                  .toList(),
-                              onChanged: (value) {
-                                setState(() => _selectedBusiness = value);
-                              },
-                              decoration: _inputDecoration('Choose business'),
-                              validator: (v) =>
-                                  v == null ? 'Please select a business' : null,
-                            ),
+    isExpanded: true, // allows the dropdown to take full width
+    value: _selectedBusiness,
+    items: _businessList
+        .map((b) => DropdownMenuItem(
+    value: b,
+    child: Text(
+    b.business?.name ?? '-',
+    style: GoogleFonts.poppins(),
+    overflow: TextOverflow.ellipsis, // prevents overflow
+    ),
+    ))
+        .toList(),
+    onChanged: (value) {
+    setState(() => _selectedBusiness = value);
+    },
+    decoration: _inputDecoration('Choose business'),
+    validator: (v) => v == null ? 'Please select a business' : null,
+    ),
+
                       const SizedBox(height: 16),
 
                       buildLabel('Lead Name'),
