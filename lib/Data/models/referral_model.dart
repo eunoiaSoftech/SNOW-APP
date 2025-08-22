@@ -19,14 +19,19 @@ class Referral {
 
   factory Referral.fromJson(Map<String, dynamic> json) {
     return Referral(
-      id: json['id'] ?? '',
-      senderId: json['sender_id'] ?? '',
-      receiverId: json['receiver_id'] ?? '',
+      id: json['id']?.toString() ?? '',
+      senderId: json['sender_id']?.toString() ?? '',
+      receiverId: json['receiver_id']?.toString() ?? '',
       leadName: json['lead_name'] ?? '',
       message: json['message'] ?? '',
       status: json['status'] ?? '',
       createdAt: json['created_at'] ?? '',
     );
+  }
+
+  @override
+  String toString() {
+    return 'Referral(id: $id, leadName: $leadName, status: $status)';
   }
 }
 
@@ -40,12 +45,12 @@ class MyReferralsResponse {
   });
 
   factory MyReferralsResponse.fromJson(Map<String, dynamic> json) {
-    print("🧩 [Model] Parsing received_referrals: ${json['received_referrals']}");
-    final received = json['received_referrals'] as List<dynamic>?;
+    final received = (json['received_referrals'] ?? []) as List<dynamic>;
+    print("🧩 [Model] Parsing received_referrals: count = ${received.length}");
 
     return MyReferralsResponse(
       success: json['success'] ?? false,
-      referrals: received?.map((e) => Referral.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      referrals: received.map((e) => Referral.fromJson(e as Map<String, dynamic>)).toList(),
     );
   }
 }

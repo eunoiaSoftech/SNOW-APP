@@ -23,22 +23,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   double _opacity = 1.0;
   double _marginTop = 0;
 
-  void _animateSnowflake() {
-    Future.delayed(Duration.zero, () async {
-      while (mounted) {
-        setState(() {
-          _opacity = 1.0;
-          _marginTop = 0;
-        });
-        await Future.delayed(Duration(seconds: 3));
-        setState(() {
-          _opacity = 0.0;
-          _marginTop = 20; // slide down
-        });
-        await Future.delayed(Duration(seconds: 2));
-      }
+ bool _stopAnimation = false;
+
+void _animateSnowflake() async {
+  while (!_stopAnimation) {
+    if (!mounted) break;
+    setState(() {
+      _opacity = 1.0;
+      _marginTop = 0;
     });
+    await Future.delayed(Duration(seconds: 3));
+    if (!mounted || _stopAnimation) break;
+    setState(() {
+      _opacity = 0.0;
+      _marginTop = 20;
+    });
+    await Future.delayed(Duration(seconds: 2));
   }
+}
+
+@override
+void dispose() {
+  _stopAnimation = true;
+  super.dispose();
+}
+
 
   // Controllers for editable fields
   final TextEditingController _nameController = TextEditingController();
