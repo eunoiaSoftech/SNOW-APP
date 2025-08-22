@@ -17,7 +17,7 @@ class GradientGridScreen extends StatelessWidget {
       // 'TRAININGS',
       'RECORD SBOG',
       'RECORD SFG',
-      // "SNOW MEETUP'S",
+      "SNOW MEETUP'S",
       'AWARDS',
     ];
 
@@ -25,7 +25,7 @@ class GradientGridScreen extends StatelessWidget {
       // UpcomingTrainingsScreen(),
       MyReferralsScreen(),
       ReceivedReferralsScreen(),
-      // SnowMeetupScreen(),
+      SnowMeetupScreen(),
       AwardsScreen(),
     ];
 
