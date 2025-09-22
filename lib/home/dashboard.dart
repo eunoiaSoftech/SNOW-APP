@@ -55,6 +55,10 @@ class _SnowDashboardState extends State<SnowDashboard> {
     String businessName,
     int value,
     Color color,
+    String email,
+    String phone,
+    String category,
+    String website,
   ) {
     String initials = name.isNotEmpty
         ? name
@@ -69,7 +73,7 @@ class _SnowDashboardState extends State<SnowDashboard> {
     return Padding(
       padding: const EdgeInsets.only(right: 12.0),
       child: SizedBox(
-        width: 160,
+        width: 300,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(22),
           child: BackdropFilter(
@@ -156,12 +160,24 @@ class _SnowDashboardState extends State<SnowDashboard> {
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w500,
-                        fontSize: 12,
+                        fontSize: 14,
                         color: Colors.white60,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+
+                  Text(
+                    email,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      color: Colors.white60,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   // Points badge
                   Container(
@@ -207,71 +223,68 @@ class _SnowDashboardState extends State<SnowDashboard> {
         statusBarIconBrightness: Brightness.light,
       ),
     );
-    return SafeArea(
-      child: Scaffold(
-        extendBody: true,
-        backgroundColor: Colors.transparent,
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
 
-        body: Stack(
-          children: [
-            // Background image
-            Positioned.fill(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(0xAA97DCEB),
-                          Color(0xAA5E9BC8),
-                          Color(0xAA97DCEB),
-                          Color(0xAA70A9EE),
-                          Color(0xAA97DCEB),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+      body: Stack(
+        children: [
+          // Background image
+          Positioned.fill(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xAA97DCEB),
+                        Color(0xAA5E9BC8),
+                        Color(0xAA97DCEB),
+                        Color(0xAA70A9EE),
+                        Color(0xAA97DCEB),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            // Main UI content
-            Padding(
-              padding: const EdgeInsets.only(bottom: 60.0),
-              child: _selectedNavIndex == 0
-                  ? _buildDashboardContent()
-                  : _selectedNavIndex == 1
-                  ? const GradientGridScreen()
-                  : ProfileScreen(),
+          ),
+          // Main UI content
+          SafeArea(
+            child: _selectedNavIndex == 0
+                ? _buildDashboardContent()
+                : _selectedNavIndex == 1
+                ? const GradientGridScreen()
+                : ProfileScreen(),
+          ),
+          // Navigation Bar
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: CurvedNavigationBar(
+              index: _selectedNavIndex,
+              height: 60.0,
+              backgroundColor: Colors.transparent,
+              color: const Color.fromARGB(255, 184, 223, 247),
+              buttonBackgroundColor: Color(0xFF5E9BC8),
+              animationDuration: const Duration(milliseconds: 300),
+              animationCurve: Curves.easeInOut,
+              items: const <Widget>[
+                Icon(Icons.home, size: 30, color: Colors.white),
+                Icon(Icons.access_time, size: 30, color: Colors.white),
+                Icon(Icons.person_2_rounded, size: 30, color: Colors.white),
+              ],
+              onTap: (index) {
+                setState(() {
+                  _selectedNavIndex = index;
+                });
+              },
             ),
-            // Navigation Bar
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: CurvedNavigationBar(
-                index: _selectedNavIndex,
-                height: 60.0,
-                backgroundColor: Colors.transparent,
-                color: const Color.fromARGB(255, 184, 223, 247),
-                buttonBackgroundColor: Color(0xFF5E9BC8),
-                animationDuration: const Duration(milliseconds: 300),
-                animationCurve: Curves.easeInOut,
-                items: const <Widget>[
-                  Icon(Icons.home, size: 30, color: Colors.white),
-                  Icon(Icons.access_time, size: 30, color: Colors.white),
-                  Icon(Icons.person_2_rounded, size: 30, color: Colors.white),
-                ],
-                onTap: (index) {
-                  setState(() {
-                    _selectedNavIndex = index;
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -621,7 +634,7 @@ class _SnowDashboardState extends State<SnowDashboard> {
                       ),
                       const SizedBox(height: 10),
                       SizedBox(
-                        height: 180,
+                        height: 200,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: topGivers.length,
@@ -632,6 +645,10 @@ class _SnowDashboardState extends State<SnowDashboard> {
                               giver.business.name ?? 'N/A',
                               giver.totalGiven,
                               Color(0xFF014576),
+                              giver.email,
+                              giver.business.contact ?? "-",
+                              giver.business.category ?? "-",
+                              giver.business.website ?? '',
                             );
                           },
                         ),
@@ -647,7 +664,7 @@ class _SnowDashboardState extends State<SnowDashboard> {
                       ),
                       const SizedBox(height: 10),
                       SizedBox(
-                        height: 180,
+                        height: 200,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: topReceivers.length,
@@ -658,6 +675,11 @@ class _SnowDashboardState extends State<SnowDashboard> {
                               receiver.business.name ?? 'N/A',
                               receiver.totalReceived,
                               Colors.blue,
+
+                              receiver.email,
+                              receiver.business.contact ?? "-",
+                              receiver.business.category ?? "-",
+                              receiver.business.website ?? '',
                             );
                           },
                         ),

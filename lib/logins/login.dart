@@ -20,6 +20,8 @@ class _LoginScreenState extends State<LoginPage> {
   final _password = TextEditingController();
   final _repo = AuthRepository();
   bool _loading = false;
+    bool _obscurePassword = true;
+
 
   @override
   Widget build(BuildContext context) {
@@ -100,20 +102,48 @@ class _LoginScreenState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
+
+                         TextFormField(
                           controller: _password,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
                           validator: (v) =>
                               Validators.minLen(v, 6, label: 'Password'),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'Password',
-                            border: OutlineInputBorder(
+                            border: const OutlineInputBorder(
                               borderRadius: BorderRadius.all(
                                 Radius.circular(12),
                               ),
                             ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.grey,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
                           ),
                         ),
+                        // TextFormField(
+                        //   controller: _password,
+                        //   obscureText: true,
+                        //   validator: (v) =>
+                        //       Validators.minLen(v, 6, label: 'Password'),
+                        //   decoration: const InputDecoration(
+                        //     hintText: 'Password',
+                        //     border: OutlineInputBorder(
+                        //       borderRadius: BorderRadius.all(
+                        //         Radius.circular(12),
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _loading ? null : _onLogin,

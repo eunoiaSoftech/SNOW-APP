@@ -237,7 +237,31 @@ class _ReceivedReferralsScreenState extends State<ReceivedReferralsScreen> {
                     );
                   },
                 ),
+                floatingActionButton: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF014576),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => RecordSFGScreen()),
+              );
+              _fetchReferrals(); // Refresh list after coming back
+            },
+            child: Text(
+              "CREATE SFG",
+              style: GoogleFonts.montserrat(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
+        
       ],
     );
   }

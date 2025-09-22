@@ -2,28 +2,34 @@ class User {
   final int id;
   final String email;
   final String fullName;
-  final String? businessName;
-  final String? businessCategory; // id or name depending on API
-  final String? contact;
-  final String? city;
+  final String businessName;
+  final String businessCategory;
+  final String contact;
+  final String city;
+  final String status;   
+  final bool isAdmin;   
 
   const User({
     required this.id,
     required this.email,
     required this.fullName,
-    this.businessName,
-    this.businessCategory,
-    this.contact,
-    this.city,
+    required this.businessName,
+    required this.businessCategory,
+    required this.contact,
+    required this.city,
+    required this.status,
+    required this.isAdmin,
   });
 
   factory User.fromJson(Map<String, dynamic> j) => User(
-        id: (j['id'] ?? 0) is String ? int.tryParse(j['id']) ?? 0 : j['id'] ?? 0,
+        id: j['id'] ?? 0,
         email: j['email'] ?? '',
-        fullName: j['full_name'] ?? j['fullName'] ?? '',
-        businessName: j['business_name'] ?? j['businessName'],
-        businessCategory: j['business_category']?.toString(),
-        contact: j['contact']?.toString(),
-        city: j['city'],
+        fullName: j['full_name'] ?? '',
+        businessName: j['business_name'] ?? '',
+        businessCategory: j['business_category'] ?? '',
+        contact: j['contact'] ?? '',
+        city: j['city'] ?? '',
+        status: j['status'] ?? 'PENDING',
+        isAdmin: j['is_admin'] ?? false,
       );
 }

@@ -37,14 +37,18 @@ class _SignUpPageState extends State<SignUpPage> {
     _loadCategories();
   }
 
-  Future<void> _loadCategories() async {
-    final res = await _common.fetchBusinessCategories();
-    if (res is Ok<List<BusinessCategory>>) {
-      setState(() => _categories = res.value);
-    } else if (res is Err) {
-      context.showToast('Failed to load categories', bg: Colors.red);
-    }
+Future<void> _loadCategories() async {
+  final res = await _common.fetchBusinessCategories();
+
+  if (!mounted) return; 
+
+  if (res is Ok<List<BusinessCategory>>) {
+    setState(() => _categories = res.value);
+  } else if (res is Err) {
+    context.showToast('Failed to load categories', bg: Colors.red);
   }
+}
+
 
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) {

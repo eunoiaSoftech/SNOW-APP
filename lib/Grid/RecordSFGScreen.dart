@@ -5,8 +5,8 @@ import '../core/api_client.dart';
 import '../Data/models/sfg_response.dart';
 
 class RecordSFGScreen extends StatefulWidget {
-  final int leadId;
-  const RecordSFGScreen({required this.leadId, super.key});
+  final int? leadId;
+  const RecordSFGScreen({this.leadId, super.key});
 
   @override
   _RecordSFGScreenState createState() => _RecordSFGScreenState();
@@ -23,7 +23,7 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
 
   final List<Color> gradientColors = [
     Color(0xAA97DCEB),
-    Color(0xAA5E9BC8),
+    Color(0xAA5E9BC8), 
     Color(0xAA97DCEB),
     Color(0xAA70A9EE),
     Color(0xAA97DCEB),
@@ -55,7 +55,7 @@ class _RecordSFGScreenState extends State<RecordSFGScreen> {
 
     try {
       final RecordSfgResponse response = await repo.createSSfg(
-        leadId: widget.leadId,
+        leadId: widget.leadId ?? 0, 
         status: selectedStatus!,
       );
 

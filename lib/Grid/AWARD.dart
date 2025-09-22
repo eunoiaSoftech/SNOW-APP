@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:snow_app/Data/Repositories/award_repository.dart';
 import 'package:snow_app/Data/models/award.dart';
@@ -38,7 +39,8 @@ class _AwardsScreenState extends State<AwardsScreen>
     final titleController = TextEditingController();
     final descController = TextEditingController();
     File? pickedImage;
-
+    final picker = ImagePicker();
+    final XFile? img = await picker.pickImage(source: ImageSource.gallery);
     await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -197,12 +199,20 @@ class _AwardsScreenState extends State<AwardsScreen>
                       icon: Icon(Icons.image, color: Colors.white),
                       label: Text("Pick Image 🎨"),
                       onPressed: () async {
-                        final picker = ImagePicker();
                         final XFile? img = await picker.pickImage(
                           source: ImageSource.gallery,
                         );
                         if (img != null) {
-                          setStateDialog(() => pickedImage = File(img.path));
+                          // Save image to permanent storage
+                          final directory =
+                              await getApplicationDocumentsDirectory();
+                          final newPath =
+                              '${directory.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+                          final File newImage = await File(
+                            img.path,
+                          ).copy(newPath);
+
+                          setStateDialog(() => pickedImage = newImage);
                         }
                       },
                     ),
@@ -653,13 +663,13 @@ class _AwardsScreenState extends State<AwardsScreen>
                                           ],
                                         ),
                                       ),
-                                      IconButton(
-                                        icon: Icon(Icons.delete_forever),
-                                        color: Colors.redAccent,
-                                        tooltip: 'Delete award',
-                                        splashRadius: 22,
-                                        onPressed: () => _deleteAward(award.id),
-                                      ),
+                                      // IconButton(
+                                      //   icon: Icon(Icons.delete_forever),
+                                      //   color: Colors.redAccent,
+                                      //   tooltip: 'Delete award',
+                                      //   splashRadius: 22,
+                                      //   onPressed: () => _deleteAward(award.id),
+                                      // ),
                                     ],
                                   ),
 
