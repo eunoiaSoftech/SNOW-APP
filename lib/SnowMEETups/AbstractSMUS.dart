@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/Meetup/Smus.dart';
 
 class AbstractSMUS extends StatefulWidget {
   const AbstractSMUS({Key? key}) : super(key: key);
@@ -12,39 +13,58 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
   DateTime? startDate;
   DateTime? endDate;
 
-  List<Map<String, dynamic>> allRecords = [
-    {
-      "date": DateTime(2025, 9, 18),
-      "metWith": "John Doe",
-      "abstract": "Discussed Q3 targets",
-      "collaboration": "High",
-      "mode": "Virtual",
-      "nextFollowUp": DateTime(2025, 9, 25),
-    },
-    {
-      "date": DateTime(2025, 9, 17),
-      "metWith": "Alice Smith",
-      "abstract": "Reviewed project roadmap",
-      "collaboration": "Medium",
-      "mode": "Offline",
-      "nextFollowUp": DateTime(2025, 9, 22),
-    },
-    {
-      "date": DateTime(2025, 9, 10),
-      "metWith": "Suresh Kumar",
-      "abstract": "Annual planning discussion",
-      "collaboration": "Low",
-      "mode": "Virtual",
-      "nextFollowUp": DateTime(2025, 9, 20),
-    },
-  ];
-
+  final ReferralsRepositorysums _repo = ReferralsRepositorysums();
+  List<Map<String, dynamic>> allRecords = [];
   List<Map<String, dynamic>> filteredRecords = [];
+  bool isLoading = false;
+  String? errorMessage;
+  final TextEditingController searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
-    filteredRecords = List.from(allRecords);
+    _fetchSmusData();
+  }
+
+  Future<void> _fetchSmusData() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final response = await _repo.fetchSmusRecords();
+      if (response.success && response.records.isNotEmpty) {
+        // Convert to your existing UI record format
+        allRecords = response.records.map((r) {
+          return {
+            "date": DateTime.tryParse(r.date) ?? DateTime.now(),
+            "metWith": r.toMember,
+            "abstract": r.abstractText,
+            "collaboration": r.collabType,
+            "mode": r.mode,
+            "nextFollowUp": DateTime.tryParse(r.followupDate) ?? DateTime.now(),
+          };
+        }).toList();
+
+        filteredRecords = List.from(allRecords);
+      } else {
+        errorMessage = "No data available in table.";
+      }
+    } catch (e) {
+      errorMessage = "Failed to fetch data. Please try again later.";
+      debugPrint("❌ SMUS Fetch Error: $e");
+    }
+
+    setState(() {
+      isLoading = false;
+    });
   }
 
   Future<void> _pickDate(BuildContext context, bool isStart) async {
@@ -152,13 +172,21 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
             children: [
               // Running Users Expansion Card
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Container(
                   decoration: _cardDecoration(),
                   child: Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      tilePadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
                       childrenPadding: const EdgeInsets.only(bottom: 12),
                       title: Text(
                         "Running Users",
@@ -182,7 +210,10 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
               // Main content: Date Filter + Records
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   child: Column(
                     children: [
                       _buildDateFilterCard(context),
@@ -212,19 +243,28 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
       title: Text(
         name,
         style: GoogleFonts.poppins(
-            fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.black87,
+        ),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Active at: $time",
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
-          Text("IGLOO: $company",
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
+          Text(
+            "Active at: $time",
+            style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
+          ),
+          Text(
+            "IGLOO: $company",
+            style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
+          ),
         ],
       ),
     );
   }
+
+
 
   Widget _buildDateFilterCard(BuildContext context) {
     return Container(
@@ -240,12 +280,18 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
               children: [
                 Expanded(
                   child: _buildDatePicker(
-                      "Start Date", startDate, () => _pickDate(context, true)),
+                    "Start Date",
+                    startDate,
+                    () => _pickDate(context, true),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildDatePicker(
-                      "End Date", endDate, () => _pickDate(context, false)),
+                    "End Date",
+                    endDate,
+                    () => _pickDate(context, false),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Column(
@@ -258,7 +304,9 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
                         backgroundColor: const Color(0xFF014576),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -274,7 +322,9 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
                         foregroundColor: const Color(0xFF014576),
                         side: const BorderSide(color: Color(0xFF014576)),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -291,13 +341,20 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
     );
   }
 
+
+
   Widget _buildDatePicker(String label, DateTime? value, VoidCallback onTap) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: GoogleFonts.poppins(
-                fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black87)),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
         const SizedBox(height: 6),
         InkWell(
           onTap: onTap,
@@ -309,8 +366,11 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today,
-                    size: 16, color: Color(0xFF014576)),
+                const Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: Color(0xFF014576),
+                ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
@@ -319,7 +379,9 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
                         : "${value.day}-${value.month}-${value.year}",
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
-                        fontSize: 14, fontWeight: FontWeight.w500),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -335,30 +397,47 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
       decoration: _cardDecoration(),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            _cardTitle("SMU Records", Icons.receipt_long),
-            const SizedBox(height: 14),
-            if (filteredRecords.isEmpty)
-              Center(
+        child: isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF014576)),
+              )
+            : errorMessage != null
+            ? Center(
                 child: Text(
-                  "No data available in table",
-                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[700]),
+                  errorMessage!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
                 ),
+              )
+            : ListView(
+                children: [
+                  _cardTitle("SMU Records", Icons.receipt_long),
+                  const SizedBox(height: 14),
+                  if (filteredRecords.isEmpty)
+                    Center(
+                      child: Text(
+                        "No data available in table",
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  for (var record in filteredRecords)
+                    _buildRecordItem(
+                      date:
+                          "${record['date'].day}-${record['date'].month}-${record['date'].year}",
+                      metWith: record['metWith'] ?? '-',
+                      abstractText: record['abstract'] ?? '-',
+                      collaboration: record['collaboration'] ?? '-',
+                      mode: record['mode'] ?? '-',
+                      nextFollowUp:
+                          "${record['nextFollowUp'].day}-${record['nextFollowUp'].month}-${record['nextFollowUp'].year}",
+                    ),
+                ],
               ),
-            for (var record in filteredRecords)
-              _buildRecordItem(
-                date:
-                    "${record['date'].day}-${record['date'].month}-${record['date'].year}",
-                metWith: record['metWith'],
-                abstractText: record['abstract'],
-                collaboration: record['collaboration'],
-                mode: record['mode'],
-                nextFollowUp:
-                    "${record['nextFollowUp'].day}-${record['nextFollowUp'].month}-${record['nextFollowUp'].year}",
-              ),
-          ],
-        ),
       ),
     );
   }
@@ -388,38 +467,55 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(date,
-              style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[700])),
+          Text(
+            date,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
+          ),
           const SizedBox(height: 6),
-          Text("Met With: $metWith",
-              style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87)),
+          Text(
+            "Met With: $metWith",
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text("Abstract: $abstractText",
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700])),
+          Text(
+            "Abstract: $abstractText",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
           const SizedBox(height: 6),
-          Text("Collaboration: $collaboration",
-              style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.blueGrey[700])),
+          Text(
+            "Collaboration: $collaboration",
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.blueGrey[700],
+            ),
+          ),
           const SizedBox(height: 6),
-          Text("Mode of Meeting: $mode",
-              style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.blueGrey[700])),
+          Text(
+            "Mode of Meeting: $mode",
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.blueGrey[700],
+            ),
+          ),
           const SizedBox(height: 6),
-          Text("Next Followup Date: $nextFollowUp",
-              style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.green[700])),
+          Text(
+            "Next Followup Date: $nextFollowUp",
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.green[700],
+            ),
+          ),
         ],
       ),
     );
@@ -448,9 +544,10 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
       children: [
         Icon(icon, size: 20, color: const Color(0xFF014576)),
         const SizedBox(width: 8),
-        Text(title,
-            style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600, fontSize: 16)),
+        Text(
+          title,
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
       ],
     );
   }

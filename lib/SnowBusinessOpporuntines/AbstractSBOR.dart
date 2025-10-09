@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/SBOG%20REPO/abstractSbor.dart';
+import 'package:snow_app/Data/models/New%20Model/abs_sbor.dart';
 
 class AbstractSBOR extends StatefulWidget {
   const AbstractSBOR({Key? key}) : super(key: key);
@@ -9,39 +12,45 @@ class AbstractSBOR extends StatefulWidget {
 }
 
 class _AbstractSBORState extends State<AbstractSBOR> {
+  final ReferralsRepositorySbor _repo = ReferralsRepositorySbor();
+
   DateTime? startDate;
   DateTime? endDate;
-
-  List<Map<String, dynamic>> allRecords = [
-    {
-      "date": DateTime(2025, 9, 18),
-      "sogForm": "John Doe",
-      "comment": "Payment for Igloo project",
-      "connectivity": "High",
-      "amount": "₹20,000",
-    },
-    {
-      "date": DateTime(2025, 9, 17),
-      "sogForm": "Alice Smith",
-      "comment": "Quarterly advance",
-      "connectivity": "Medium",
-      "amount": "₹15,000",
-    },
-    {
-      "date": DateTime(2025, 9, 10),
-      "sogForm": "Suresh Kumar",
-      "comment": "Annual subscription",
-      "connectivity": "Low",
-      "amount": "₹12,000",
-    },
-  ];
-
-  List<Map<String, dynamic>> filteredRecords = [];
+  bool isLoading = false;
+  String? error;
+  List<SborAbsRecord> records = [];
+  List<SborAbsRecord> filteredRecords = [];
 
   @override
   void initState() {
     super.initState();
-    filteredRecords = List.from(allRecords);
+    _fetchRecords();
+  }
+
+  Future<void> _fetchRecords() async {
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
+
+    try {
+      final response = await _repo.fetchSborRecords(
+        startDate: startDate,
+        endDate: endDate,
+      );
+      setState(() {
+        records = response.records;
+        filteredRecords = List.from(records);
+      });
+    } catch (e) {
+      setState(() {
+        error = e.toString();
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> _pickDate(BuildContext context, bool isStart) async {
@@ -53,21 +62,17 @@ class _AbstractSBORState extends State<AbstractSBOR> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: const Color(0xFF014576), // header & selected date
-              onPrimary: Colors.white, // header text color
-              onSurface: Colors.black87, // dates text color
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF014576),
-              ),
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF014576),
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
             ),
           ),
           child: child!,
         );
       },
     );
+
     if (picked != null) {
       setState(() {
         if (isStart) {
@@ -82,10 +87,14 @@ class _AbstractSBORState extends State<AbstractSBOR> {
   void _applyFilter() {
     setState(() {
       if (startDate == null && endDate == null) {
-        filteredRecords = List.from(allRecords);
+        filteredRecords = List.from(records);
       } else {
-        filteredRecords = allRecords.where((record) {
-          DateTime d = record["date"];
+        filteredRecords = records.where((record) {
+          DateTime? d;
+          try {
+            d = DateTime.parse(record.createdAt ?? '');
+          } catch (_) {}
+          if (d == null) return false;
           if (startDate != null && d.isBefore(startDate!)) return false;
           if (endDate != null && d.isAfter(endDate!)) return false;
           return true;
@@ -98,7 +107,7 @@ class _AbstractSBORState extends State<AbstractSBOR> {
     setState(() {
       startDate = null;
       endDate = null;
-      filteredRecords = List.from(allRecords);
+      filteredRecords = List.from(records);
     });
   }
 
@@ -106,7 +115,6 @@ class _AbstractSBORState extends State<AbstractSBOR> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background with gradient overlay
         Positioned.fill(
           child: Stack(
             fit: StackFit.expand,
@@ -146,58 +154,60 @@ class _AbstractSBORState extends State<AbstractSBOR> {
             ),
             iconTheme: const IconThemeData(color: Color(0xFF014576)),
           ),
-          body: Column(
-            children: [
-              // Running Users Expansion Card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  decoration: _cardDecoration(),
-                  child: Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      childrenPadding: const EdgeInsets.only(bottom: 12),
-                      title: Text(
-                        "Running Users",
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF014576),
-                        ),
-                      ),
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : error != null
+                  ? Center(child: Text("Error: $error"))
+                  : Column(
                       children: [
-                        _buildRunningUser(
-                          name: "Praveen Pawar",
-                          time: "18-Sep-25 02:02 PM",
-                          company: "Igloo Panther",
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Container(
+                            decoration: _cardDecoration(),
+                            child: Theme(
+                              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                              child: ExpansionTile(
+                                tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                childrenPadding: const EdgeInsets.only(bottom: 12),
+                                title: Text(
+                                  "Running Users",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF014576),
+                                  ),
+                                ),
+                                children: [
+                                  _buildRunningUser(
+                                    name: "Praveen Pawar",
+                                    time: "18-Sep-25 02:02 PM",
+                                    company: "Igloo Panther",
+                                  ),
+                                  const Divider(),
+                                  _buildRunningUser(
+                                    name: "Suresh Kumar",
+                                    time: "17-Sep-25 04:40 PM",
+                                    company: "Igloo Panther",
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                        const Divider(),
-                        _buildRunningUser(
-                          name: "Suresh Kumar",
-                          time: "17-Sep-25 04:40 PM",
-                          company: "Igloo Panther",
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            child: Column(
+                              children: [
+                                _buildDateFilterCard(context),
+                                const SizedBox(height: 14),
+                                Expanded(child: _buildRecordsCard()),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-              // Main content: Date Filter + Records
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Column(
-                    children: [
-                      _buildDateFilterCard(context),
-                      const SizedBox(height: 14),
-                      Expanded(child: _buildRecordsCard()),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     );
@@ -230,7 +240,6 @@ class _AbstractSBORState extends State<AbstractSBOR> {
     );
   }
 
-  // Date Filter Card
   Widget _buildDateFilterCard(BuildContext context) {
     return Container(
       decoration: _cardDecoration(),
@@ -335,7 +344,6 @@ class _AbstractSBORState extends State<AbstractSBOR> {
     );
   }
 
-  // Records Card
   Widget _buildRecordsCard() {
     return Container(
       decoration: _cardDecoration(),
@@ -349,22 +357,31 @@ class _AbstractSBORState extends State<AbstractSBOR> {
               Center(
                 child: Text(
                   "No data available in table",
-                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[700]),
+                  style:
+                      GoogleFonts.poppins(fontSize: 14, color: Colors.grey[700]),
                 ),
               ),
             for (var record in filteredRecords)
               _buildRecordItem(
-                date:
-                    "${record['date'].day}-${record['date'].month}-${record['date'].year}",
-                sogForm: record['sogForm'],
-                comment: record['comment'],
-                connectivity: record['connectivity'],
-                amount: record['amount'],
+                date: _formatDate(record.createdAt ?? ''),
+                sogForm: record.toMember ?? '',
+                comment: record.comments ?? '',
+                connectivity: record.level ?? '',
+                amount: record.referral ?? '',
               ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('dd-MMM-yy hh:mm a').format(date);
+    } catch (e) {
+      return dateStr;
+    }
   }
 
   Widget _buildRecordItem({
@@ -380,11 +397,11 @@ class _AbstractSBORState extends State<AbstractSBOR> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Colors.black12,
             blurRadius: 6,
-            offset: const Offset(2, 3),
+            offset: Offset(2, 3),
           ),
         ],
       ),
@@ -404,8 +421,8 @@ class _AbstractSBORState extends State<AbstractSBOR> {
                   color: Colors.black87)),
           const SizedBox(height: 6),
           Text("Comments: $comment",
-              style: GoogleFonts.poppins(
-                  fontSize: 13, color: Colors.grey[700])),
+              style:
+                  GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700])),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -427,7 +444,6 @@ class _AbstractSBORState extends State<AbstractSBOR> {
     );
   }
 
-  // Common Helpers
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(20),
@@ -436,11 +452,11 @@ class _AbstractSBORState extends State<AbstractSBOR> {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      boxShadow: [
+      boxShadow: const [
         BoxShadow(
           color: Colors.black12,
           blurRadius: 10,
-          offset: const Offset(2, 4),
+          offset: Offset(2, 4),
         ),
       ],
     );

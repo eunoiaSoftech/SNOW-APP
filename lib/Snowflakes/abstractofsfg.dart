@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/sgf/sgf_repo.dart';
+import 'package:snow_app/Data/models/New%20Model/sgf_abst_model.dart';
 
 class AbstractSFG extends StatefulWidget {
   const AbstractSFG({Key? key}) : super(key: key);
@@ -9,105 +11,80 @@ class AbstractSFG extends StatefulWidget {
 }
 
 class _AbstractSFGState extends State<AbstractSFG> {
+  final ReferralsRepositorySfg _repo = ReferralsRepositorySfg();
+
   DateTime? startDate;
   DateTime? endDate;
-
-  List<Map<String, dynamic>> allRecords = [
-    {
-      "date": DateTime(2025, 9, 18),
-      "sogForm": "John Doe",
-      "comment": "Payment for Igloo project",
-      "connectivity": "High",
-      "amount": "₹20,000",
-    },
-    {
-      "date": DateTime(2025, 9, 17),
-      "sogForm": "Alice Smith",
-      "comment": "Quarterly advance",
-      "connectivity": "Medium",
-      "amount": "₹15,000",
-    },
-    {
-      "date": DateTime(2025, 9, 10),
-      "sogForm": "Suresh Kumar",
-      "comment": "Annual subscription",
-      "connectivity": "Low",
-      "amount": "₹12,000",
-    },
-  ];
-
-  List<Map<String, dynamic>> filteredRecords = [];
+  List<SfgAbsRecord> records = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    filteredRecords = List.from(allRecords);
+    fetchData();
   }
 
-Future<void> _pickDate(BuildContext context, bool isStart) async {
-  DateTime? picked = await showDatePicker(
-    context: context,
-    initialDate: DateTime.now(),
-    firstDate: DateTime(2020),
-    lastDate: DateTime(2030),
-    builder: (context, child) {
-      return Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: ColorScheme.light(
-            primary: const Color(0xFF014576), // header & selected date
-            onPrimary: Colors.white, // header text color
-            onSurface: Colors.black87, // dates text color
-          ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF014576), 
-            ),
-          ),
-        ),
-        child: child!,
-      );
-    },
-  );
-  if (picked != null) {
+Future<void> fetchData({String? query}) async {
+  setState(() => isLoading = true);
+
+  try {
+    final res = await _repo.fetchSfgRecords(
+      onlyMy: false,           // fetch all users
+      businessId: null,        // optional, omit to get all
+      startDate: startDate != null ? _formatDate(startDate!) : null,
+      endDate: endDate != null ? _formatDate(endDate!) : null,
+      query: query,
+    );
+
     setState(() {
-      if (isStart) {
-        startDate = picked;
-      } else {
-        endDate = picked;
-      }
+      records = res.records;   // <-- List<SfgAbsRecord>
     });
+
+    print("🎯 Total records fetched: ${records.length}");
+  } catch (e) {
+    print("⚠️ Error fetching data: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Failed to load records")),
+    );
+  } finally {
+    setState(() => isLoading = false);
   }
 }
 
 
-  void _applyFilter() {
-    setState(() {
-      if (startDate == null && endDate == null) {
-        filteredRecords = List.from(allRecords);
-      } else {
-        filteredRecords = allRecords.where((record) {
-          DateTime d = record["date"];
-          if (startDate != null && d.isBefore(startDate!)) return false;
-          if (endDate != null && d.isAfter(endDate!)) return false;
-          return true;
-        }).toList();
-      }
-    });
+  String _formatDate(DateTime date) =>
+      "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
+  Future<void> _pickDate(BuildContext context, bool isStart) async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart)
+          startDate = picked;
+        else
+          endDate = picked;
+      });
+    }
   }
 
+  void _applyFilter() => fetchData();
   void _resetFilter() {
     setState(() {
       startDate = null;
       endDate = null;
-      filteredRecords = List.from(allRecords);
     });
+    fetchData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background
         Positioned.fill(
           child: Stack(
             fit: StackFit.expand,
@@ -145,50 +122,14 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
                 fontSize: 20,
               ),
             ),
-            iconTheme: const IconThemeData(color: Color(0xFF014576)),
           ),
-          body: Column(
-            children: [
-              // Expansion Tile for Running Users wrapped in Card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  decoration: _cardDecoration(),
-                  child: Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      childrenPadding: const EdgeInsets.only(bottom: 12),
-                      title: Text(
-                        "Running Users",
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF014576),
-                        ),
-                      ),
-                      children: [
-                        _buildRunningUser(
-                          name: "Praveen Pawar",
-                          time: "18-Sep-25 02:02 PM",
-                          company: "Igloo Panther",
-                        ),
-                        const Divider(),
-                        _buildRunningUser(
-                          name: "Suresh Kumar",
-                          time: "17-Sep-25 04:40 PM",
-                          company: "Igloo Panther",
-                        ),
-                      ],
-                    ),
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
                   ),
-                ),
-              ),
-
-              Expanded(
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Column(
                     children: [
                       _buildDateFilterCard(context),
@@ -197,42 +138,11 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
         ),
       ],
     );
   }
 
-  Widget _buildRunningUser({
-    required String name,
-    required String time,
-    required String company,
-  }) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.blue.shade100,
-        child: const Icon(Icons.person, color: Colors.blue),
-      ),
-      title: Text(
-        name,
-        style: GoogleFonts.poppins(
-            fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Active at: $time",
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
-          Text("IGLOO: $company",
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
-        ],
-      ),
-    );
-  }
-
-  // Date Filter Card
   Widget _buildDateFilterCard(BuildContext context) {
     return Container(
       decoration: _cardDecoration(),
@@ -247,12 +157,18 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
               children: [
                 Expanded(
                   child: _buildDatePicker(
-                      "Start Date", startDate, () => _pickDate(context, true)),
+                    "Start Date",
+                    startDate,
+                    () => _pickDate(context, true),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildDatePicker(
-                      "End Date", endDate, () => _pickDate(context, false)),
+                    "End Date",
+                    endDate,
+                    () => _pickDate(context, false),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Column(
@@ -265,11 +181,9 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
                         backgroundColor: const Color(0xFF014576),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          horizontal: 14,
+                          vertical: 10,
                         ),
-                        textStyle: GoogleFonts.poppins(fontSize: 13),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -280,12 +194,6 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF014576),
                         side: const BorderSide(color: Color(0xFF014576)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        textStyle: GoogleFonts.poppins(fontSize: 13),
                       ),
                     ),
                   ],
@@ -302,9 +210,14 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: GoogleFonts.poppins(
-                fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black87)),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
         const SizedBox(height: 6),
         InkWell(
           onTap: onTap,
@@ -316,8 +229,11 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today,
-                    size: 16, color: Color(0xFF014576)),
+                const Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: Color(0xFF014576),
+                ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
@@ -326,7 +242,9 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
                         : "${value.day}-${value.month}-${value.year}",
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
-                        fontSize: 14, fontWeight: FontWeight.w500),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -336,28 +254,25 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
       ],
     );
   }
-
-  // Records Card
   Widget _buildRecordsCard() {
     return Container(
       decoration: _cardDecoration(),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            _cardTitle("Snowflakes Records", Icons.receipt_long),
-            const SizedBox(height: 14),
-            for (var record in filteredRecords)
-              _buildRecordItem(
-                date:
-                    "${record['date'].day}-${record['date'].month}-${record['date'].year}",
-                sogForm: record['sogForm'],
-                comment: record['comment'],
-                connectivity: record['connectivity'],
-                amount: record['amount'],
+        child: records.isEmpty
+            ? const Center(child: Text("No records found"))
+            : ListView.builder(
+                itemCount: records.length,
+                itemBuilder: (context, index) {
+                  final r = records[index];
+                  return _buildRecordItem(
+                    date: r.createdAt,
+                    sogForm: r.toMember,
+                    comment: r.remarks,
+                    amount: r.amount,
+                  );
+                },
               ),
-          ],
-        ),
       ),
     );
   }
@@ -366,7 +281,6 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
     required String date,
     required String sogForm,
     required String comment,
-    required String connectivity,
     required String amount,
   }) {
     return Container(
@@ -386,43 +300,40 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(date,
-              style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[700])),
+          Text(
+            date,
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey),
+          ),
           const SizedBox(height: 6),
-          Text("Snowflakes Given To: $sogForm",
-              style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87)),
+          Text(
+            "Snowflakes Given To: $sogForm",
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text("Comments: $comment",
-              style: GoogleFonts.poppins(
-                  fontSize: 13, color: Colors.grey[700])),
+          Text(
+            "Comments: $comment",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Connectivity: $connectivity",
-                  style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.blueGrey[700])),
-              Text(amount,
-                  style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green[700])),
-            ],
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Text(
+              amount,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.green[700],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Common Helpers
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(20),
@@ -446,9 +357,10 @@ Future<void> _pickDate(BuildContext context, bool isStart) async {
       children: [
         Icon(icon, size: 20, color: Color(0xFF014576)),
         const SizedBox(width: 8),
-        Text(title,
-            style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600, fontSize: 16)),
+        Text(
+          title,
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
       ],
     );
   }

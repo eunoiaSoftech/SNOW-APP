@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:snow_app/Data/Repositories/referrals_repository.dart';
-import 'package:snow_app/Data/Repositories/common_repository.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/SBOG%20REPO/recordSbog.dart';
+import 'package:snow_app/Data/models/New%20Model/sbog_model.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/_SearchIgloosDialog.dart';
-
-import '../core/api_client.dart';
 
 class RecordSBOG extends StatefulWidget {
   const RecordSBOG({Key? key}) : super(key: key);
@@ -20,16 +18,17 @@ class _RecordSBOGState extends State<RecordSBOG> {
   final _emailController = TextEditingController();
   final _commentsController = TextEditingController();
 
+  final repository = ReferralsRepositorySbog ();
+
   bool _isLoading = false;
 
-  final repository = ReferralsRepository(ApiClient.create());
-  final commonRepository = CommonRepository();
-
   String? _selectedMemberName;
-  int _selectedConnectLevel = 0;
   String? _selectedMyIglooMember;
+  int _selectedConnectLevel = 0; 
 
-  List<String> _myIglooMembers = ['Member A', 'Member B', 'Member C'];
+  final List<String> _myIglooMembers = ['Member A', 'Member B', 'Member C'];
+  final List<String> levelWords = ["Very Poor", "Poor", "Average", "Good", "Excellent"];
+
 
   @override
   void dispose() {
@@ -44,9 +43,7 @@ class _RecordSBOGState extends State<RecordSBOG> {
     showDialog(
       context: context,
       builder: (context) {
-        return
-        
-         SearchIgloosDialog(
+        return SearchIgloosDialog(
           onMemberSelected: (memberName) {
             setState(() {
               _selectedMemberName = memberName;
@@ -58,12 +55,14 @@ class _RecordSBOGState extends State<RecordSBOG> {
     );
   }
 
+  /// ⭐ Submit Form using your repository
   void _submitForm() async {
     if (!_formKey.currentState!.validate() ||
-        (_selectedMemberName == null && _selectedMyIglooMember == null)) {
+        (_selectedMemberName == null && _selectedMyIglooMember == null) ||
+        _selectedConnectLevel == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a member and fill all required fields.'),
+          content: Text('Please fill all fields and select a star rating.'),
         ),
       );
       return;
@@ -71,16 +70,52 @@ class _RecordSBOGState extends State<RecordSBOG> {
 
     setState(() => _isLoading = true);
 
-    // Placeholder for API call
-    // final response = await repository.createSbog(...);
+    try {
+      final request = SbogRequest(
+  receiverBusinessId: "123", // replace with actual business ID
+  toMember: _selectedMyIglooMember ?? _selectedMemberName!,
+  referral: _referralController.text.trim(),
+  telephone: _telephoneController.text.trim(),
+  email: _emailController.text.trim(),
+  level: levelWords[_selectedConnectLevel - 1], // <-- send string!
+  comments: _commentsController.text.trim(),
+);
 
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Form submitted successfully!'),
-        backgroundColor: Colors.green,
-      ),
-    );
+
+      final response = await repository.recordSbog(request.toJson());
+
+      setState(() => _isLoading = false);
+
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] ?? 'SBOG recorded successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _formKey.currentState?.reset();
+        setState(() {
+          _selectedMemberName = null;
+          _selectedMyIglooMember = null;
+          _selectedConnectLevel = 0;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] ?? 'Failed to record SBOG'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   Widget buildLabel(String text) {
@@ -110,23 +145,69 @@ class _RecordSBOGState extends State<RecordSBOG> {
     );
   }
 
-  Widget _buildConnectLevelRadio({required int value, required String text}) {
-    return Row(
-      children: [
-        Radio<int>(
-          value: value,
-          groupValue: _selectedConnectLevel,
-          onChanged: (int? newValue) {
-            setState(() {
-              _selectedConnectLevel = newValue!;
-            });
-          },
-          activeColor: const Color(0xFF014576),
-        ),
-        Expanded(child: Text(text, style: GoogleFonts.poppins(fontSize: 12))),
-      ],
-    );
-  }
+Widget _buildConnectLevelStars() {
+  const levelWords = ["Very Poor", "Poor", "Average", "Good", "Excellent"];
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(5, (index) {
+          int starIndex = index + 1;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedConnectLevel = starIndex;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 11.0),
+              child: Icon(
+                Icons.star,
+                size: 36,
+                color: _selectedConnectLevel >= starIndex
+                    ? Colors.amber
+                    : Colors.grey[300],
+                shadows: _selectedConnectLevel >= starIndex
+                    ? [const Shadow(color: Colors.orange, blurRadius: 4)]
+                    : [],
+              ),
+            ),
+          );
+        }),
+      ),
+      const SizedBox(height: 8),
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
+        child: _selectedConnectLevel > 0
+            ? Container(
+                key: ValueKey(_selectedConnectLevel),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.amber[100]?.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  levelWords[_selectedConnectLevel - 1], // show text below stars
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF014576),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            : const SizedBox.shrink(),
+      ),
+    ],
+  );
+}
+
+
+
 
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
@@ -190,7 +271,6 @@ class _RecordSBOGState extends State<RecordSBOG> {
             ],
           ),
         ),
-
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
@@ -237,86 +317,41 @@ class _RecordSBOGState extends State<RecordSBOG> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Inside your RecordSBOG build method, replace the "To" section with this:
-                      // buildLabel('To'),
-                              // ---------------- "To" Text Field ----------------
-_buildTextField('To', _referralController, 'Enter recipient name'),
+                      _buildTextField('To', _referralController, 'Enter recipient name'),
 
-// ---------------- My Igloo Member Dropdown ----------------
-buildLabel('Select a member from My Igloo'),
-DropdownButtonFormField<String>(
-  value: _selectedMyIglooMember,
-  items: _myIglooMembers.map((String member) {
-    return DropdownMenuItem<String>(
-      value: member,
-      child: Text(
-        member,
-        style: GoogleFonts.poppins(fontSize: 14),
-      ),
-    );
-  }).toList(),
-  onChanged: (String? newValue) {
-    setState(() {
-      _selectedMyIglooMember = newValue;
-    });
-  },
-  decoration: _inputDecoration('Select a member'),
-  validator: (value) {
-    if (value == null) {
-      return 'Required';
-    }
-    return null;
-  },
-),
+                      buildLabel('Select a member from My Igloo'),
+                      DropdownButtonFormField<String>(
+                        value: _selectedMyIglooMember,
+                        items: _myIglooMembers.map((String member) {
+                          return DropdownMenuItem<String>(
+                            value: member,
+                            child: Text(member, style: GoogleFonts.poppins(fontSize: 14)),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedMyIglooMember = newValue;
+                          });
+                        },
+                        decoration: _inputDecoration('Select a member'),
+                        validator: (value) => value == null ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
 
-  const SizedBox(height: 16),
                       if (_selectedMemberName != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16.0),
                           child: Text(
                             'Selected: $_selectedMemberName',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                         ),
 
                       _buildTextField('Referral', _referralController, ''),
-                      _buildTextField(
-                        'Telephone',
-                        _telephoneController,
-                        '',
-                        keyboardType: TextInputType.phone,
-                      ),
+                      _buildTextField('Telephone', _telephoneController, '', keyboardType: TextInputType.phone),
                       _buildTextField('Email', _emailController, ''),
-
                       buildLabel('Level of Connect'),
-                      _buildConnectLevelRadio(
-                        value: 1,
-                        text:
-                            'Member passes on the contact no of prospective lead or customer.',
-                      ),
-                      _buildConnectLevelRadio(
-                        value: 2,
-                        text:
-                            'Member Introduce over a con call to prospective lead or customer.',
-                      ),
-                      _buildConnectLevelRadio(
-                        value: 3,
-                        text:
-                            'Member arranges an online meeting of prospective lead or customer with fellow member.',
-                      ),
-                      _buildConnectLevelRadio(
-                        value: 4,
-                        text:
-                            'Member takes along with him the fellow SNOWEIT to prospective lead or customer for in person meeting.',
-                      ),
-                      _buildConnectLevelRadio(
-                        value: 5,
-                        text:
-                            'Member takes along with the fellow SNOWEIT to prospective lead or customer and finalies the deal.',
-                      ),
+                      _buildConnectLevelStars(),
                       const SizedBox(height: 16),
 
                       buildLabel('Comments'),
@@ -348,9 +383,7 @@ DropdownButtonFormField<String>(
                             child: Container(
                               alignment: Alignment.center,
                               child: _isLoading
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white,
-                                    )
+                                  ? const CircularProgressIndicator(color: Colors.white)
                                   : Text(
                                       'SUBMIT',
                                       style: GoogleFonts.poppins(
@@ -374,4 +407,3 @@ DropdownButtonFormField<String>(
     );
   }
 }
-

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/Meetup/Smus.dart';
 import 'package:snow_app/Data/Repositories/referrals_repository.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/_SearchIgloosDialog.dart';
@@ -17,10 +18,10 @@ class _RecordSMUSState extends State<RecordSMUS> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
-TextEditingController _toController = TextEditingController();
-TextEditingController _abstractController = TextEditingController();
-TextEditingController _dateController = TextEditingController();
-TextEditingController _followupController = TextEditingController();
+  TextEditingController _toController = TextEditingController();
+  TextEditingController _abstractController = TextEditingController();
+  TextEditingController _dateController = TextEditingController();
+  TextEditingController _followupController = TextEditingController();
 
   DateTime? _date;
   DateTime? _followupDate;
@@ -134,71 +135,90 @@ TextEditingController _followupController = TextEditingController();
       },
     );
   }
+Future<void> _submitForm({bool resetAfter = false}) async {
+  final bool hasRecipient =
+      _toController.text.trim().isNotEmpty ||
+      _selectedMemberName != null ||
+      _selectedMyIglooMember != null;
 
-  Future<void> _submitForm({bool resetAfter = false}) async {
-    final bool hasRecipient =
-        _toController.text.trim().isNotEmpty ||
-        _selectedMemberName != null ||
-        _selectedMyIglooMember != null;
-
-    if (!hasRecipient) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select "To" member.')),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) return;
-    if (_date == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select Date.')));
-      return;
-    }
-    if (_mode == null || _mode == _modes[0]) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select Mode of Meeting.')),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      await Future.delayed(const Duration(milliseconds: 600)); // simulate API
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            resetAfter
-                ? 'Saved — ready for new entry.'
-                : 'SMU saved successfully.',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-      if (resetAfter) _resetForm();
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Error saving.')));
-    } finally {
-      setState(() => _isLoading = false);
-    }
+  if (!hasRecipient) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select "To" member.')),
+    );
+    return;
   }
+
+  if (!_formKey.currentState!.validate()) return;
+
+  if (_date == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select Date.')),
+    );
+    return;
+  }
+
+  if (_mode == null || _mode == _modes[0]) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select Mode of Meeting.')),
+    );
+    return;
+  }
+
+  setState(() => _isLoading = true);
+
+  try {
+    final body = {
+      "to_member": _toController.text.trim(),
+      "to_business_id": 1,
+      "abstract": _abstractController.text.trim(),
+      "date":
+          "${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}",
+      "collab_type": _collab,
+      "followup_date": _followupDate != null
+          ? "${_followupDate!.year}-${_followupDate!.month.toString().padLeft(2, '0')}-${_followupDate!.day.toString().padLeft(2, '0')}"
+          : null,
+      "mode": _mode,
+    };
+
+    print("📤 Submitting SMU Form...");
+    print("📦 API Body: $body");
+
+    final repo = ReferralsRepositorysums();
+    final response = await repo.recordSmus(body);
+
+    print("✅ API Success Response: $response");
+
+    _loadSmus(); // refresh list after adding
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(response['message'] ?? 'SMU recorded successfully.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    if (resetAfter) _resetForm();
+  } catch (e) {
+    print("❌ API Error: $e");
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(e.toString().replaceFirst('Exception: ', '')),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    setState(() => _isLoading = false);
+  }
+}
 
 void _resetForm() {
   setState(() {
-    // dispose old controllers
-    _toController.dispose();
-    _abstractController.dispose();
-    _dateController.dispose();
-    _followupController.dispose();
-
-    // recreate fresh ones
-    _toController = TextEditingController();
-    _abstractController = TextEditingController();
-    _dateController = TextEditingController();
-    _followupController = TextEditingController();
+    // Instead of disposing, just clear the controllers
+    _toController.clear();
+    _abstractController.clear();
+    _dateController.clear();
+    _followupController.clear();
 
     _date = null;
     _followupDate = null;
@@ -209,6 +229,23 @@ void _resetForm() {
     _formKey.currentState?.reset();
   });
 }
+
+
+Future<void> _loadSmus() async {
+  print("🔄 Fetching SMU records...");
+  try {
+    final repo = ReferralsRepositorysums();
+    final response = await repo.fetchSmusRecords();
+    print("✅ SMU Records fetched successfully!");
+    print("📊 Total Records: ${response.records.length}");
+  } catch (e) {
+    print("❌ Error fetching SMUs: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  }
+}
+
 
   // ---------------- Build ----------------
   @override
@@ -460,7 +497,6 @@ void _resetForm() {
                                   ? null
                                   : () => _submitForm(resetAfter: true),
                               child: FittedBox(
-                            
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                   "SAVE & NEW",

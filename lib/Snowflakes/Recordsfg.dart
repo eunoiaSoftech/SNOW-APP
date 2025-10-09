@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/sgf/sgf_repo.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/_SearchIgloosDialog.dart';
 
 class SnowflakesRecordSFG extends StatefulWidget {
@@ -79,22 +80,62 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG> {
     );
   }
 
-  void _submitForm() {
-    if (!_formKey.currentState!.validate() || _selectedMember == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all required fields")),
-      );
-      return;
-    }
-    setState(() => _isLoading = true);
-
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Snowflakes Form Submitted!")),
-      );
-    });
+void _submitForm() async {
+  if (!_formKey.currentState!.validate() || _selectedMember == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please fill all required fields")),
+    );
+    return;
   }
+
+  setState(() => _isLoading = true);
+
+  try {
+    final repo = ReferralsRepositorySfg();
+
+    // call your recordSfg POST API
+    final response = await repo.recordSfg(
+      toMember: _toController.text.trim(),
+      giverBusinessId: 1, // use actual business ID if dynamic
+      amount: _amountController.text.trim(),
+      remarks: _commentsController.text.trim(),
+    );
+
+    if (response.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message,
+              style: const TextStyle(color: Colors.white)),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Clear inputs after success
+      _formKey.currentState!.reset();
+      _toController.clear();
+      _amountController.clear();
+      _commentsController.clear();
+      setState(() => _selectedMember = null);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed: ${response.message}"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Error: $e"),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  } finally {
+    setState(() => _isLoading = false);
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {

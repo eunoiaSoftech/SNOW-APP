@@ -6,7 +6,6 @@ import 'package:snow_app/Grid/AWARD.dart';
 import 'package:snow_app/Grid/myreferral.dart';
 import 'package:snow_app/Grid/recived_referrals.dart';
 import 'package:snow_app/Grid/meetup_create.dart';
-import 'package:snow_app/Grid/UpcomingTrainingsScreen.dart';
 
 import 'package:snow_app/Snowflakes/Recordsfg.dart';
 import 'package:snow_app/Snowflakes/abstractofsfg.dart';
@@ -27,7 +26,7 @@ class GradientGridScreen extends StatefulWidget {
 
 class _GradientGridScreenState extends State<GradientGridScreen> {
   final ScrollController _scrollController = ScrollController();
-  String? _expandedTile; // State variable to track the currently expanded tile's title
+  String? _expandedTile;
 
   final Map<String, GlobalKey> _expansionTileKeys = {
     'snowflakes': GlobalKey(),
