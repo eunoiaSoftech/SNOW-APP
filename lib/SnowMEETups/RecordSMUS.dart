@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/Meetup/Smus.dart';
-import 'package:snow_app/Data/Repositories/referrals_repository.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
+import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
+import 'package:snow_app/core/result.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/_SearchIgloosDialog.dart';
-
-import '../core/api_client.dart';
 
 class RecordSMUS extends StatefulWidget {
   const RecordSMUS({Key? key}) : super(key: key);
@@ -14,7 +14,8 @@ class RecordSMUS extends StatefulWidget {
   _RecordSMUSState createState() => _RecordSMUSState();
 }
 
-class _RecordSMUSState extends State<RecordSMUS> {
+class _RecordSMUSState extends State<RecordSMUS>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -31,7 +32,7 @@ class _RecordSMUSState extends State<RecordSMUS> {
   String? _selectedMemberName;
   String? _selectedMyIglooMember;
 
-  final List<String> _myIglooMembers = ['Member A', 'Member B', 'Member C'];
+  List<String> _myIglooMembers = [];
   final List<String> _modes = [
     'Select Mode of Meeting',
     'Online',
@@ -40,9 +41,65 @@ class _RecordSMUSState extends State<RecordSMUS> {
   ];
 
   bool _isLoading = false;
+  bool _isDropdownLoading = true;
 
-  final repository = ReferralsRepository(ApiClient.create());
+  // Animated dots for loading
+  late final AnimationController _dotsController;
+  late final Animation<int> _dotsAnimation;
+
+  final BusinessRepository businessRepo = BusinessRepository();
   final commonRepository = CommonRepository();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _dotsController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+    _dotsAnimation = IntTween(begin: 0, end: 3).animate(_dotsController);
+
+    _fetchMyIglooMembers();
+  }
+
+  Future<void> _fetchMyIglooMembers() async {
+    setState(() => _isDropdownLoading = true);
+
+    try {
+      final repo = BusinessRepository();
+      final Result<List<BusinessItem>> result = await repo.fetchBusiness(
+        page: 1,
+        country: 'India',
+        showAll: true,
+      );
+
+      if (result is Ok<List<BusinessItem>>) {
+        setState(() {
+          _myIglooMembers = result.value
+              .map((e) => e.displayName ?? '')
+              .toList();
+          _isDropdownLoading = false;
+        });
+      } else if (result is Err<List<BusinessItem>>) {
+        setState(() => _isDropdownLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to fetch members: ${result.message}"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isDropdownLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error fetching members: $e"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -50,10 +107,134 @@ class _RecordSMUSState extends State<RecordSMUS> {
     _abstractController.dispose();
     _dateController.dispose();
     _followupController.dispose();
+    _dotsController.dispose();
     super.dispose();
   }
 
-  // ---------------- UI helpers ----------------
+  Future<void> _pickDate(BuildContext ctx, {required bool isFollowUp}) async {
+    final picked = await showDatePicker(
+      context: ctx,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isFollowUp) {
+          _followupDate = picked;
+          _followupController.text =
+              "${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}";
+        } else {
+          _date = picked;
+          _dateController.text =
+              "${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}";
+        }
+      });
+    }
+  }
+
+  void _showIgloosSearchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return SearchIgloosDialog(
+          onMemberSelected: (memberName) {
+            setState(() {
+              _selectedMemberName = memberName;
+              _selectedMyIglooMember = null;
+              _toController.text = memberName;
+            });
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitForm({bool resetAfter = false}) async {
+    final bool hasRecipient =
+        _toController.text.trim().isNotEmpty ||
+        _selectedMemberName != null ||
+        _selectedMyIglooMember != null;
+
+    if (!hasRecipient) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select "To" member.')),
+      );
+      return;
+    }
+
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_date == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select Date.')));
+      return;
+    }
+
+    if (_mode == null || _mode == _modes[0]) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select Mode of Meeting.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final body = {
+        "to_member": _toController.text.trim(),
+        "to_business_id": 1,
+        "abstract": _abstractController.text.trim(),
+        "date":
+            "${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}",
+        "collab_type": _collab,
+        "followup_date": _followupDate != null
+            ? "${_followupDate!.year}-${_followupDate!.month.toString().padLeft(2, '0')}-${_followupDate!.day.toString().padLeft(2, '0')}"
+            : null,
+        "mode": _mode,
+      };
+
+      final repo = ReferralsRepositorysums();
+      final response = await repo.recordSmus(body);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] ?? 'SMU recorded successfully.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      if (resetAfter) _resetForm();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _resetForm() {
+    setState(() {
+      _toController.clear();
+      _abstractController.clear();
+      _dateController.clear();
+      _followupController.clear();
+
+      _date = null;
+      _followupDate = null;
+      _mode = null;
+      _collab = 0;
+      _selectedMemberName = null;
+      _selectedMyIglooMember = null;
+      _formKey.currentState?.reset();
+    });
+  }
+
   Widget buildLabel(String text, {bool required = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
@@ -97,157 +278,6 @@ class _RecordSMUSState extends State<RecordSMUS> {
     );
   }
 
-  Future<void> _pickDate(BuildContext ctx, {required bool isFollowUp}) async {
-    final picked = await showDatePicker(
-      context: ctx,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        if (isFollowUp) {
-          _followupDate = picked;
-          _followupController.text =
-              "${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}";
-        } else {
-          _date = picked;
-          _dateController.text =
-              "${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}";
-        }
-      });
-    }
-  }
-
-  void _showIgloosSearchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return SearchIgloosDialog(
-          onMemberSelected: (memberName) {
-            setState(() {
-              _selectedMemberName = memberName;
-              _selectedMyIglooMember = null;
-              _toController.text = memberName;
-            });
-          },
-        );
-      },
-    );
-  }
-Future<void> _submitForm({bool resetAfter = false}) async {
-  final bool hasRecipient =
-      _toController.text.trim().isNotEmpty ||
-      _selectedMemberName != null ||
-      _selectedMyIglooMember != null;
-
-  if (!hasRecipient) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select "To" member.')),
-    );
-    return;
-  }
-
-  if (!_formKey.currentState!.validate()) return;
-
-  if (_date == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select Date.')),
-    );
-    return;
-  }
-
-  if (_mode == null || _mode == _modes[0]) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select Mode of Meeting.')),
-    );
-    return;
-  }
-
-  setState(() => _isLoading = true);
-
-  try {
-    final body = {
-      "to_member": _toController.text.trim(),
-      "to_business_id": 1,
-      "abstract": _abstractController.text.trim(),
-      "date":
-          "${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}",
-      "collab_type": _collab,
-      "followup_date": _followupDate != null
-          ? "${_followupDate!.year}-${_followupDate!.month.toString().padLeft(2, '0')}-${_followupDate!.day.toString().padLeft(2, '0')}"
-          : null,
-      "mode": _mode,
-    };
-
-    print("📤 Submitting SMU Form...");
-    print("📦 API Body: $body");
-
-    final repo = ReferralsRepositorysums();
-    final response = await repo.recordSmus(body);
-
-    print("✅ API Success Response: $response");
-
-    _loadSmus(); // refresh list after adding
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(response['message'] ?? 'SMU recorded successfully.'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    if (resetAfter) _resetForm();
-  } catch (e) {
-    print("❌ API Error: $e");
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(e.toString().replaceFirst('Exception: ', '')),
-        backgroundColor: Colors.red,
-      ),
-    );
-  } finally {
-    setState(() => _isLoading = false);
-  }
-}
-
-void _resetForm() {
-  setState(() {
-    // Instead of disposing, just clear the controllers
-    _toController.clear();
-    _abstractController.clear();
-    _dateController.clear();
-    _followupController.clear();
-
-    _date = null;
-    _followupDate = null;
-    _mode = null;
-    _collab = 0;
-    _selectedMemberName = null;
-    _selectedMyIglooMember = null;
-    _formKey.currentState?.reset();
-  });
-}
-
-
-Future<void> _loadSmus() async {
-  print("🔄 Fetching SMU records...");
-  try {
-    final repo = ReferralsRepositorysums();
-    final response = await repo.fetchSmusRecords();
-    print("✅ SMU Records fetched successfully!");
-    print("📊 Total Records: ${response.records.length}");
-  } catch (e) {
-    print("❌ Error fetching SMUs: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString())),
-    );
-  }
-}
-
-
-  // ---------------- Build ----------------
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -335,30 +365,52 @@ Future<void> _loadSmus() async {
                         "Select a member from My Igloo",
                         required: false,
                       ),
-                      DropdownButtonFormField<String>(
-                        value: _selectedMyIglooMember,
-                        items: _myIglooMembers.map((String member) {
-                          return DropdownMenuItem<String>(
-                            value: member,
-                            child: Text(
-                              member,
-                              style: GoogleFonts.poppins(fontSize: 14),
+                      _isDropdownLoading
+                          ? TextFormField(
+                              enabled: false,
+                              decoration: _inputDecoration("Loading...")
+                                  .copyWith(
+                                    suffix: AnimatedBuilder(
+                                      animation: _dotsAnimation,
+                                      builder: (context, child) {
+                                        String dots =
+                                            '.' * _dotsAnimation.value;
+                                        return Text(
+                                          dots,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                            )
+                          : DropdownButtonFormField<String>(
+                              value: _selectedMyIglooMember,
+                              items: _myIglooMembers.map((String member) {
+                                return DropdownMenuItem<String>(
+                                  value: member,
+                                  child: Text(
+                                    member,
+                                    style: GoogleFonts.poppins(fontSize: 14),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  _selectedMyIglooMember = newValue;
+                                });
+                              },
+                              decoration: _inputDecoration('Select a member'),
+                              validator: (value) =>
+                                  value == null ? 'Required' : null,
+                              menuMaxHeight: 200,
                             ),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          setState(() {
-                            _selectedMyIglooMember = val;
-                            if (val != null) {
-                              _toController.text = val;
-                              _selectedMemberName = null;
-                            }
-                          });
-                        },
-                        decoration: _inputDecoration("Select a member"),
-                      ),
+
                       const SizedBox(height: 16),
 
+                      // ... rest of your UI (Abstract, Date, Collab Type, etc.) remains unchanged
                       buildLabel("Abstract of SMU"),
                       TextFormField(
                         controller: _abstractController,

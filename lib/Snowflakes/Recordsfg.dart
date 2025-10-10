@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/sgf/sgf_repo.dart';
+import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/_SearchIgloosDialog.dart';
+import 'package:snow_app/core/result.dart';
+import '../../Data/Models/business_item.dart';
 
 class SnowflakesRecordSFG extends StatefulWidget {
   const SnowflakesRecordSFG({Key? key}) : super(key: key);
@@ -10,18 +14,75 @@ class SnowflakesRecordSFG extends StatefulWidget {
   _SnowflakesRecordSFGState createState() => _SnowflakesRecordSFGState();
 }
 
-class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG> {
+class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _toController = TextEditingController();
   final _amountController = TextEditingController();
   final _commentsController = TextEditingController();
 
   String? _selectedMemberName;
-  int _selectedConnectLevel = 0;
   String? _selectedMyIglooMember;
   String? _selectedMember;
-  final List<String> _members = ["Member A", "Member B", "Member C"];
   bool _isLoading = false;
+  bool _isDropdownLoading = true;
+
+  List<String> _members = [];
+
+  late final AnimationController _dotsController;
+  late final Animation<int> _dotsAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _dotsController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1))
+          ..repeat();
+    _dotsAnimation = IntTween(begin: 0, end: 3).animate(_dotsController);
+    _fetchMembers();
+  }
+
+  @override
+  void dispose() {
+    _toController.dispose();
+    _amountController.dispose();
+    _commentsController.dispose();
+    _dotsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchMembers() async {
+    setState(() => _isDropdownLoading = true);
+
+    try {
+      final repo = BusinessRepository();
+      final Result<List<BusinessItem>> result = await repo.fetchBusiness(
+        page: 1,
+        country: 'India',
+        showAll: true,
+      );
+
+      if (result is Ok<List<BusinessItem>>) {
+        setState(() {
+          _members = result.value.map((e) => e.displayName ?? '').toList();
+          _isDropdownLoading = false;
+        });
+      } else if (result is Err<List<BusinessItem>>) {
+        setState(() => _isDropdownLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to fetch members: ${result.message}"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isDropdownLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.redAccent),
+      );
+    }
+  }
 
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
@@ -80,62 +141,58 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG> {
     );
   }
 
-void _submitForm() async {
-  if (!_formKey.currentState!.validate() || _selectedMember == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please fill all required fields")),
-    );
-    return;
-  }
-
-  setState(() => _isLoading = true);
-
-  try {
-    final repo = ReferralsRepositorySfg();
-
-    // call your recordSfg POST API
-    final response = await repo.recordSfg(
-      toMember: _toController.text.trim(),
-      giverBusinessId: 1, // use actual business ID if dynamic
-      amount: _amountController.text.trim(),
-      remarks: _commentsController.text.trim(),
-    );
-
-    if (response.success) {
+  void _submitForm() async {
+    if (!_formKey.currentState!.validate() || _selectedMember == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message,
-              style: const TextStyle(color: Colors.white)),
-          backgroundColor: Colors.green,
-        ),
+        const SnackBar(content: Text("Please fill all required fields")),
       );
-
-      // Clear inputs after success
-      _formKey.currentState!.reset();
-      _toController.clear();
-      _amountController.clear();
-      _commentsController.clear();
-      setState(() => _selectedMember = null);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed: ${response.message}"),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      return;
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Error: $e"),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
-  } finally {
-    setState(() => _isLoading = false);
-  }
-}
 
+    setState(() => _isLoading = true);
+
+    try {
+      final repo = ReferralsRepositorySfg();
+
+      final response = await repo.recordSfg(
+        toMember: _toController.text.trim(),
+        giverBusinessId: 1,
+        amount: _amountController.text.trim(),
+        remarks: _commentsController.text.trim(),
+      );
+
+      if (response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              response.message,
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        _formKey.currentState!.reset();
+        _toController.clear();
+        _amountController.clear();
+        _commentsController.clear();
+        setState(() => _selectedMember = null);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed: ${response.message}"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.redAccent),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -221,18 +278,45 @@ void _submitForm() async {
                       ),
                       const SizedBox(height: 16),
                       buildLabel("Select a member from My Igloo"),
-                      DropdownButtonFormField<String>(
-                        value: _selectedMember,
-                        items: _members.map((e) {
-                          return DropdownMenuItem(
-                            value: e,
-                            child: Text(e, style: GoogleFonts.poppins()),
-                          );
-                        }).toList(),
-                        onChanged: (v) => setState(() => _selectedMember = v),
-                        decoration: _inputDecoration("Select member"),
-                        validator: (v) => v == null ? "Required" : null,
-                      ),
+                      _isDropdownLoading
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 15, horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border:
+                                    Border.all(color: Colors.grey.shade400),
+                              ),
+                              child: AnimatedBuilder(
+                                animation: _dotsAnimation,
+                                builder: (context, child) {
+                                  return Text(
+                                    "Loading" +
+                                        "." * _dotsAnimation.value +
+                                        " " *
+                                            (3 - _dotsAnimation.value),
+                                    style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade600),
+                                  );
+                                },
+                              ),
+                            )
+                          : DropdownButtonFormField<String>(
+                              value: _selectedMember,
+                              items: _members.map((e) {
+                                return DropdownMenuItem(
+                                  value: e,
+                                  child: Text(e, style: GoogleFonts.poppins()),
+                                );
+                              }).toList(),
+                              onChanged: (v) =>
+                                  setState(() => _selectedMember = v),
+                              decoration: _inputDecoration("Select member"),
+                              validator: (v) => v == null ? "Required" : null,
+                              menuMaxHeight: 200, // Limit dropdown height
+                            ),
                       const SizedBox(height: 16),
                       buildLabel("Snowflakes Amount"),
                       TextFormField(
