@@ -389,7 +389,7 @@ class _RecordSMUSState extends State<RecordSMUS>
                           : SizedBox(
                               width: double.infinity,
                               child: DropdownButtonFormField<String>(
-                                isExpanded: true, // 👈 VERY IMPORTANT
+                                isExpanded: true, 
                                 value: _selectedMyIglooMember,
                                 items: _myIglooMembers.map((String member) {
                                   return DropdownMenuItem<String>(
