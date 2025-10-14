@@ -77,7 +77,7 @@ class _RecordSMUSState extends State<RecordSMUS>
       if (result is Ok<List<BusinessItem>>) {
         setState(() {
           _myIglooMembers = result.value
-              .map((e) => e.displayName ?? '')
+              .map((e) => e.business.name ?? '')
               .toList();
           _isDropdownLoading = false;
         });
@@ -386,28 +386,33 @@ class _RecordSMUSState extends State<RecordSMUS>
                                     ),
                                   ),
                             )
-                          : DropdownButtonFormField<String>(
-                              value: _selectedMyIglooMember,
-                              items: _myIglooMembers.map((String member) {
-                                return DropdownMenuItem<String>(
-                                  value: member,
-                                  child: Text(
-                                    member,
-                                    style: GoogleFonts.poppins(fontSize: 14),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedMyIglooMember = newValue;
-                                });
-                              },
-                              decoration: _inputDecoration('Select a member'),
-                              validator: (value) =>
-                                  value == null ? 'Required' : null,
-                              menuMaxHeight: 200,
+                          : SizedBox(
+                              width: double.infinity,
+                              child: DropdownButtonFormField<String>(
+                                isExpanded: true, // 👈 VERY IMPORTANT
+                                value: _selectedMyIglooMember,
+                                items: _myIglooMembers.map((String member) {
+                                  return DropdownMenuItem<String>(
+                                    value: member,
+                                    child: Text(
+                                      member,
+                                      overflow: TextOverflow
+                                          .ellipsis, 
+                                      style: GoogleFonts.poppins(fontSize: 14),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedMyIglooMember = newValue;
+                                  });
+                                },
+                                decoration: _inputDecoration('Select a member'),
+                                validator: (value) =>
+                                    value == null ? 'Required' : null,
+                                menuMaxHeight: 200,
+                              ),
                             ),
-
                       const SizedBox(height: 16),
 
                       // ... rest of your UI (Abstract, Date, Collab Type, etc.) remains unchanged

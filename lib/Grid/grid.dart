@@ -51,7 +51,11 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         final screenHeight = MediaQuery.of(context).size.height;
 
         final double targetOffset =
-            _scrollController.offset + offset.dy + widgetHeight - screenHeight + 20;
+            _scrollController.offset +
+            offset.dy +
+            widgetHeight -
+            screenHeight +
+            20;
 
         _scrollController.animateTo(
           targetOffset,
@@ -190,7 +194,10 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
 
           // Header + Scrollable Grid Sections
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 40.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 40.0,
+            ),
             child: Column(
               children: [
                 SizedBox(height: 40),
@@ -290,49 +297,54 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
     );
   }
 
-  // -------- Custom ExpansionTile styled like a Grid Tile --------
-// -------- Custom ExpansionTile styled like a Grid Tile --------
-Widget _buildExpansionTile(
-  BuildContext context,
-  String title,
-  IconData icon,
-  Widget childGrid,
-  GlobalKey key,
-  String keyName,
-) {
-  return Container(
-    key: key,
-    margin: const EdgeInsets.only(bottom: 12),
-    child: ExpansionTile(
+  Widget _buildExpansionTile(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Widget childGrid,
+    GlobalKey key,
+    String keyName,
+  ) {
+    return ExpansionTile(
+      key: key,
       tilePadding: EdgeInsets.zero,
-      backgroundColor: Colors.transparent,
-      collapsedBackgroundColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      maintainState: true,
+      // REMOVE default animation by forcing zero duration
+      childrenPadding: EdgeInsets.zero,
       collapsedShape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      initiallyExpanded: _expandedTile == keyName, // <-- use keyName instead of title
-      onExpansionChanged: (isExpanded) {
-        setState(() {
-          _expandedTile = isExpanded ? keyName : null; // <-- only one stays open
-        });
-        if (isExpanded) {
-          _scrollToExpanded(keyName);
-        }
-      },
-      title: _tileBox(title, icon),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: Colors.transparent,
+      collapsedBackgroundColor: Colors.transparent,
+      initiallyExpanded: _expandedTile == keyName,
       trailing: const Icon(
         Icons.keyboard_arrow_down_rounded,
         color: Color(0xFF014576),
       ),
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      expandedAlignment: Alignment.centerLeft,
+      onExpansionChanged: (isExpanded) {
+        setState(() => _expandedTile = isExpanded ? keyName : null);
+        if (isExpanded) _scrollToExpanded(keyName);
+      },
+      title: _tileBox(title, icon),
       children: [
-        const SizedBox(height: 8),
-        childGrid,
-        const SizedBox(height: 18),
+        AnimatedSize(
+          duration: Duration(milliseconds: 180), // Smooth, subtle effect
+          curve: Curves.easeOut,
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              childGrid,
+              const SizedBox(height: 18),
+            ],
+          ),
+        ),
       ],
-    ),
-  );
-}}
+    );
+  }
+}
 
 class GridTile extends StatefulWidget {
   final String title;
@@ -358,10 +370,7 @@ class _GridTileState extends State<GridTile> {
           borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             colors: _isHovering
-                ? [
-                    const Color(0xFF97DCEB),
-                    const Color(0xFFEAF5FC),
-                  ]
+                ? [const Color(0xFF97DCEB), const Color(0xFFEAF5FC)]
                 : [
                     const Color(0xFFEAF5FC),
                     const Color.fromARGB(255, 193, 218, 250),
@@ -371,20 +380,20 @@ class _GridTileState extends State<GridTile> {
           ),
           boxShadow: _isHovering
               ? [
-                    BoxShadow(
-                      color: const Color(0xAA5E9BC8).withOpacity(0.5),
-                      blurRadius: 10,
-                      spreadRadius: 2,
-                      offset: const Offset(4, 4),
-                    ),
-                  ]
+                  BoxShadow(
+                    color: const Color(0xAA5E9BC8).withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                    offset: const Offset(4, 4),
+                  ),
+                ]
               : [
-                    const BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(2, 2),
-                    ),
-                  ],
+                  const BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(2, 2),
+                  ),
+                ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

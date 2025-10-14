@@ -35,9 +35,10 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
   @override
   void initState() {
     super.initState();
-    _dotsController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 1))
-          ..repeat();
+    _dotsController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
     _dotsAnimation = IntTween(begin: 0, end: 3).animate(_dotsController);
     _fetchMembers();
   }
@@ -64,7 +65,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
 
       if (result is Ok<List<BusinessItem>>) {
         setState(() {
-          _members = result.value.map((e) => e.displayName ?? '').toList();
+          _members = result.value.map((e) => e.business.name ?? '').toList();
           _isDropdownLoading = false;
         });
       } else if (result is Err<List<BusinessItem>>) {
@@ -227,7 +228,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(
-              "Abstract SFG",
+              "Record SFG",
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
                 fontSize: 20,
@@ -281,12 +282,13 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                       _isDropdownLoading
                           ? Container(
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 15, horizontal: 12),
+                                vertical: 15,
+                                horizontal: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                border:
-                                    Border.all(color: Colors.grey.shade400),
+                                border: Border.all(color: Colors.grey.shade400),
                               ),
                               child: AnimatedBuilder(
                                 animation: _dotsAnimation,
@@ -294,28 +296,40 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                                   return Text(
                                     "Loading" +
                                         "." * _dotsAnimation.value +
-                                        " " *
-                                            (3 - _dotsAnimation.value),
+                                        " " * (3 - _dotsAnimation.value),
                                     style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade600),
+                                      fontSize: 14,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   );
                                 },
                               ),
                             )
-                          : DropdownButtonFormField<String>(
-                              value: _selectedMember,
-                              items: _members.map((e) {
-                                return DropdownMenuItem(
-                                  value: e,
-                                  child: Text(e, style: GoogleFonts.poppins()),
-                                );
-                              }).toList(),
-                              onChanged: (v) =>
-                                  setState(() => _selectedMember = v),
-                              decoration: _inputDecoration("Select member"),
-                              validator: (v) => v == null ? "Required" : null,
-                              menuMaxHeight: 200, // Limit dropdown height
+                          : SizedBox(
+                              width: double.infinity,
+                              child: DropdownButtonFormField<String>(
+                                isExpanded: true,
+                                value: _selectedMyIglooMember,
+                                items: _members.map((String member) {
+                                  return DropdownMenuItem<String>(
+                                    value: member,
+                                    child: Text(
+                                      member,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.poppins(fontSize: 14),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedMyIglooMember = newValue;
+                                  });
+                                },
+                                decoration: _inputDecoration('Select a member'),
+                                validator: (value) =>
+                                    value == null ? 'Required' : null,
+                                menuMaxHeight: 200,
+                              ),
                             ),
                       const SizedBox(height: 16),
                       buildLabel("Snowflakes Amount"),
