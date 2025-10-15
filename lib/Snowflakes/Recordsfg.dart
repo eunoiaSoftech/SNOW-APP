@@ -21,14 +21,12 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
   final _commentsController = TextEditingController();
 
   String? _selectedMyIglooMember;
+  int? _selectedBusinessId;
   bool _isLoading = false;
   bool _isDropdownLoading = true;
-  int? _selectedBusinessId;
-  String? _selectedUniqueMemberId;
 
   List<String> _members = [];
   List<BusinessItem> _businessItems = [];
-  List<Map<String, dynamic>> _dropdownItems = [];
   FilterData? _currentFilters;
 
   late final AnimationController _dotsController;
@@ -84,44 +82,11 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
           _businessItems = result.value;
           _members = result.value.map((e) => e.business.name ?? '').toList();
 
-          // Create dropdown items with unique identifiers to handle duplicate names
-          _dropdownItems = result.value.map((item) {
-            final businessName = item.business.name ?? 'Unknown Business';
-            final businessId = item.id;
-            final displayName = item.displayName;
-            final contact = item.business.contact ?? '';
-
-            // Create unique identifier combining name and ID
-            final uniqueId = '${businessName}_$businessId';
-
-            // Create display text that shows additional info for duplicates
-            String displayText = businessName;
-            if (_members.where((name) => name == businessName).length > 1) {
-              // If there are duplicate names, show additional info
-              if (displayName.isNotEmpty && displayName != businessName) {
-                displayText = '$businessName ($displayName)';
-              } else if (contact.isNotEmpty) {
-                displayText = '$businessName ($contact)';
-              } else {
-                displayText = '$businessName (ID: $businessId)';
-              }
-            }
-
-            return {
-              'uniqueId': uniqueId,
-              'businessName': businessName,
-              'displayText': displayText,
-              'businessId': businessId,
-              'businessItem': item,
-            };
-          }).toList();
-
           _isDropdownLoading = false;
         });
         print('✅ Successfully loaded ${_members.length} members');
         print('📋 Member names: $_members');
         print('📋 Business items: ${_businessItems.length} items');
-        print('📋 Dropdown items: ${_dropdownItems.length} items');
       } else if (result is Err<List<BusinessItem>>) {
         setState(() => _isDropdownLoading = false);
         print('❌ Failed to fetch members: ${result.message}');
@@ -196,7 +161,6 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
               _currentFilters = filters;
               _selectedMyIglooMember = null;
               _selectedBusinessId = null;
-              _selectedUniqueMemberId = null;
             });
             // Refresh the members list with new filters
             _fetchMembers();
@@ -215,7 +179,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
     }
 
     // Check if a member is selected from dropdown
-    if (_selectedMyIglooMember == null) {
+    if (_selectedBusinessId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Please select a member from the dropdown"),
@@ -229,16 +193,16 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
     try {
       final repo = ReferralsRepositorySfg();
 
-      // Use selected member name from dropdown or text field
-      String memberName = _selectedMyIglooMember ?? _toController.text.trim();
+      // Use selected member name from dropdown
+      String memberName = _selectedMyIglooMember ?? '';
 
       print('📤 Submitting SFG with:');
       print('   - Member: $memberName');
-      print('   - Business ID: ${_selectedBusinessId ?? 0}');
+      print('   - Business ID: $_selectedBusinessId');
 
       final response = await repo.recordSfg(
         toMember: memberName,
-        giverBusinessId: _selectedBusinessId ?? 0,
+        giverBusinessId: _selectedBusinessId!,
         amount: _amountController.text.trim(),
         remarks: _commentsController.text.trim(),
       );
@@ -261,7 +225,6 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
         setState(() {
           _selectedMyIglooMember = null;
           _selectedBusinessId = null;
-          _selectedUniqueMemberId = null;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -360,13 +323,13 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      buildLabel("To"),
-                      TextFormField(
-                        controller: _toController,
-                        decoration: _inputDecoration("Enter recipient"),
-                        validator: (v) => v!.isEmpty ? "Required" : null,
-                      ),
-                      const SizedBox(height: 16),
+                      // buildLabel("To"),
+                      // TextFormField(
+                      //   controller: _toController,
+                      //   decoration: _inputDecoration("Enter recipient"),
+                      //   validator: (v) => v!.isEmpty ? "Required" : null,
+                      // ),
+                      // const SizedBox(height: 16),
                       buildLabel("Select a member from My Igloo"),
                       _isDropdownLoading
                           ? Container(
@@ -396,54 +359,58 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                             )
                           : SizedBox(
                               width: double.infinity,
-                              child: DropdownButtonFormField<String>(
+                              child: DropdownButtonFormField<int>(
                                 isExpanded: true,
-                                value: _selectedUniqueMemberId,
-                                items: _dropdownItems.map((
-                                  Map<String, dynamic> item,
-                                ) {
-                                  return DropdownMenuItem<String>(
-                                    value: item['uniqueId'],
+                                value: _selectedBusinessId,
+                                items: _businessItems.map((BusinessItem item) {
+                                  final businessName =
+                                      item.business.name ?? 'Unknown Business';
+                                  return DropdownMenuItem<int>(
+                                    value: item.id,
                                     child: Text(
-                                      item['displayText'],
+                                      businessName,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.poppins(fontSize: 14),
                                     ),
                                   );
                                 }).toList(),
-                                onChanged: (String? newUniqueId) {
-                                  debugPrint("newUniqueId ${newUniqueId}");
+                                onChanged: (int? businessId) {
+                                  debugPrint(
+                                    "Selected business ID: $businessId",
+                                  );
                                   setState(() {
-                                    _selectedUniqueMemberId = newUniqueId;
-
-                                    if (newUniqueId != null) {
-                                      // Find the selected dropdown item
-                                      final selectedItem = _dropdownItems
+                                    _selectedBusinessId = businessId;
+                                    if (businessId != null) {
+                                      final selectedBusiness = _businessItems
                                           .firstWhere(
-                                            (item) =>
-                                                item['uniqueId'] == newUniqueId,
-                                            orElse: () => {},
+                                            (item) => item.id == businessId,
+                                            orElse: () => BusinessItem(
+                                              id: 0,
+                                              email: '',
+                                              fullName: '',
+                                              displayName: '',
+                                              registeredDate: DateTime.now(),
+                                              status: '',
+                                              business: BusinessDetails(
+                                                name: '',
+                                                contact: '',
+                                                city: '',
+                                                zone: '',
+                                                country: '',
+                                              ),
+                                            ),
                                           );
+                                      _selectedMyIglooMember =
+                                          selectedBusiness.business.name;
 
-                                      if (selectedItem.isNotEmpty) {
-                                        _selectedMyIglooMember =
-                                            selectedItem['businessName'];
-                                        _selectedBusinessId =
-                                            selectedItem['businessId'];
-
-                                        print(
-                                          '🎯 Selected Member: ${selectedItem['businessName']}',
-                                        );
-                                        print(
-                                          '🆔 Selected Business ID: ${selectedItem['businessId']}',
-                                        );
-                                        print(
-                                          '🔑 Selected Unique ID: $newUniqueId',
-                                        );
-                                      }
+                                      print(
+                                        '🎯 Selected Member: ${selectedBusiness.business.name}',
+                                      );
+                                      print(
+                                        '🎯 Selected Business ID: $businessId',
+                                      );
                                     } else {
                                       _selectedMyIglooMember = null;
-                                      _selectedBusinessId = null;
                                     }
                                   });
                                 },

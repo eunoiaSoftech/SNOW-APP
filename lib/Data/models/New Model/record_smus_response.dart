@@ -21,7 +21,7 @@ class SmusResponse {
     return SmusResponse(
       success: json['success'] ?? false,
       loggedInUser: json['logged_in_user'] ?? 0,
-      showOnlyMy: json['show_only_my'] ?? false,
+      showOnlyMy: json['show_only_my'] ?? true,
       count: json['count'] ?? 0,
       records: (recordsData != null && recordsData is List)
           ? recordsData.map((e) => SMUSRecord.fromJson(e)).toList()

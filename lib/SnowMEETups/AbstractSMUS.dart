@@ -170,43 +170,6 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
           ),
           body: Column(
             children: [
-              // Running Users Expansion Card
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Container(
-                  decoration: _cardDecoration(),
-                  child: Theme(
-                    data: Theme.of(
-                      context,
-                    ).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
-                      childrenPadding: const EdgeInsets.only(bottom: 12),
-                      title: Text(
-                        "Running Users",
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF014576),
-                        ),
-                      ),
-                      children: [
-                        _buildRunningUser(
-                          name: "Pravin Pawar",
-                          time: "22-Sep-25 05:40 PM",
-                          company: "SNOW PANTHERS",
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
               // Main content: Date Filter + Records
               Expanded(
                 child: Padding(
@@ -229,42 +192,6 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
       ],
     );
   }
-
-  Widget _buildRunningUser({
-    required String name,
-    required String time,
-    required String company,
-  }) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.green.shade100,
-        child: const Icon(Icons.person, color: Colors.green),
-      ),
-      title: Text(
-        name,
-        style: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Active at: $time",
-            style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
-          ),
-          Text(
-            "IGLOO: $company",
-            style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
-          ),
-        ],
-      ),
-    );
-  }
-
-
 
   Widget _buildDateFilterCard(BuildContext context) {
     return Container(
@@ -340,8 +267,6 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
       ),
     );
   }
-
-
 
   Widget _buildDatePicker(String label, DateTime? value, VoidCallback onTap) {
     return Column(
