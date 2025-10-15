@@ -36,45 +36,45 @@ class _RecordSBOGScreenState extends State<RecordSBOGScreen> {
     _fetchBusinessCategories();
   }
 
-Future<void> _fetchBusinessCategories() async {
-  try {
-    setState(() => _isLoadingBusinesses = true);
+  Future<void> _fetchBusinessCategories() async {
+    try {
+      setState(() => _isLoadingBusinesses = true);
 
-    final result = await commonRepository.fetchBusiness();
+      final result = await commonRepository.fetchBusiness();
 
-    if (result is Ok<List<CustomBusinessItem>>) {
-      setState(() {
-        _businessList = result.value;
-      });
-    } else if (result is Err) {
-      final errorValue = (result as Err).message ?? 'Failed to load categories';
+      if (result is Ok<List<CustomBusinessItem>>) {
+        setState(() {
+          _businessList = result.value;
+        });
+      } else if (result is Err) {
+        final errorValue =
+            (result as Err).message ?? 'Failed to load categories';
+        setState(() => _isLoadingBusinesses = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorValue.toString(),
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
       setState(() => _isLoadingBusinesses = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            errorValue.toString(),
+            'Something went wrong: $e',
             style: const TextStyle(color: Colors.white),
           ),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      setState(() => _isLoadingBusinesses = false);
     }
-  } catch (e) {
-    setState(() => _isLoadingBusinesses = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Something went wrong: $e',
-          style: const TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.red,
-      ),
-    );
-  } finally {
-    setState(() => _isLoadingBusinesses = false);
   }
-}
-
 
   Widget buildLabel(String text) {
     return Padding(
@@ -197,24 +197,29 @@ Future<void> _fetchBusinessCategories() async {
                       _isLoadingBusinesses
                           ? const Center(child: CircularProgressIndicator())
                           : DropdownButtonFormField<CustomBusinessItem>(
-    isExpanded: true, // allows the dropdown to take full width
-    value: _selectedBusiness,
-    items: _businessList
-        .map((b) => DropdownMenuItem(
-    value: b,
-    child: Text(
-    b.business?.name ?? '-',
-    style: GoogleFonts.poppins(),
-    overflow: TextOverflow.ellipsis, // prevents overflow
-    ),
-    ))
-        .toList(),
-    onChanged: (value) {
-    setState(() => _selectedBusiness = value);
-    },
-    decoration: _inputDecoration('Choose business'),
-    validator: (v) => v == null ? 'Please select a business' : null,
-    ),
+                              isExpanded:
+                                  true, // allows the dropdown to take full width
+                              value: _selectedBusiness,
+                              items: _businessList
+                                  .map(
+                                    (b) => DropdownMenuItem(
+                                      value: b,
+                                      child: Text(
+                                        b.business?.name ?? '-',
+                                        style: GoogleFonts.poppins(),
+                                        overflow: TextOverflow
+                                            .ellipsis, // prevents overflow
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedBusiness = value);
+                              },
+                              decoration: _inputDecoration('Choose business'),
+                              validator: (v) =>
+                                  v == null ? 'Please select a business' : null,
+                            ),
 
                       const SizedBox(height: 16),
 

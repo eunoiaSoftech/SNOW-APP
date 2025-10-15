@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/SBOG%20REPO/recordSbog.dart';
 import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
 import 'package:snow_app/Data/models/New%20Model/sbog_model.dart';
-import 'package:snow_app/SnowBusinessOpporuntines/_SearchIgloosDialog.dart';
+import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/core/result.dart';
 
@@ -31,8 +31,13 @@ class _RecordSBOGState extends State<RecordSBOG>
   String? _selectedMemberName;
   String? _selectedMyIglooMember;
   int _selectedConnectLevel = 0;
+  int? _selectedBusinessId;
+  String? _selectedUniqueMemberId;
 
   List<String> _myIglooMembers = [];
+  List<BusinessItem> _businessItems = [];
+  List<Map<String, dynamic>> _dropdownItems = [];
+  FilterData? _currentFilters;
 
   final List<String> levelWords = [
     "Very Poor",
@@ -57,24 +62,78 @@ class _RecordSBOGState extends State<RecordSBOG>
   }
 
   Future<void> _fetchMembers() async {
+    print('🎯 RECORDSBOG - _fetchMembers called');
+    print('📋 Current Filters: ${_currentFilters?.toQueryParams()}');
+    print('🔍 Has Any Filter: ${_currentFilters?.hasAnyFilter}');
+
     setState(() => _isDropdownLoading = true);
     try {
       final repo = BusinessRepository();
+
+      // Determine if we should pass showAll based on filters
+      bool shouldShowAll =
+          _currentFilters == null || !_currentFilters!.hasAnyFilter;
+
+      print('📊 Should Show All: $shouldShowAll');
+
       final Result<List<BusinessItem>> result = await repo.fetchBusiness(
         page: 1,
-        country: 'India',
-        showAll: true,
+        country: _currentFilters?.country ?? '',
+        zone: _currentFilters?.zone ?? '',
+        city: _currentFilters?.city ?? '',
+        search: _currentFilters?.businessName ?? '',
+        showAll: shouldShowAll,
       );
 
       if (result is Ok<List<BusinessItem>>) {
         setState(() {
+          _businessItems = result.value;
           _myIglooMembers = result.value
               .map((e) => e.business.name ?? '')
               .toList();
+
+          // Create dropdown items with unique identifiers to handle duplicate names
+          _dropdownItems = result.value.map((item) {
+            final businessName = item.business.name ?? 'Unknown Business';
+            final businessId = item.id;
+            final displayName = item.displayName;
+            final contact = item.business.contact ?? '';
+
+            // Create unique identifier combining name and ID
+            final uniqueId = '${businessName}_$businessId';
+
+            // Create display text that shows additional info for duplicates
+            String displayText = businessName;
+            if (_myIglooMembers.where((name) => name == businessName).length >
+                1) {
+              // If there are duplicate names, show additional info
+              if (displayName.isNotEmpty && displayName != businessName) {
+                displayText = '$businessName ($displayName)';
+              } else if (contact.isNotEmpty) {
+                displayText = '$businessName ($contact)';
+              } else {
+                displayText = '$businessName (ID: $businessId)';
+              }
+            }
+
+            return {
+              'uniqueId': uniqueId,
+              'businessName': businessName,
+              'displayText': displayText,
+              'businessId': businessId,
+              'businessItem': item,
+            };
+          }).toList();
+
           _isDropdownLoading = false;
         });
+        print('✅ Successfully loaded ${_myIglooMembers.length} members');
+        print('📋 Member names: $_myIglooMembers');
+        print('📋 Business items: ${_businessItems.length} items');
+        print('📋 Dropdown items: ${_dropdownItems.length} items');
       } else if (result is Err<List<BusinessItem>>) {
         setState(() => _isDropdownLoading = false);
+        print('❌ Failed to fetch members: ${result.message}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Failed to fetch members: ${result.message}"),
@@ -104,12 +163,22 @@ class _RecordSBOGState extends State<RecordSBOG>
     showDialog(
       context: context,
       builder: (context) {
-        return SearchIgloosDialog(
-          onMemberSelected: (memberName) {
+        return EnhancedSearchIgloosDialog(
+          initialFilters: _currentFilters,
+          onFiltersApplied: (FilterData filters) {
+            print('🔧 FILTERS APPLIED in RecordSBOG');
+            print('📋 Applied Filters: ${filters.toQueryParams()}');
+            print('🔍 Has Any Filter: ${filters.hasAnyFilter}');
+
             setState(() {
-              _selectedMemberName = memberName;
+              _currentFilters = filters;
+              _selectedMemberName = null;
               _selectedMyIglooMember = null;
+              _selectedBusinessId = null;
+              _selectedUniqueMemberId = null;
             });
+            // Refresh the members list with new filters
+            _fetchMembers();
           },
         );
       },
@@ -131,10 +200,18 @@ class _RecordSBOGState extends State<RecordSBOG>
     setState(() => _isLoading = true);
 
     try {
+      // Determine the business ID to use
+      int businessIdToUse = _selectedBusinessId ?? 123;
+      String memberName = _selectedMyIglooMember ?? _selectedMemberName!;
+
+      print('📤 Submitting SBOG with:');
+      print('   - Member: $memberName');
+      print('   - Business ID: $businessIdToUse');
+
       final request = SbogRequest(
-        receiverBusinessId: "123", // replace with actual business ID
+        receiverBusinessId: businessIdToUse.toString(),
         // to: _toController.text.trim(),
-        toMember: _selectedMyIglooMember ?? _selectedMemberName!,
+        toMember: memberName,
         referral: _referralController.text.trim(),
         telephone: _telephoneController.text.trim(),
         email: _emailController.text.trim(),
@@ -349,9 +426,13 @@ class _RecordSBOGState extends State<RecordSBOG>
             iconTheme: const IconThemeData(color: Color(0xFF014576)),
             actions: [
               IconButton(
-                icon: const Icon(
-                  Icons.info_outline_rounded,
-                  color: Color(0xFF014576),
+                icon: Icon(
+                  _currentFilters?.hasAnyFilter == true
+                      ? Icons.filter_alt
+                      : Icons.filter_alt_outlined,
+                  color: _currentFilters?.hasAnyFilter == true
+                      ? Colors.orange
+                      : const Color(0xFF014576),
                 ),
                 onPressed: _showIgloosSearchDialog,
               ),
@@ -414,21 +495,52 @@ class _RecordSBOGState extends State<RecordSBOG>
                               width: double.infinity,
                               child: DropdownButtonFormField<String>(
                                 isExpanded: true, // 👈 VERY IMPORTANT
-                                value: _selectedMyIglooMember,
-                                items: _myIglooMembers.map((String member) {
+                                value: _selectedUniqueMemberId,
+                                items: _dropdownItems.map((
+                                  Map<String, dynamic> item,
+                                ) {
                                   return DropdownMenuItem<String>(
-                                    value: member,
+                                    value: item['uniqueId'],
                                     child: Text(
-                                      member,
-                                      overflow: TextOverflow
-                                          .ellipsis, 
+                                      item['displayText'],
+                                      overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.poppins(fontSize: 14),
                                     ),
                                   );
                                 }).toList(),
-                                onChanged: (String? newValue) {
+                                onChanged: (String? newUniqueId) {
                                   setState(() {
-                                    _selectedMyIglooMember = newValue;
+                                    _selectedUniqueMemberId = newUniqueId;
+
+                                    if (newUniqueId != null) {
+                                      // Find the selected dropdown item
+                                      final selectedItem = _dropdownItems
+                                          .firstWhere(
+                                            (item) =>
+                                                item['uniqueId'] == newUniqueId,
+                                            orElse: () => {},
+                                          );
+
+                                      if (selectedItem.isNotEmpty) {
+                                        _selectedMyIglooMember =
+                                            selectedItem['businessName'];
+                                        _selectedBusinessId =
+                                            selectedItem['businessId'];
+
+                                        print(
+                                          '🎯 Selected Member: ${selectedItem['businessName']}',
+                                        );
+                                        print(
+                                          '🆔 Selected Business ID: ${selectedItem['businessId']}',
+                                        );
+                                        print(
+                                          '🔑 Selected Unique ID: $newUniqueId',
+                                        );
+                                      }
+                                    } else {
+                                      _selectedMyIglooMember = null;
+                                      _selectedBusinessId = null;
+                                    }
                                   });
                                 },
                                 decoration: _inputDecoration('Select a member'),

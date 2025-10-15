@@ -3,9 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/sgf/sgf_repo.dart';
 import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
-import 'package:snow_app/SnowBusinessOpporuntines/_SearchIgloosDialog.dart';
+import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
 import 'package:snow_app/core/result.dart';
-import '../../Data/Models/business_item.dart';
 
 class SnowflakesRecordSFG extends StatefulWidget {
   const SnowflakesRecordSFG({Key? key}) : super(key: key);
@@ -21,13 +20,16 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
   final _amountController = TextEditingController();
   final _commentsController = TextEditingController();
 
-  String? _selectedMemberName;
   String? _selectedMyIglooMember;
-  String? _selectedMember;
   bool _isLoading = false;
   bool _isDropdownLoading = true;
+  int? _selectedBusinessId;
+  String? _selectedUniqueMemberId;
 
   List<String> _members = [];
+  List<BusinessItem> _businessItems = [];
+  List<Map<String, dynamic>> _dropdownItems = [];
+  FilterData? _currentFilters;
 
   late final AnimationController _dotsController;
   late final Animation<int> _dotsAnimation;
@@ -53,23 +55,76 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
   }
 
   Future<void> _fetchMembers() async {
+    print('🎯 RECORDSFG - _fetchMembers called');
+    print('📋 Current Filters: ${_currentFilters?.toQueryParams()}');
+    print('🔍 Has Any Filter: ${_currentFilters?.hasAnyFilter}');
+
     setState(() => _isDropdownLoading = true);
 
     try {
       final repo = BusinessRepository();
+
+      // Determine if we should pass showAll based on filters
+      bool shouldShowAll =
+          _currentFilters == null || !_currentFilters!.hasAnyFilter;
+
+      print('📊 Should Show All: $shouldShowAll');
+
       final Result<List<BusinessItem>> result = await repo.fetchBusiness(
         page: 1,
-        country: 'India',
-        showAll: true,
+        country: _currentFilters?.country ?? '',
+        zone: _currentFilters?.zone ?? '',
+        city: _currentFilters?.city ?? '',
+        search: _currentFilters?.businessName ?? '',
+        showAll: shouldShowAll,
       );
 
       if (result is Ok<List<BusinessItem>>) {
         setState(() {
+          _businessItems = result.value;
           _members = result.value.map((e) => e.business.name ?? '').toList();
+
+          // Create dropdown items with unique identifiers to handle duplicate names
+          _dropdownItems = result.value.map((item) {
+            final businessName = item.business.name ?? 'Unknown Business';
+            final businessId = item.id;
+            final displayName = item.displayName;
+            final contact = item.business.contact ?? '';
+
+            // Create unique identifier combining name and ID
+            final uniqueId = '${businessName}_$businessId';
+
+            // Create display text that shows additional info for duplicates
+            String displayText = businessName;
+            if (_members.where((name) => name == businessName).length > 1) {
+              // If there are duplicate names, show additional info
+              if (displayName.isNotEmpty && displayName != businessName) {
+                displayText = '$businessName ($displayName)';
+              } else if (contact.isNotEmpty) {
+                displayText = '$businessName ($contact)';
+              } else {
+                displayText = '$businessName (ID: $businessId)';
+              }
+            }
+
+            return {
+              'uniqueId': uniqueId,
+              'businessName': businessName,
+              'displayText': displayText,
+              'businessId': businessId,
+              'businessItem': item,
+            };
+          }).toList();
+
           _isDropdownLoading = false;
         });
+        print('✅ Successfully loaded ${_members.length} members');
+        print('📋 Member names: $_members');
+        print('📋 Business items: ${_businessItems.length} items');
+        print('📋 Dropdown items: ${_dropdownItems.length} items');
       } else if (result is Err<List<BusinessItem>>) {
         setState(() => _isDropdownLoading = false);
+        print('❌ Failed to fetch members: ${result.message}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Failed to fetch members: ${result.message}"),
@@ -130,12 +185,21 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
     showDialog(
       context: context,
       builder: (context) {
-        return SearchIgloosDialog(
-          onMemberSelected: (memberName) {
+        return EnhancedSearchIgloosDialog(
+          initialFilters: _currentFilters,
+          onFiltersApplied: (FilterData filters) {
+            print('🔧 FILTERS APPLIED in Recordsfg');
+            print('📋 Applied Filters: ${filters.toQueryParams()}');
+            print('🔍 Has Any Filter: ${filters.hasAnyFilter}');
+
             setState(() {
-              _selectedMemberName = memberName;
+              _currentFilters = filters;
               _selectedMyIglooMember = null;
+              _selectedBusinessId = null;
+              _selectedUniqueMemberId = null;
             });
+            // Refresh the members list with new filters
+            _fetchMembers();
           },
         );
       },
@@ -143,9 +207,19 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
   }
 
   void _submitForm() async {
-    if (!_formKey.currentState!.validate() || _selectedMember == null) {
+    if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill all required fields")),
+      );
+      return;
+    }
+
+    // Check if a member is selected from dropdown
+    if (_selectedMyIglooMember == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please select a member from the dropdown"),
+        ),
       );
       return;
     }
@@ -155,9 +229,16 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
     try {
       final repo = ReferralsRepositorySfg();
 
+      // Use selected member name from dropdown or text field
+      String memberName = _selectedMyIglooMember ?? _toController.text.trim();
+
+      print('📤 Submitting SFG with:');
+      print('   - Member: $memberName');
+      print('   - Business ID: ${_selectedBusinessId ?? 0}');
+
       final response = await repo.recordSfg(
-        toMember: _toController.text.trim(),
-        giverBusinessId: 1,
+        toMember: memberName,
+        giverBusinessId: _selectedBusinessId ?? 0,
         amount: _amountController.text.trim(),
         remarks: _commentsController.text.trim(),
       );
@@ -177,7 +258,11 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
         _toController.clear();
         _amountController.clear();
         _commentsController.clear();
-        setState(() => _selectedMember = null);
+        setState(() {
+          _selectedMyIglooMember = null;
+          _selectedBusinessId = null;
+          _selectedUniqueMemberId = null;
+        });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -238,9 +323,13 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
             iconTheme: const IconThemeData(color: Color(0xFF014576)),
             actions: [
               IconButton(
-                icon: const Icon(
-                  Icons.info_outline_rounded,
-                  color: Color(0xFF014576),
+                icon: Icon(
+                  _currentFilters?.hasAnyFilter == true
+                      ? Icons.filter_alt
+                      : Icons.filter_alt_outlined,
+                  color: _currentFilters?.hasAnyFilter == true
+                      ? Colors.orange
+                      : const Color(0xFF014576),
                 ),
                 onPressed: _showIgloosSearchDialog,
               ),
@@ -309,20 +398,53 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                               width: double.infinity,
                               child: DropdownButtonFormField<String>(
                                 isExpanded: true,
-                                value: _selectedMyIglooMember,
-                                items: _members.map((String member) {
+                                value: _selectedUniqueMemberId,
+                                items: _dropdownItems.map((
+                                  Map<String, dynamic> item,
+                                ) {
                                   return DropdownMenuItem<String>(
-                                    value: member,
+                                    value: item['uniqueId'],
                                     child: Text(
-                                      member,
+                                      item['displayText'],
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.poppins(fontSize: 14),
                                     ),
                                   );
                                 }).toList(),
-                                onChanged: (String? newValue) {
+                                onChanged: (String? newUniqueId) {
+                                  debugPrint("newUniqueId ${newUniqueId}");
                                   setState(() {
-                                    _selectedMyIglooMember = newValue;
+                                    _selectedUniqueMemberId = newUniqueId;
+
+                                    if (newUniqueId != null) {
+                                      // Find the selected dropdown item
+                                      final selectedItem = _dropdownItems
+                                          .firstWhere(
+                                            (item) =>
+                                                item['uniqueId'] == newUniqueId,
+                                            orElse: () => {},
+                                          );
+
+                                      if (selectedItem.isNotEmpty) {
+                                        _selectedMyIglooMember =
+                                            selectedItem['businessName'];
+                                        _selectedBusinessId =
+                                            selectedItem['businessId'];
+
+                                        print(
+                                          '🎯 Selected Member: ${selectedItem['businessName']}',
+                                        );
+                                        print(
+                                          '🆔 Selected Business ID: ${selectedItem['businessId']}',
+                                        );
+                                        print(
+                                          '🔑 Selected Unique ID: $newUniqueId',
+                                        );
+                                      }
+                                    } else {
+                                      _selectedMyIglooMember = null;
+                                      _selectedBusinessId = null;
+                                    }
                                   });
                                 },
                                 decoration: _inputDecoration('Select a member'),

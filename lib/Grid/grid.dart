@@ -122,16 +122,16 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "icon": Icons.emoji_events_rounded,
         "screen": AwardsScreen(),
       },
-      {
-        "title": "Referrals",
-        "icon": Icons.handshake_rounded,
-        "screen": MyReferralsScreen(),
-      },
-      {
-        "title": "Received Referrals",
-        "icon": Icons.mark_email_read_rounded,
-        "screen": ReceivedReferralsScreen(),
-      },
+      // {
+      //   "title": "Referrals",
+      //   "icon": Icons.handshake_rounded,
+      //   "screen": MyReferralsScreen(),
+      // },
+      // {
+      //   "title": "Received Referrals",
+      //   "icon": Icons.mark_email_read_rounded,
+      //   "screen": ReceivedReferralsScreen(),
+      // },
       {
         "title": "Meetup List",
         "icon": Icons.ac_unit_rounded,

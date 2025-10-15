@@ -37,7 +37,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
         endDate: endDate,
       );
       setState(() {
-        records = response.records ?? [];
+        records = response.records;
       });
     } catch (e) {
       setState(() {
@@ -139,43 +139,13 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
           ),
           body: Column(
             children: [
-              // Running Users Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  decoration: _cardDecoration(),
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      childrenPadding: const EdgeInsets.only(bottom: 12),
-                      title: Text(
-                        "Running Users",
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF014576),
-                        ),
-                      ),
-                      children: [
-                        _buildRunningUser(
-                          name: "Praveen Pawar",
-                          time: "22-Sep-25 02:38 PM",
-                          company: "SNOW PANTHERS",
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
               // Filters + Records
               Expanded(
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   child: Column(
                     children: [
                       _buildDateFilterCard(context),
@@ -189,35 +159,6 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildRunningUser({
-    required String name,
-    required String time,
-    required String company,
-  }) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.blue.shade100,
-        child: const Icon(Icons.person, color: Colors.blue),
-      ),
-      title: Text(
-        name,
-        style: GoogleFonts.poppins(
-            fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Active at: $time",
-              style:
-                  GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
-          Text("IGLOO: $company",
-              style:
-                  GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
-        ],
-      ),
     );
   }
 
@@ -235,12 +176,18 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
               children: [
                 Expanded(
                   child: _buildDatePicker(
-                      "Start Date", startDate, () => _pickDate(context, true)),
+                    "Start Date",
+                    startDate,
+                    () => _pickDate(context, true),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildDatePicker(
-                      "End Date", endDate, () => _pickDate(context, false)),
+                    "End Date",
+                    endDate,
+                    () => _pickDate(context, false),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Column(
@@ -253,7 +200,9 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
                         backgroundColor: const Color(0xFF014576),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -269,7 +218,9 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
                         foregroundColor: const Color(0xFF014576),
                         side: const BorderSide(color: Color(0xFF014576)),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -290,11 +241,14 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87)),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
         const SizedBox(height: 6),
         InkWell(
           onTap: onTap,
@@ -306,8 +260,11 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today,
-                    size: 16, color: Color(0xFF014576)),
+                const Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: Color(0xFF014576),
+                ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
@@ -316,7 +273,9 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
                         : "${value.day}-${value.month}-${value.year}",
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
-                        fontSize: 14, fontWeight: FontWeight.w500),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -333,18 +292,22 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
     }
     if (error != null) {
       return Center(
-        child: Text("Error: $error",
-            style:
-                GoogleFonts.poppins(color: Colors.redAccent, fontSize: 14)),
+        child: Text(
+          "Error: $error",
+          style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 14),
+        ),
       );
     }
     if (records.isEmpty) {
       return Center(
-        child: Text("No data available in table",
-            style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600])),
+        child: Text(
+          "No data available in table",
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[600],
+          ),
+        ),
       );
     }
 
@@ -398,32 +361,49 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Date: $date",
-              style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[700])),
+          Text(
+            "Date: $date",
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
+          ),
           const SizedBox(height: 6),
-          Text("SBOG TO: $sbogTo",
-              style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87)),
+          Text(
+            "SBOG TO: $sbogTo",
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text("Referral: $referral",
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700])),
-          Text("Phone: $phone",
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700])),
-          Text("Email: $email",
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700])),
-          Text("Comments: $comment",
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700])),
+          Text(
+            "Referral: $referral",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
+          Text(
+            "Phone: $phone",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
+          Text(
+            "Email: $email",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
+          Text(
+            "Comments: $comment",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
           const SizedBox(height: 10),
-          Text("Level of Connect: $level",
-              style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.blueGrey[700])),
+          Text(
+            "Level of Connect: $level",
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.blueGrey[700],
+            ),
+          ),
         ],
       ),
     );
@@ -438,11 +418,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
         end: Alignment.bottomRight,
       ),
       boxShadow: const [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 10,
-          offset: Offset(2, 4),
-        ),
+        BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(2, 4)),
       ],
     );
   }
@@ -452,9 +428,10 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
       children: [
         Icon(icon, size: 20, color: const Color(0xFF014576)),
         const SizedBox(width: 8),
-        Text(title,
-            style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600, fontSize: 16)),
+        Text(
+          title,
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
       ],
     );
   }
