@@ -3,9 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 // Import Screens
 import 'package:snow_app/Grid/AWARD.dart';
+import 'package:snow_app/Grid/UpcomingTrainingsScreen.dart';
 import 'package:snow_app/Grid/myreferral.dart';
 import 'package:snow_app/Grid/recived_referrals.dart';
 import 'package:snow_app/Grid/meetup_create.dart';
+import 'package:snow_app/SnowBusinessOpporuntines/RecordSBOL.dart';
 
 import 'package:snow_app/Snowflakes/Recordsfg.dart';
 import 'package:snow_app/Snowflakes/abstractofsfg.dart';
@@ -89,6 +91,11 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "icon": Icons.receipt_long_rounded,
         "screen": RecordSBOG(),
       },
+       {
+        "title": "Record SBOL",
+        "icon": Icons.business_center_rounded,
+        "screen": RecordSBOL(),
+      },
       {
         "title": "Abstract of SBOG",
         "icon": Icons.analytics_rounded,
@@ -122,11 +129,11 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "icon": Icons.emoji_events_rounded,
         "screen": AwardsScreen(),
       },
-      // {
-      //   "title": "Referrals",
-      //   "icon": Icons.handshake_rounded,
-      //   "screen": MyReferralsScreen(),
-      // },
+      {
+        "title": "Training",
+        "icon": Icons.school_rounded,
+        "screen": UpcomingTrainingsScreen(),
+      },
       // {
       //   "title": "Received Referrals",
       //   "icon": Icons.mark_email_read_rounded,
@@ -216,7 +223,16 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
                   child: SingleChildScrollView(
                     controller: _scrollController,
                     child: Column(
+                      
                       children: [
+                         _buildExpansionTile(
+                          context,
+                          "SNOW Meet Ups",
+                          Icons.people_alt_rounded,
+                          buildGrid(snowMeetupItems),
+                          _expansionTileKeys['snowMeetups']!,
+                          'snowMeetups',
+                        ),
                         _buildExpansionTile(
                           context,
                           "SNOWFLAKES",
@@ -233,14 +249,7 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
                           _expansionTileKeys['snowBusiness']!,
                           'snowBusiness',
                         ),
-                        _buildExpansionTile(
-                          context,
-                          "SNOW Meet Ups",
-                          Icons.people_alt_rounded,
-                          buildGrid(snowMeetupItems),
-                          _expansionTileKeys['snowMeetups']!,
-                          'snowMeetups',
-                        ),
+                       
                         _buildExpansionTile(
                           context,
                           "Extra Features",

@@ -563,51 +563,44 @@ class _AwardsScreenState extends State<AwardsScreen>
                         borderRadius: BorderRadius.circular(20),
                         child: Column(
                           children: [
-                            award.imageUrl != null
-                                ? (award.imageUrl!.startsWith("/")
-                                      ? Image.file(
-                                          File(award.imageUrl!),
-                                          width: double.infinity,
-                                          height: 220,
-                                          fit: BoxFit.cover,
-                                        )
-                                      : Stack(
-                                          children: [
-                                            Image.network(
-                                              award.imageUrl!,
+                            Stack(
+                              children: [
+                                award.imageUrl != null &&
+                                        award.imageUrl!.isNotEmpty
+                                    ? Image.network(
+                                        award.imageUrl!,
+                                        width: double.infinity,
+                                        height: 220,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            Image.asset(
+                                              'assets/placeholder.jpg',
                                               width: double.infinity,
                                               height: 220,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  Image.asset(
-                                                    'assets/placeholder.jpg',
-                                                    width: double.infinity,
-                                                    height: 220,
-                                                    fit: BoxFit.cover,
-                                                  ),
                                             ),
-                                            Container(
-                                              height: 220,
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  colors: [
-                                                    Colors.transparent,
-                                                    Colors.blue.shade900
-                                                        .withOpacity(0.3),
-                                                  ],
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ))
-                                : Image.asset(
-                                    'assets/placeholder.jpg',
-                                    width: double.infinity,
-                                    height: 220,
-                                    fit: BoxFit.cover,
+                                      )
+                                    : Image.asset(
+                                        'assets/placeholder.jpg',
+                                        width: double.infinity,
+                                        height: 220,
+                                        fit: BoxFit.cover,
+                                      ),
+                                Container(
+                                  height: 220,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.blue.shade900.withOpacity(0.3),
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    ),
                                   ),
+                                ),
+                              ],
+                            ),
                             Container(
                               width: double.infinity,
                               decoration: BoxDecoration(

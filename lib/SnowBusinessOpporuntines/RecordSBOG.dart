@@ -534,7 +534,7 @@ class _RecordSBOGState extends State<RecordSBOG>
                           ),
                         ),
 
-                      _buildTextField('Referral', _referralController, ''),
+                      _buildTextField('Give', _referralController, ''),
                       _buildTextField(
                         'Telephone',
                         _telephoneController,
@@ -542,8 +542,8 @@ class _RecordSBOGState extends State<RecordSBOG>
                         keyboardType: TextInputType.phone,
                       ),
                       _buildTextField('Email', _emailController, ''),
-                      buildLabel('Level of Connect'),
-                      _buildConnectLevelStars(),
+                      // buildLabel('Level of Connect'),
+                      // _buildConnectLevelStars(),
                       const SizedBox(height: 16),
 
                       buildLabel('Comments'),

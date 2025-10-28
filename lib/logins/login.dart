@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:snow_app/Admin%20Home%20Page/homewapper.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/validators.dart';
 import 'package:snow_app/home/dashboard.dart';
 import 'package:snow_app/logins/sign_up.dart';
 import 'package:snow_app/data/repositories/auth_repository.dart';
+import 'package:snow_app/logins/signup_type_screen.dart';
 import '../core/result.dart';
 
 class LoginPage extends StatefulWidget {
@@ -193,7 +195,7 @@ class _LoginScreenState extends State<LoginPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const SignUpPage(),
+                                builder: (context) => const SelectTypePage(),
                               ),
                             );
                           },
@@ -248,7 +250,7 @@ class _LoginScreenState extends State<LoginPage> {
 
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => SnowDashboard()),
+          MaterialPageRoute(builder: (context) => MainHome(role: v.user.isAdmin ? 'admin' : 'user')),
           (Route<dynamic> route) => false,
         );
         break;
