@@ -18,6 +18,7 @@ import 'package:snow_app/SnowBusinessOpporuntines/AbstractSBOR.dart';
 
 import 'package:snow_app/SnowMEETups/RecordSMUS.dart';
 import 'package:snow_app/SnowMEETups/AbstractSMUS.dart';
+import 'package:snow_app/core/module_access_service.dart';
 
 class GradientGridScreen extends StatefulWidget {
   const GradientGridScreen({super.key});
@@ -70,6 +71,10 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final moduleService = ModuleAccessService();
+    final hasSfg = moduleService.hasAccess('sfg');
+    final hasSbog = moduleService.hasAccess('sbog');
+
     // ---------------- SNOWFLAKES ----------------
     final List<Map<String, dynamic>> snowflakesItems = [
       {
@@ -225,7 +230,7 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
                     child: Column(
                       
                       children: [
-                         _buildExpansionTile(
+                        _buildExpansionTile(
                           context,
                           "SNOW Meet Ups",
                           Icons.people_alt_rounded,
@@ -233,23 +238,24 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
                           _expansionTileKeys['snowMeetups']!,
                           'snowMeetups',
                         ),
-                        _buildExpansionTile(
-                          context,
-                          "SNOWFLAKES",
-                          Icons.ac_unit_rounded,
-                          buildGrid(snowflakesItems),
-                          _expansionTileKeys['snowflakes']!,
-                          'snowflakes',
-                        ),
-                        _buildExpansionTile(
-                          context,
-                          "SNOW Business Opportunities",
-                          Icons.business_center_rounded,
-                          buildGrid(snowBusinessItems),
-                          _expansionTileKeys['snowBusiness']!,
-                          'snowBusiness',
-                        ),
-                       
+                        if (hasSfg)
+                          _buildExpansionTile(
+                            context,
+                            "SNOWFLAKES",
+                            Icons.ac_unit_rounded,
+                            buildGrid(snowflakesItems),
+                            _expansionTileKeys['snowflakes']!,
+                            'snowflakes',
+                          ),
+                        if (hasSbog)
+                          _buildExpansionTile(
+                            context,
+                            "SNOW Business Opportunities",
+                            Icons.business_center_rounded,
+                            buildGrid(snowBusinessItems),
+                            _expansionTileKeys['snowBusiness']!,
+                            'snowBusiness',
+                          ),
                         _buildExpansionTile(
                           context,
                           "Extra Features",

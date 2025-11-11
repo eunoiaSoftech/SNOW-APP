@@ -41,7 +41,7 @@ class ApiClient {
             options.headers['Authorization'] = 'Bearer $token';
           }
 
-          print('🚀 API REQUEST: ${options.method} ${options.baseUrl}${options.path}');
+          print('🚀 API REQUEST: ${options.method} {options.path}');
           handler.next(options);
         },
         onResponse: (response, handler) => handler.next(response),
@@ -60,8 +60,21 @@ class ApiClient {
     return (res, res.statusCode ?? 0);
   }
 
+  Future<(Response, int)> getUri(Uri uri) async {
+    final res = await dio.getUri(uri);
+    return (res, res.statusCode ?? 0);
+  }
+
   Future<(Response, int)> post(String path, {Object? body}) async {
     final res = await dio.post(path, data: body);
+    return (res, res.statusCode ?? 0);
+  }
+
+  Future<(Response, int)> postUri(
+    Uri uri, {
+    Object? body,
+  }) async {
+    final res = await dio.postUri(uri, data: body);
     return (res, res.statusCode ?? 0);
   }
 

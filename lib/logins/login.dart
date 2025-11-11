@@ -4,6 +4,7 @@ import 'package:snow_app/Admin%20Home%20Page/homewapper.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/validators.dart';
 import 'package:snow_app/home/dashboard.dart';
+import 'package:snow_app/logins/forgot_password.dart';
 import 'package:snow_app/logins/sign_up.dart';
 import 'package:snow_app/data/repositories/auth_repository.dart';
 import 'package:snow_app/logins/signup_type_screen.dart';
@@ -173,12 +174,22 @@ class _LoginScreenState extends State<LoginPage> {
                                   ),
                                 ),
                         ),
-                        // const SizedBox(height: 12),
-                        // const Text(
-                        //   'Forgot Password',
-                        //   style: TextStyle(color: Colors.grey),
-                        // ),
-                        // const SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _loading
+                                ? null
+                                : () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const ForgotPasswordPage(),
+                                      ),
+                                    );
+                                  },
+                            child: const Text('Forgot Password?'),
+                          ),
+                        ),
                         // Row(
                         //   mainAxisAlignment: MainAxisAlignment.center,
                         //   children: const [
@@ -246,6 +257,8 @@ class _LoginScreenState extends State<LoginPage> {
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
+        await prefs.setBool('isAdmin', v.user.isAdmin);
+        await prefs.setString('userRole', v.user.isAdmin ? 'admin' : 'user');
         await prefs.setString('userFullName', v.user.fullName); 
 
         Navigator.pushAndRemoveUntil(

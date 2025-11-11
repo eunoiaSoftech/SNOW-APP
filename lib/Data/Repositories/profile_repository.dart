@@ -1,27 +1,41 @@
-import 'package:snow_app/Data/Models/profile.dart';
+import 'package:snow_app/Data/Models/profile_overview.dart';
 
 import '../../core/api_client.dart';
 import '../../core/result.dart';
 
 class ProfileRepository {
-  final ApiClient _api = ApiClient.create();
+  ProfileRepository();
 
-  Future<Result<ProfileModel>> getProfile() async {
-    final (res, code) = await _api.get('/business/profile');
-    if (code == 200) {
-      return Ok(ProfileModel.fromJson(res.data));
+  final ApiClient _api = ApiClient.create();
+  static final Uri _routerBase =
+      Uri.parse('https://mediumvioletred-chough-398772.hostingersite.com/api/v1/router.php');
+
+  Future<Result<ProfileOverview>> fetchProfile() async {
+    final uri = _routerBase.replace(queryParameters: {'endpoint': 'user/profile'});
+    final (res, code) = await _api.getUri(uri);
+    if (code == 200 && res.data is Map<String, dynamic>) {
+      return Ok(ProfileOverview.fromJson(res.data as Map<String, dynamic>));
     }
     return Err('Unable to fetch profile', code: code);
   }
 
-  Future<Result<String>> updateProfile(Map<String, dynamic> body) async {
-    final (res, code) = await _api.post('/business/update-profile', body: body);
+  Future<Result<void>> switchUserType(int userTypeId) async {
+    final uri = _routerBase.replace(queryParameters: {'endpoint': 'auth/switch-type'});
+    final (res, code) = await _api.postUri(uri, body: {'user_type_id': userTypeId});
     if (code == 200) {
-      final msg = (res.data is Map && res.data['message'] is String)
-          ? res.data['message'] as String
-          : 'Profile updated successfully';
-      return Ok(msg);
+      return const Ok(null);
     }
-    return Err('Update failed', code: code);
+    final msg = _extractError(res.data);
+    return Err(msg, code: code);
+  }
+
+  String _extractError(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final msg = data['message'] ?? data['error'];
+      if (msg is String && msg.isNotEmpty) {
+        return msg;
+      }
+    }
+    return 'Request failed';
   }
 }

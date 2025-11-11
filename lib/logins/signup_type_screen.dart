@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snow_app/logins/sign_up.dart';
-import 'package:snow_app/logins/signup_froms.dart/SnowNormalForm.dart';
-import 'package:snow_app/logins/signup_froms.dart/SnowRealEstateForm.dart';
-import 'package:snow_app/logins/signup_froms.dart/SnowYouthForm.dart';
 import 'package:snow_app/logins/signup_froms.dart/VisitorForm.dart';
-
 
 class SelectTypePage extends StatelessWidget {
   const SelectTypePage({super.key});
@@ -16,21 +12,15 @@ class SelectTypePage extends StatelessWidget {
 
     final List<Map<String, dynamic>> options = [
       {'title': 'Elite Member', 'icon': Icons.star, 'page': const SignUpPage()},
-      {'title': 'SnowYouth', 'icon': Icons.emoji_events, 'page': const SnowYouthFormPage()},
-      {'title': 'SnowNormalPeople', 'icon': Icons.people, 'page': const SnowNormalFormPage()},
-      {'title': 'SnowRealEstate', 'icon': Icons.apartment, 'page': const SnowRealEstateFormPage()},
       {'title': 'Visitor', 'icon': Icons.person_outline, 'page': const VisitorFormPage()},
     ];
 
     return Scaffold(
       body: Stack(
         children: [
-          // Background image
           SizedBox.expand(
             child: Image.asset('assets/bglogin.jpg', fit: BoxFit.cover),
           ),
-          // Semi-transparent overlay
-          // Container(color: Colors.black.withOpacity(0.4)),
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -49,7 +39,7 @@ class SelectTypePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Please select your membership type.',
+                      'Choose the sign-up flow that matches your role.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
@@ -60,20 +50,12 @@ class SelectTypePage extends StatelessWidget {
                     ...options.map((option) {
                       return GestureDetector(
                         onTap: () {
-                          if (option['page'] != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => option['page'],
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${option['title']} form coming soon!'),
-                              ),
-                            );
-                          }
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => option['page'] as Widget,
+                            ),
+                          );
                         },
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 10),
@@ -95,14 +77,14 @@ class SelectTypePage extends StatelessWidget {
                                 radius: 25,
                                 backgroundColor: primaryColor.withOpacity(0.2),
                                 child: Icon(
-                                  option['icon'],
+                                  option['icon'] as IconData,
                                   color: primaryColor,
                                   size: 30,
                                 ),
                               ),
                               const SizedBox(width: 20),
                               Text(
-                                option['title'],
+                                option['title'] as String,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,

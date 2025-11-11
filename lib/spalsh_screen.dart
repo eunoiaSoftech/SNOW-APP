@@ -3,6 +3,7 @@ import 'package:snow_app/home/dashboard.dart';
 import 'package:snow_fall_animation/snow_fall_animation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snow_app/onboarding_screen.dart';
+import 'package:snow_app/Admin Home Page/homewapper.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,14 +22,22 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> navigateBasedOnLogin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    bool isAdmin = prefs.getBool('isAdmin') ?? false;
 
     await Future.delayed(const Duration(seconds: 3));
 
     if (isLoggedIn) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const SnowDashboard()),
-      );
+      if (isAdmin) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainHome(role: 'admin')),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SnowDashboard()),
+        );
+      }
     } else {
       Navigator.pushReplacement(
         context,

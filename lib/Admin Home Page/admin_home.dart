@@ -3,6 +3,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Admin%20Home%20Page/admin_module_screen.dart';
+import 'package:snow_app/Admin%20Home%20Page/admin_igloo_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/user_list_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
@@ -20,6 +22,18 @@ class AdminHomeScreen extends StatelessWidget {
       "icon": Icons.people,
       "color": Color(0xFF70A9EE),
       "route": "users",
+    },
+    {
+      "title": "Igloo Management",
+      "icon": Icons.ac_unit,
+      "color": Color(0xFF97DCEB),
+      "route": "igloos",
+    },
+    {
+      "title": "Module Access Management",
+      "icon": Icons.tune,
+      "color": Color(0xFF97DCEB),
+      "route": "modules",
     },
     {
       "title": "Reports",
@@ -41,7 +55,6 @@ class AdminHomeScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // ✅ Background Image + Gradient
           Positioned.fill(
             child: Stack(
               fit: StackFit.expand,
@@ -70,7 +83,6 @@ class AdminHomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Header with gradient text
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 16,
@@ -104,7 +116,6 @@ class AdminHomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
-                // ✅ Menu Grid inside white container
                 Expanded(
                   child: Container(
                     width: double.infinity,
@@ -129,19 +140,37 @@ class AdminHomeScreen extends StatelessWidget {
                         final item = menuItems[index];
                         return GestureDetector(
                           onTap: () {
-                            if (item["route"] == "login") {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const UserListScreen(),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text("${item['title']} clicked"),
-                                ),
-                              );
+                            switch (item["route"]) {
+                              case "login":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const UserListScreen(),
+                                  ),
+                                );
+                                break;
+                              case "igloos":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const AdminIglooScreen(),
+                                  ),
+                                );
+                                break;
+                              case "modules":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const AdminModuleScreen(),
+                                  ),
+                                );
+                                break;
+                              default:
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text("${item['title']} coming soon"),
+                                  ),
+                                );
                             }
                           },
                           child: Container(

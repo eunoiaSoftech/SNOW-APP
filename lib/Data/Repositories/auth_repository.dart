@@ -5,12 +5,17 @@ import '../../core/api_client.dart';
 import '../../core/result.dart';
 
 class AuthRepository {
+  AuthRepository();
+
   final ApiClient _api = ApiClient.create();
+  static final Uri _routerBase =
+      Uri.parse('https://mediumvioletred-chough-398772.hostingersite.com/api/v1/router.php');
 
   Future<Result<RegisterResponse>> signup(Map<String, dynamic> body) async {
-    final (res, code) = await _api.post('/auth/register', body: body);
-    if (code == 201 || code == 200) {
-      return Ok(RegisterResponse.fromJson(res.data));
+    final uri = _routerBase.replace(queryParameters: {'endpoint': 'user/register'});
+    final (res, code) = await _api.postUri(uri, body: body);
+    if (code == 201 || code == 200 || code == 202) {
+      return Ok(RegisterResponse.fromJson(res.data as Map<String, dynamic>));
     }
     final msg = _extractError(res);
     return Err(msg, code: code);
@@ -33,6 +38,48 @@ class AuthRepository {
     return Err(msg, code: code);
   }
 
+  Future<Result<void>> requestPasswordOtp(String email) async {
+    final uri = _routerBase.replace(queryParameters: {'endpoint': 'auth/forgot-password'});
+    final (res, code) = await _api.postUri(uri, body: {'email': email});
+    if (code == 200) {
+      return const Ok(null);
+    }
+    final msg = _extractError(res);
+    return Err(msg, code: code);
+  }
+
+  Future<Result<String>> verifyResetOtp({required String email, required String otp}) async {
+    final uri = _routerBase.replace(queryParameters: {'endpoint': 'auth/verify-reset-otp'});
+    final (res, code) = await _api.postUri(uri, body: {'email': email, 'otp': otp});
+    if (code == 200 && res.data is Map<String, dynamic>) {
+      final token = (res.data as Map<String, dynamic>)['reset_token']?.toString();
+      if (token != null && token.isNotEmpty) {
+        return Ok(token);
+      }
+    }
+    final msg = _extractError(res);
+    return Err(msg, code: code);
+  }
+
+  Future<Result<void>> resetPassword({
+    required String email,
+    required String resetToken,
+    required String newPassword,
+  }) async {
+    final uri = _routerBase.replace(queryParameters: {'endpoint': 'auth/reset-password'});
+    final body = {
+      'email': email,
+      'reset_token': resetToken,
+      'new_password': newPassword,
+    };
+    final (res, code) = await _api.postUri(uri, body: body);
+    if (code == 200) {
+      return const Ok(null);
+    }
+    final msg = _extractError(res);
+    return Err(msg, code: code);
+  }
+
   String _extractError(Response res) {
     final data = res.data;
 
@@ -40,8 +87,7 @@ class AuthRepository {
 
     if (data is Map) {
       if (data['message'] is String) return data['message'];
-      if (data['error'] is String)
-        return data['error']; 
+      if (data['error'] is String) return data['error'];
     }
 
     return 'Something went wrong (${res.statusCode})';

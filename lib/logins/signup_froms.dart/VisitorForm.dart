@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:snow_app/Data/Models/business_category.dart';
+import 'package:snow_app/Data/Repositories/auth_repository.dart';
+import 'package:snow_app/Data/Repositories/common_repository.dart';
+import 'package:snow_app/core/app_toast.dart';
+import 'package:snow_app/core/result.dart';
+import 'package:snow_app/core/validators.dart';
+import 'package:snow_app/logins/login.dart';
 
 class VisitorFormPage extends StatefulWidget {
   const VisitorFormPage({super.key});
@@ -11,72 +17,149 @@ class VisitorFormPage extends StatefulWidget {
 class _VisitorFormPageState extends State<VisitorFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
-  final _nameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _businessNameController = TextEditingController();
-  final _businessCategoryController = TextEditingController();
   final _yearsInBusinessController = TextEditingController();
   final _gstController = TextEditingController();
   final _websiteController = TextEditingController();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _contactController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _stateController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _pinController = TextEditingController();
-  final _sponsorController = TextEditingController();
-  final _paymentController = TextEditingController();
 
-  // Dropdown/Radio selections
-  String? _businessType;
-  bool _partOfNetwork = false;
-  String? _iglooSelection;
-  List<String> _businessOpportunities = [];
-  DateTime? _selectedDate;
-  int? _recommendScore;
-  int _selectedScore = 5;
+  final AuthRepository _auth = AuthRepository();
+  final CommonRepository _common = CommonRepository();
 
-  bool _isLoading = false;
+  List<BusinessCategory> _categories = [];
+  BusinessCategory? _selectedCategory;
+  String? _selectedBusinessType;
+  String? _selectedJoinPreference;
+  bool _paymentDone = false;
 
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+  bool _isLoadingCategories = false;
+  bool _isSubmitting = false;
 
-    setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Visitor form submitted!')));
-    });
+  static const _businessTypeOptions = <Map<String, String>>[
+    {'label': 'Products', 'value': 'products'},
+    {'label': 'Services', 'value': 'services'},
+    {'label': 'Both (Products & Services)', 'value': 'both'},
+  ];
+
+  static const _joinOptions = <Map<String, String>>[
+    {'label': 'City Igloo (In-person / Online)', 'value': 'city'},
+    {'label': 'Pan India Igloo (Online)', 'value': 'pan_india'},
+    {'label': 'International Igloo (Online)', 'value': 'international'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
   }
 
-  Future<void> _pickDate() async {
-    DateTime? date = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (date != null) {
-      setState(() => _selectedDate = date);
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _businessNameController.dispose();
+    _yearsInBusinessController.dispose();
+    _gstController.dispose();
+    _websiteController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _contactController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() => _isLoadingCategories = true);
+
+    final res = await _common.fetchBusinessCategories();
+
+    if (!mounted) return;
+
+    switch (res) {
+      case Ok(value: final value):
+        setState(() {
+          _categories = value;
+          _isLoadingCategories = false;
+        });
+        break;
+      case Err(message: final msg, code: _):
+        context.showToast(msg, bg: Colors.red);
+        setState(() => _isLoadingCategories = false);
+        break;
     }
   }
 
-  InputDecoration _inputDecoration(String hint) => InputDecoration(
-    hintText: hint,
-    filled: true,
-    fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Color(0xFFBDBDBD)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Color(0xFF5E9BC8), width: 1.5),
-    ),
-  );
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) {
+      context.showToast('Fix validation errors');
+      return;
+    }
+
+    if (_selectedCategory == null) {
+      context.showToast('Please select a business category');
+      return;
+    }
+
+    if (_selectedBusinessType == null) {
+      context.showToast('Please select your business type');
+      return;
+    }
+
+    if (_selectedJoinPreference == null) {
+      context.showToast('Please choose a joining preference');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final body = {
+      'user_type': 'visitor',
+      'full_name': _fullNameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'password': _passwordController.text,
+      'business_name': _businessNameController.text.trim(),
+      'business_category': _selectedCategory!.id,
+      'business_type': _selectedBusinessType,
+      'years_in_business': _yearsInBusinessController.text.trim(),
+      'contact': _contactController.text.trim(),
+      'gst': _gstController.text.trim(),
+      'website': _websiteController.text.trim(),
+      'payment_done': _paymentDone ? 1 : 0,
+      'want_to_join': _selectedJoinPreference,
+    };
+
+    final res = await _auth.signup(body);
+
+    if (!mounted) return;
+
+    setState(() => _isSubmitting = false);
+
+    switch (res) {
+      case Ok(value: final response):
+        final message = response.message.isNotEmpty
+            ? response.message
+            : 'Registration submitted for approval';
+        context.showToast(message);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+        break;
+      case Err(message: final msg, code: final code):
+        final suffix = code > 0 ? ' ($code)' : '';
+        context.showToast('Signup failed$suffix: $msg', bg: Colors.red);
+        break;
+    }
+  }
+
+  InputDecoration _fieldDecoration(String label) => InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +181,7 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.92),
+                  color: Colors.white.withOpacity(0.94),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: const [
                     BoxShadow(
@@ -108,13 +191,12 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                     ),
                   ],
                 ),
-                width: 380,
+                width: 400,
                 child: SingleChildScrollView(
                   child: Form(
                     key: _formKey,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Text(
                           'Visitor Registration',
@@ -125,383 +207,166 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                           ),
                         ),
                         const SizedBox(height: 24),
-
-                        // Full Name
                         TextFormField(
-                          controller: _nameController,
-                          decoration: _inputDecoration('Full Name *'),
-                          validator: (v) => v!.isEmpty ? 'Enter Name' : null,
+                          controller: _fullNameController,
+                          decoration: _fieldDecoration('Full Name *'),
+                          validator: (v) =>
+                              Validators.required(v, label: 'Full Name'),
                         ),
                         const SizedBox(height: 16),
-
                         TextFormField(
                           controller: _businessNameController,
-                          decoration: _inputDecoration('Business Name *'),
-                          validator: (v) =>
-                              v!.isEmpty ? 'Enter Business Name' : null,
+                          decoration: _fieldDecoration('Business Name *'),
+                          validator: (v) => Validators.required(
+                            v,
+                            label: 'Business Name',
+                          ),
                         ),
                         const SizedBox(height: 16),
-
-                        TextFormField(
-                          controller: _businessCategoryController,
-                          decoration: _inputDecoration('Business Category'),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Business Type Radio
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Business Type',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: const Color(0xFFBDBDBD),
+                        DropdownButtonFormField<BusinessCategory>(
+                          value: _selectedCategory,
+                          items: _categories
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.name),
                                 ),
-                              ),
-                              child: Column(
-                                children: [
-                                  RadioListTile<String>(
-                                    title: const Text('Products'),
-                                    value: 'Products',
-                                    groupValue: _businessType,
-                                    onChanged: (v) =>
-                                        setState(() => _businessType = v),
-                                  ),
-                                  RadioListTile<String>(
-                                    title: const Text('Services'),
-                                    value: 'Services',
-                                    groupValue: _businessType,
-                                    onChanged: (v) =>
-                                        setState(() => _businessType = v),
-                                  ),
-                                  RadioListTile<String>(
-                                    title: const Text(
-                                      'Both (Products & Services)',
-                                    ),
-                                    value: 'Both',
-                                    groupValue: _businessType,
-                                    onChanged: (v) =>
-                                        setState(() => _businessType = v),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                              )
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _selectedCategory = value),
+                          decoration:
+                              _fieldDecoration('Business Category *'),
+                          validator: (value) {
+                            if (_categories.isEmpty) {
+                              return 'Business categories unavailable';
+                            }
+                            if (value == null) {
+                              return 'Select business category';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
-
+                        DropdownButtonFormField<String>(
+                          value: _selectedBusinessType,
+                          items: _businessTypeOptions
+                              .map(
+                                (item) => DropdownMenuItem<String>(
+                                  value: item['value'],
+                                  child: Text(item['label'] ?? ''),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _selectedBusinessType = value),
+                          decoration: _fieldDecoration('Business Type *'),
+                          validator: (value) =>
+                              value == null ? 'Select business type' : null,
+                        ),
+                        const SizedBox(height: 16),
                         TextFormField(
                           controller: _yearsInBusinessController,
-                          decoration: _inputDecoration(
-                            'How many years in Business',
-                          ),
+                          decoration:
+                              _fieldDecoration('Years in Business *'),
+                          keyboardType: TextInputType.number,
+                          validator: (v) =>
+                              Validators.required(v, label: 'Years in Business'),
                         ),
                         const SizedBox(height: 16),
-
                         TextFormField(
                           controller: _gstController,
-                          decoration: _inputDecoration('GST Number (If any)'),
+                          decoration: _fieldDecoration('GST Number'),
                         ),
                         const SizedBox(height: 16),
-
                         TextFormField(
                           controller: _websiteController,
-                          decoration: _inputDecoration('Website'),
+                          decoration: _fieldDecoration('Website'),
+                          keyboardType: TextInputType.url,
                         ),
                         const SizedBox(height: 16),
-
                         TextFormField(
                           controller: _emailController,
-                          decoration: _inputDecoration('Email'),
+                          decoration: _fieldDecoration('Email *'),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: Validators.email,
                         ),
                         const SizedBox(height: 16),
-
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: _fieldDecoration('Password *'),
+                          validator: (v) =>
+                              Validators.minLen(v, 6, label: 'Password'),
+                        ),
+                        const SizedBox(height: 16),
                         TextFormField(
                           controller: _contactController,
-                          decoration: _inputDecoration('Contact Number'),
+                          decoration: _fieldDecoration('Contact Number *'),
+                          keyboardType: TextInputType.phone,
+                          validator: (v) =>
+                              Validators.required(v, label: 'Contact Number'),
                         ),
                         const SizedBox(height: 16),
-
-                        TextFormField(
-                          controller: _addressController,
-                          decoration: _inputDecoration('Address'),
-                        ),
-                        const SizedBox(height: 16),
-
-                        TextFormField(
-                          controller: _stateController,
-                          decoration: _inputDecoration('State'),
-                        ),
-                        const SizedBox(height: 16),
-
-                        TextFormField(
-                          controller: _cityController,
-                          decoration: _inputDecoration('City'),
-                        ),
-                        const SizedBox(height: 16),
-
-                        TextFormField(
-                          controller: _pinController,
-                          decoration: _inputDecoration('PIN Code'),
-                        ),
-                        const SizedBox(height: 16),
-
-                        SwitchListTile(
-                          title: const Text(
-                            'Are you part of any other Networking Organizations?',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          value: _partOfNetwork,
-                          onChanged: (v) => setState(() => _partOfNetwork = v),
-                          activeColor: const Color(0xFF5E9BC8),
-                        ),
-                        const SizedBox(height: 16),
-
                         DropdownButtonFormField<String>(
-                          decoration: _inputDecoration(
-                            'Join the following SNOW IGLOO',
-                          ),
-                          value: _iglooSelection,
-                          isExpanded: true, // 👈 This is the main fix!
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'CITY IGLOO',
-                              child: Text(
-                                'CITY IGLOO (Inperson / Online)',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'PAN INDIA IGLOO',
-                              child: Text(
-                                'PAN INDIA IGLOO (Online)',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'INTERNATIONAL IGLOO',
-                              child: Text(
-                                'INTERNATIONAL IGLOO (Online)',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                          onChanged: (v) => setState(() => _iglooSelection = v),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Business Opportunities
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Business opportunities you are looking for?',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: const Color(0xFFBDBDBD),
+                          value: _selectedJoinPreference,
+                          items: _joinOptions
+                              .map(
+                                (item) => DropdownMenuItem<String>(
+                                  value: item['value'],
+                                  child: Text(item['label'] ?? ''),
                                 ),
+                              )
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _selectedJoinPreference = value),
+                          decoration:
+                              _fieldDecoration('Preferred SNOW Igloo *'),
+                          validator: (value) =>
+                              value == null ? 'Select joining preference' : null,
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          value: _paymentDone,
+                          activeColor: const Color(0xFF5E9BC8),
+                          onChanged: (value) => setState(() => _paymentDone = value),
+                          title: const Text('Payment Completed'),
+                          subtitle: const Text('Toggle on if payment is done'),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isSubmitting ? null : _submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5E9BC8),
+                              shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Column(
-                                children: [
-                                  for (final opt in [
-                                    'Distributor',
-                                    'Collaboration',
-                                    'Franchisee',
-                                    'Corporates',
-                                  ])
-                                    CheckboxListTile(
-                                      title: Text(opt),
-                                      value: _businessOpportunities.contains(
-                                        opt,
-                                      ),
-                                      onChanged: (v) {
-                                        setState(() {
-                                          if (v == true) {
-                                            _businessOpportunities.add(opt);
-                                          } else {
-                                            _businessOpportunities.remove(opt);
-                                          }
-                                        });
-                                      },
+                              minimumSize: const Size(double.infinity, 50),
+                            ),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
                                     ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        TextFormField(
-                          controller: _sponsorController,
-                          decoration: _inputDecoration(
-                            'Name of Sponsor / Invited by',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        InkWell(
-                          onTap: _pickDate,
-                          child: InputDecorator(
-                            decoration: _inputDecoration(
-                              'Date of form submission',
-                            ),
-                            child: Text(
-                              _selectedDate == null
-                                  ? 'Select Date'
-                                  : DateFormat(
-                                      'MM/dd/yyyy',
-                                    ).format(_selectedDate!),
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: _selectedDate == null
-                                    ? Colors.grey.shade600
-                                    : Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        Text(
-                          'How likely are you to recommend SNOW to business owners, startups, innovators or entrepreneurs?',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: List.generate(6, (index) {
-                            bool isSelected = index <= _selectedScore;
-
-                            // Calculate color based on index: red → yellow → green
-                            Color backgroundColor;
-                            double fraction = index / 5; // 0 to 1
-                            if (fraction < 0.5) {
-                              // Red to yellow
-                              backgroundColor = Color.lerp(
-                                Colors.redAccent.withOpacity(0.5),
-                                Colors.yellowAccent.withOpacity(0.5),
-                                fraction * 2,
-                              )!;
-                            } else {
-                              // Yellow to green
-                              backgroundColor = Color.lerp(
-                                Colors.yellowAccent.withOpacity(0.5),
-                                Colors.greenAccent.withOpacity(0.5),
-                                (fraction - 0.5) * 2,
-                              )!;
-                            }
-
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedScore = index;
-                                });
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 250),
-                                width: 35,
-                                height: 35,
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? backgroundColor
-                                      : Colors.grey[300],
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '$index',
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Colors.black54,
-                                    fontWeight: FontWeight.bold,
+                                  )
+                                : const Text(
+                                    'Submit',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
                                   ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [Text('Low'), Text('High')],
-                        ),
-                        const SizedBox(height: 16),
-
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Text(
-                                'Scan QR Code for Payment',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.asset(
-                                'assets/QRsacnner.jpg',
-                                // height: ,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5E9BC8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            minimumSize: const Size(double.infinity, 50),
                           ),
-                          child: _isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white,
-                                )
-                              : const Text(
-                                  'Submit',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _isLoadingCategories ? null : _loadCategories,
+                          child: const Text('Refresh categories'),
                         ),
                       ],
                     ),
