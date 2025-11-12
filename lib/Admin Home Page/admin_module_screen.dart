@@ -235,72 +235,98 @@ class _AdminModuleScreenState extends State<AdminModuleScreen>
       ),
       body: _loading && !_modulesByUserType.containsKey(currentUserType)
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabs,
-              children: _userTypes.map((userType) {
-                final modules = _modulesByUserType[userType];
-                final states = _moduleStates[userType];
-                if (modules == null || states == null) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (modules.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+          : Stack(
+        children: [
+          Positioned.fill(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xAA97DCEB),
+                        Color(0xAA5E9BC8),
+                        Color(0xAA97DCEB),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+              TabBarView(
+                  controller: _tabs,
+                  children: _userTypes.map((userType) {
+                    final modules = _modulesByUserType[userType];
+                    final states = _moduleStates[userType];
+                    if (modules == null || states == null) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (modules.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('No modules assigned yet.'),
+                              const SizedBox(height: 12),
+                              ElevatedButton.icon(
+                                onPressed: () => _showModulePicker(userType),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Assign Module'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+              
+                    final enabledModules = modules
+                        .where((m) => states[m.id] ?? m.isEnabled)
+                        .toList();
+                    final disabledModules = modules
+                        .where((m) => !(states[m.id] ?? m.isEnabled))
+                        .toList();
+              
+                    return RefreshIndicator(
+                      onRefresh: () => _loadModules(userType),
+                      child: ListView(
+                        padding: const EdgeInsets.all(16),
                         children: [
-                          const Text('No modules assigned yet.'),
-                          const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            onPressed: () => _showModulePicker(userType),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Assign Module'),
+                          _buildBulkActions(
+                            userType,
+                            enabledModules,
+                            disabledModules,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildModuleSection(
+                            title: 'Enabled Modules (${enabledModules.length})',
+                            modules: enabledModules,
+                            states: states,
+                            userType: userType,
+                            emptyText: 'No modules enabled.',
+                          ),
+                          const SizedBox(height: 24),
+                          _buildModuleSection(
+                            title: 'Disabled Modules (${disabledModules.length})',
+                            modules: disabledModules,
+                            states: states,
+                            userType: userType,
+                            emptyText: 'No modules disabled.',
                           ),
                         ],
                       ),
-                    ),
-                  );
-                }
-
-                final enabledModules = modules
-                    .where((m) => states[m.id] ?? m.isEnabled)
-                    .toList();
-                final disabledModules = modules
-                    .where((m) => !(states[m.id] ?? m.isEnabled))
-                    .toList();
-
-                return RefreshIndicator(
-                  onRefresh: () => _loadModules(userType),
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _buildBulkActions(
-                        userType,
-                        enabledModules,
-                        disabledModules,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildModuleSection(
-                        title: 'Enabled Modules (${enabledModules.length})',
-                        modules: enabledModules,
-                        states: states,
-                        userType: userType,
-                        emptyText: 'No modules enabled.',
-                      ),
-                      const SizedBox(height: 24),
-                      _buildModuleSection(
-                        title: 'Disabled Modules (${disabledModules.length})',
-                        modules: disabledModules,
-                        states: states,
-                        userType: userType,
-                        emptyText: 'No modules disabled.',
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
     );
   }
 
