@@ -15,7 +15,7 @@ class AwardsScreen extends StatefulWidget {
 
 class _AwardsScreenState extends State<AwardsScreen>
     with SingleTickerProviderStateMixin {
-  final repo = AwardRepository(ApiClient.create());
+  final repo = AwardRepositoryNew();
 
   List<Award> awards = [];
   bool isLoading = true;
@@ -26,14 +26,19 @@ class _AwardsScreenState extends State<AwardsScreen>
     loadAwards();
   }
 
-  Future<void> loadAwards() async {
-    setState(() => isLoading = true);
-    final data = await repo.getAwards();
+Future<void> loadAwards() async {
+  setState(() => isLoading = true);
+
+  try {
+    final response = await repo.fetchAwards();
     setState(() {
-      awards = data;
+      awards = response.data;
       isLoading = false;
     });
+  } catch (e) {
+    setState(() => isLoading = false);
   }
+}
 
   Future<void> _showCreateDialog() async {
     final titleController = TextEditingController();
@@ -242,54 +247,56 @@ class _AwardsScreenState extends State<AwardsScreen>
                         const SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () async {
-                              if (titleController.text.trim().isEmpty ||
-                                  descController.text.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Please fill all required fields 🌟',
-                                    ),
-                                    backgroundColor: Colors.red.shade400,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                                return;
-                              }
+                        onPressed: () async {
+  if (titleController.text.trim().isEmpty ||
+      descController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Please fill all required fields 🌟'),
+        backgroundColor: Colors.red.shade400,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return;
+  }
 
-                              final award = Award(
-                                id: 0,
-                                userId: 0,
-                                title: titleController.text.trim(),
-                                description: descController.text.trim(),
-                                imageUrl: pickedImage?.path,
-                              );
+  // We keep pickedImage for the future (when backend supports image)
+  // final award = Award(
+  //   id: 0,
+  //   userId: 0,
+  //   title: titleController.text.trim(),
+  //   description: descController.text.trim(),
+  //   imageUrl: pickedImage?.path, // local only for now
+  // );
 
-                              final newAward = await repo.createAward(award);
+  // 🔥 API call (title + description only, image later)
+  final res = await repo.createAward(
+    titleController.text.trim(),
+    descController.text.trim(),
+  );
 
-                              if (newAward != null) {
-                                Navigator.pop(context);
-                                setState(() => awards.insert(0, newAward));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Award created successfully 🥳',
-                                    ),
-                                    backgroundColor: Colors.green.shade400,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Failed to create award ⚠️'),
-                                    backgroundColor: Colors.red.shade400,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
+  if (res['success'] == true) {
+    await loadAwards();    // refresh UI
+    Navigator.pop(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Award created successfully 🥳'),
+        backgroundColor: Colors.green.shade400,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to create award ⚠️'),
+        backgroundColor: Colors.red.shade400,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+},
+   style: ElevatedButton.styleFrom(
                               padding: EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(15),
@@ -441,21 +448,21 @@ class _AwardsScreenState extends State<AwardsScreen>
       ),
     );
 
-    if (confirm == true) {
-      final success = await repo.deleteAward(awardId);
-      if (success) {
-        setState(() {
-          awards.removeWhere((a) => a.id == awardId);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Award deleted successfully 🗑️'),
-            backgroundColor: Colors.green.shade400,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
+    // if (confirm == true) {
+    //   final success = await repo.deleteAward(awardId);
+    //   if (success) {
+    //     setState(() {
+    //       awards.removeWhere((a) => a.id == awardId);
+    //     });
+    //     ScaffoldMessenger.of(context).showSnackBar(
+    //       SnackBar(
+    //         content: Text('Award deleted successfully 🗑️'),
+    //         backgroundColor: Colors.green.shade400,
+    //         behavior: SnackBarBehavior.floating,
+    //       ),
+    //     );
+    //   }
+    // }
   }
 
   @override
@@ -563,44 +570,50 @@ class _AwardsScreenState extends State<AwardsScreen>
                         borderRadius: BorderRadius.circular(20),
                         child: Column(
                           children: [
-                            Stack(
-                              children: [
-                                award.imageUrl != null &&
-                                        award.imageUrl!.isNotEmpty
-                                    ? Image.network(
-                                        award.imageUrl!,
-                                        width: double.infinity,
-                                        height: 220,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            Image.asset(
-                                              'assets/placeholder.jpg',
-                                              width: double.infinity,
-                                              height: 220,
-                                              fit: BoxFit.cover,
-                                            ),
-                                      )
-                                    : Image.asset(
-                                        'assets/placeholder.jpg',
-                                        width: double.infinity,
-                                        height: 220,
-                                        fit: BoxFit.cover,
-                                      ),
-                                Container(
-                                  height: 220,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.transparent,
-                                        Colors.blue.shade900.withOpacity(0.3),
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                       
+                       
+                            // Stack(
+                            //   children: [
+                            //     award.imageUrl != null &&
+                            //             award.imageUrl!.isNotEmpty
+                            //         ? Image.network(
+                            //             award.imageUrl!,
+                            //             width: double.infinity,
+                            //             height: 220,
+                            //             fit: BoxFit.cover,
+                            //             errorBuilder: (_, __, ___) =>
+                            //                 Image.asset(
+                            //                   'assets/placeholder.jpg',
+                            //                   width: double.infinity,
+                            //                   height: 220,
+                            //                   fit: BoxFit.cover,
+                            //                 ),
+                            //           )
+                            //         : Image.asset(
+                            //             'assets/placeholder.jpg',
+                            //             width: double.infinity,
+                            //             height: 220,
+                            //             fit: BoxFit.cover,
+                            //           ),
+                            //     Container(
+                            //       height: 220,
+                            //       decoration: BoxDecoration(
+                            //         gradient: LinearGradient(
+                            //           colors: [
+                            //             Colors.transparent,
+                            //             Colors.blue.shade900.withOpacity(0.3),
+                            //           ],
+                            //           begin: Alignment.topCenter,
+                            //           end: Alignment.bottomCenter,
+                            //         ),
+                            //       ),
+                            //     ),
+                            //   ],
+                            // ),
+                           
+                           
+                           
+                           
                             Container(
                               width: double.infinity,
                               decoration: BoxDecoration(

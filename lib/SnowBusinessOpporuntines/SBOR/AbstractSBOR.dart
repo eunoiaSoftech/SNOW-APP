@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:snow_app/Data/Repositories/New%20Repositories/SBOG%20REPO/recordSbog.dart';
-import 'package:snow_app/Data/models/New%20Model/abs_sbog.dart';
+import 'package:intl/intl.dart';
 
-class AbstractSBOGScreen extends StatefulWidget {
-  const AbstractSBOGScreen({Key? key}) : super(key: key);
+import '../../Data/Repositories/New Repositories/SBOR/sbor_repo.dart';
+import '../../Data/models/New Model/SBOR MODEL/sbor_model.dart';
+
+class AbstractSBOR extends StatefulWidget {
+  const AbstractSBOR({Key? key}) : super(key: key);
 
   @override
-  _AbstractSBOGScreenState createState() => _AbstractSBOGScreenState();
+  _AbstractSBORState createState() => _AbstractSBORState();
 }
 
-class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
-  final ReferralsRepositorySbog _repo = ReferralsRepositorySbog();
+class _AbstractSBORState extends State<AbstractSBOR> {
+  final ReferralsRepositorySbor _repo = ReferralsRepositorySbor();
 
   DateTime? startDate;
   DateTime? endDate;
   bool isLoading = false;
   String? error;
-  List<SbogAbsRecord> records = [];
+  List<SborRecord> records = [];
+  List<SborRecord> filteredRecords = [];
 
   @override
   void initState() {
@@ -32,19 +35,33 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
     });
 
     try {
-      final response = await _repo.fetchSbogRecords(
-        startDate: startDate,
-        endDate: endDate,
+      final response = await _repo.fetchSborRecords(
+        // startDate: startDate,
+        // endDate: endDate,
       );
       setState(() {
-        records = response.records;
+        records = response.data
+            .map(
+              (e) => SborRecord(
+                id: e.id,
+                userId: e.userId,
+                fromBusinessId: e.fromBusinessId,
+                giverUserId: e.giverUserId,
+                amount: e.amount,
+                comment: e.comment,
+              ),
+            )
+            .toList();
+        filteredRecords = List.from(records);
       });
     } catch (e) {
       setState(() {
         error = e.toString();
       });
     } finally {
-      setState(() => isLoading = false);
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -61,9 +78,6 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
               primary: Color(0xFF014576),
               onPrimary: Colors.white,
               onSurface: Colors.black87,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: Color(0xFF014576)),
             ),
           ),
           child: child!,
@@ -82,21 +96,37 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
     }
   }
 
-  void _applyFilter() => _fetchRecords();
+  // void _applyFilter() {
+  //   setState(() {
+  //     if (startDate == null && endDate == null) {
+  //       filteredRecords = List.from(records);
+  //     } else {
+  //       filteredRecords = records.where((record) {
+  //         DateTime? d;
+  //         try {
+  //           d = DateTime.parse(record.createdAt);
+  //         } catch (_) {}
+  //         if (d == null) return false;
+  //         if (startDate != null && d.isBefore(startDate!)) return false;
+  //         if (endDate != null && d.isAfter(endDate!)) return false;
+  //         return true;
+  //       }).toList();
+  //     }
+  //   });
+  // }
 
   void _resetFilter() {
     setState(() {
       startDate = null;
       endDate = null;
+      filteredRecords = List.from(records);
     });
-    _fetchRecords();
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background
         Positioned.fill(
           child: Stack(
             fit: StackFit.expand,
@@ -120,7 +150,6 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
             ],
           ),
         ),
-
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
@@ -128,7 +157,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
             elevation: 0,
             centerTitle: true,
             title: Text(
-              "Abstract SBOG",
+              "Abstract SBOR",
               style: GoogleFonts.poppins(
                 color: const Color(0xFF014576),
                 fontWeight: FontWeight.w600,
@@ -137,26 +166,25 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
             ),
             iconTheme: const IconThemeData(color: Color(0xFF014576)),
           ),
-          body: Column(
-            children: [
-              // Filters + Records
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  child: Column(
-                    children: [
-                      _buildDateFilterCard(context),
-                      const SizedBox(height: 14),
-                      Expanded(child: _buildRecordsSection()),
-                    ],
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : error != null
+              ? Center(child: Text("Error: $error"))
+              : Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    child: Column(
+                      children: [
+                        _buildDateFilterCard(context),
+                        const SizedBox(height: 14),
+                        Expanded(child: _buildRecordsCard()),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
         ),
       ],
     );
@@ -170,7 +198,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _cardTitle("Select date range to view slips", Icons.filter_alt),
+            _cardTitle("Date Filters", Icons.filter_alt),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -193,7 +221,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
                 Column(
                   children: [
                     ElevatedButton.icon(
-                      onPressed: _applyFilter,
+                      onPressed: null,
                       icon: const Icon(Icons.search, size: 18),
                       label: const Text("Search"),
                       style: ElevatedButton.styleFrom(
@@ -269,7 +297,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
                 Flexible(
                   child: Text(
                     value == null
-                        ? "dd-mm-yyyy"
+                        ? "Select"
                         : "${value.day}-${value.month}-${value.year}",
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
@@ -286,31 +314,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
     );
   }
 
-  Widget _buildRecordsSection() {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (error != null) {
-      return Center(
-        child: Text(
-          "Error: $error",
-          style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 14),
-        ),
-      );
-    }
-    if (records.isEmpty) {
-      return Center(
-        child: Text(
-          "No data available in table",
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[600],
-          ),
-        ),
-      );
-    }
-
+  Widget _buildRecordsCard() {
     return Container(
       decoration: _cardDecoration(),
       child: Padding(
@@ -319,15 +323,23 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
           children: [
             _cardTitle("Snowflakes Records", Icons.receipt_long),
             const SizedBox(height: 14),
-            for (var record in records)
+            if (filteredRecords.isEmpty)
+              Center(
+                child: Text(
+                  "No data available in table",
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ),
+            for (var record in filteredRecords)
               _buildRecordItem(
-                date: record.date ?? '',
-                sbogTo: record.sbogTo ?? '',
-                referral: record.referral ?? '',
-                phone: record.phone ?? '',
-                email: record.email ?? '',
-                comment: record.comment ?? '',
-                level: record.level ?? '',
+                date: "-", // No created_at in your model
+                sogForm: record.giverUserId.toString(),
+                comment: record.comment,
+                connectivity: record.fromBusinessId.toString(),
+                amount: record.amount,
               ),
           ],
         ),
@@ -335,14 +347,21 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
     );
   }
 
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('dd-MMM-yy hh:mm a').format(date);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
   Widget _buildRecordItem({
     required String date,
-    required String sbogTo,
-    required String referral,
-    required String phone,
-    required String email,
+    required String sogForm,
     required String comment,
-    required String level,
+    required String connectivity,
+    required String amount,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -350,19 +369,15 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-            offset: const Offset(2, 3),
-          ),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(2, 3)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Date: $date",
+            date,
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -371,7 +386,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            "SBOG TO: $sbogTo",
+            "Snowflakes Given To: $sogForm",
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -380,29 +395,30 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            "Referral: $referral",
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
-          ),
-          Text(
-            "Phone: $phone",
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
-          ),
-          Text(
-            "Email: $email",
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
-          ),
-          Text(
             "Comments: $comment",
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
           ),
           const SizedBox(height: 10),
-          Text(
-            "Level of Connect: $level",
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Colors.blueGrey[700],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Connectivity: $connectivity",
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.blueGrey[700],
+                ),
+              ),
+              Text(
+                amount,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[700],
+                ),
+              ),
+            ],
           ),
         ],
       ),

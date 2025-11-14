@@ -1,78 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:snow_app/Data/Repositories/New%20Repositories/sgf/sgf_repo.dart';
-import 'package:snow_app/Data/models/New%20Model/sgf_record_model.dart';
-import 'package:snow_app/common%20api/all_business_api.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/SBOG%20REPO/recordSbog.dart';
+import 'package:snow_app/Data/models/New%20Model/SBOG%20MODEL/abs_sbog.dart';
 
-class AbstractSFG extends StatefulWidget {
-  const AbstractSFG({Key? key}) : super(key: key);
+class AbstractSBOGScreen extends StatefulWidget {
+  const AbstractSBOGScreen({Key? key}) : super(key: key);
 
   @override
-  _AbstractSFGState createState() => _AbstractSFGState();
+  _AbstractSBOGScreenState createState() => _AbstractSBOGScreenState();
 }
 
-class _AbstractSFGState extends State<AbstractSFG> {
-  final SfgRepository _repo = SfgRepository();
+class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
+  final ReferralsRepositorySbog _repo = ReferralsRepositorySbog();
 
   DateTime? startDate;
   DateTime? endDate;
-  List<SfgItem> records = [];
-  bool isLoading = true;
-  Map<int, String> businessNameMap = {};
+  bool isLoading = false;
+  String? error;
+  List<SbogItem> records = [];
 
   @override
   void initState() {
     super.initState();
-    loadBusinessNames().then((_) => fetchData());
+    _fetchRecords();
   }
 
-  Future<void> fetchData() async {
-    setState(() => isLoading = true);
-
-    
+  Future<void> _fetchRecords() async {
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
 
     try {
-      /// Get business ID from shared prefs or login response
-      /// (You probably have it already — replace with your actual value)
-      const int myBusinessId = 2;
-
-      final response = await _repo.fetchSfgList(
-        businessId: myBusinessId,
-        showOnlyMy: true, // As per Postman
-      );
-
+      final response = await _repo.fetchSbogRecords();
       setState(() {
-        records = response.data; // NEW MODEL → response.data
+        records = response.data;
       });
-
-      print("🎯 Total records fetched: ${records.length}");
     } catch (e) {
-      print("⚠️ Error fetching SFG list: $e");
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Failed to load records")));
+      setState(() {
+        error = e.toString();
+      });
     } finally {
       setState(() => isLoading = false);
     }
   }
-
-  Future<void> loadBusinessNames() async {
-    try {
-      final repo = DirectoryBusinessRepository();
-      final response = await repo.fetchAllActiveBusinesses();
-
-      businessNameMap = {
-        for (var b in response.data) b.id!: b.data.businessName ?? "Unknown",
-      };
-
-      print("📌 Loaded ${businessNameMap.length} business names");
-    } catch (e) {
-      print("⚠️ Failed to load business names: $e");
-    }
-  }
-
-  String _formatDate(DateTime date) =>
-      "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
   Future<void> _pickDate(BuildContext context, bool isStart) async {
     DateTime? picked = await showDatePicker(
@@ -80,30 +51,49 @@ class _AbstractSFGState extends State<AbstractSFG> {
       initialDate: DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF014576),
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: Color(0xFF014576)),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) {
       setState(() {
-        if (isStart)
+        if (isStart) {
           startDate = picked;
-        else
+        } else {
           endDate = picked;
+        }
       });
     }
   }
 
-  void _applyFilter() => fetchData();
+  void _applyFilter() => _fetchRecords();
+
   void _resetFilter() {
     setState(() {
       startDate = null;
       endDate = null;
     });
-    fetchData();
+    _fetchRecords();
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // Background
         Positioned.fill(
           child: Stack(
             fit: StackFit.expand,
@@ -127,6 +117,7 @@ class _AbstractSFGState extends State<AbstractSFG> {
             ],
           ),
         ),
+
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
@@ -134,17 +125,20 @@ class _AbstractSFGState extends State<AbstractSFG> {
             elevation: 0,
             centerTitle: true,
             title: Text(
-              "Abstract SFGS",
+              "Abstract SBOG",
               style: GoogleFonts.poppins(
                 color: const Color(0xFF014576),
                 fontWeight: FontWeight.w600,
                 fontSize: 20,
               ),
             ),
+            iconTheme: const IconThemeData(color: Color(0xFF014576)),
           ),
-          body: isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Padding(
+          body: Column(
+            children: [
+              // Filters + Records
+              Expanded(
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 10,
@@ -153,10 +147,13 @@ class _AbstractSFGState extends State<AbstractSFG> {
                     children: [
                       _buildDateFilterCard(context),
                       const SizedBox(height: 14),
-                      Expanded(child: _buildRecordsCard()),
+                      Expanded(child: _buildRecordsSection()),
                     ],
                   ),
                 ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -170,7 +167,7 @@ class _AbstractSFGState extends State<AbstractSFG> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _cardTitle("Date Filters", Icons.filter_alt),
+            _cardTitle("Select date range to view slips", Icons.filter_alt),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -203,6 +200,10 @@ class _AbstractSFGState extends State<AbstractSFG> {
                           horizontal: 14,
                           vertical: 10,
                         ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        textStyle: GoogleFonts.poppins(fontSize: 13),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -213,6 +214,14 @@ class _AbstractSFGState extends State<AbstractSFG> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF014576),
                         side: const BorderSide(color: Color(0xFF014576)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        textStyle: GoogleFonts.poppins(fontSize: 13),
                       ),
                     ),
                   ],
@@ -257,7 +266,7 @@ class _AbstractSFGState extends State<AbstractSFG> {
                 Flexible(
                   child: Text(
                     value == null
-                        ? "Select"
+                        ? "dd-mm-yyyy"
                         : "${value.day}-${value.month}-${value.year}",
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
@@ -274,36 +283,61 @@ class _AbstractSFGState extends State<AbstractSFG> {
     );
   }
 
-  Widget _buildRecordsCard() {
+  Widget _buildRecordsSection() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (error != null) {
+      return Center(
+        child: Text(
+          "Error: $error",
+          style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 14),
+        ),
+      );
+    }
+    if (records.isEmpty) {
+      return Center(
+        child: Text(
+          "No data available in table",
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[600],
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: _cardDecoration(),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: records.isEmpty
-            ? const Center(child: Text("No records found"))
-            : ListView.builder(
-                itemCount: records.length,
-                itemBuilder: (context, index) {
-                  final r = records[index];
-                  return _buildRecordItem(
-                    date: r.createdAt,
-                    sogForm:
-                        businessNameMap[r.opponentUserId] ??
-                        "ID: ${r.opponentUserId}",
-                    comment: r.comment,
-                    amount: r.amount,
-                  );
-                },
+        child: ListView(
+          children: [
+            _cardTitle("Snowflakes Records", Icons.receipt_long),
+            const SizedBox(height: 14),
+            for (var record in records)
+              _buildRecordItem(
+                date: record.createdAt,
+                sbogTo: record.toBusinessId,
+                referral: record.give,
+                phone: record.telephone,
+                email: record.email,
+                comment: record.comment,
               ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildRecordItem({
     required String date,
-    required String sogForm,
+    required String sbogTo,
+    required String referral,
+    required String phone,
+    required String email,
     required String comment,
-    required String amount,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -323,34 +357,40 @@ class _AbstractSFGState extends State<AbstractSFG> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            date,
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "Snowflakes Given To: $sogForm",
+            "Date: $date",
             style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
             ),
           ),
           const SizedBox(height: 6),
+          Text(
+            "SBOG TO: $sbogTo",
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "Referral: $referral",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
+          Text(
+            "Phone: $phone",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
+          Text(
+            "Email: $email",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
           Text(
             "Comments: $comment",
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
           ),
           const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Text(
-              amount,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.green[700],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -364,12 +404,8 @@ class _AbstractSFGState extends State<AbstractSFG> {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 10,
-          offset: const Offset(2, 4),
-        ),
+      boxShadow: const [
+        BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(2, 4)),
       ],
     );
   }
@@ -377,7 +413,7 @@ class _AbstractSFGState extends State<AbstractSFG> {
   Widget _cardTitle(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Color(0xFF014576)),
+        Icon(icon, size: 20, color: const Color(0xFF014576)),
         const SizedBox(width: 8),
         Text(
           title,

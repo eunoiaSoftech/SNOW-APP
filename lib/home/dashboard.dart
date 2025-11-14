@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snow_app/Data/Repositories/dashboard_repo.dart';
 import 'package:snow_app/Data/models/dashboard_model.dart';
 import 'package:snow_app/Grid/AWARD.dart';
+import 'package:snow_app/Grid/UpcomingTrainingsScreen.dart';
 import 'package:snow_app/Grid/grid.dart';
 import 'package:snow_app/Grid/meetup_create.dart';
 import 'package:snow_app/Grid/profile.dart';
@@ -223,14 +224,14 @@ class _SnowDashboardState extends State<SnowDashboard> {
 
   Widget _buildQuickActions() {
     final actions = <Map<String, dynamic>>[
-      {'label': 'Profile', 'icon': Icons.person, 'handler': _goToProfile},
+      {'label': 'Trainings', 'icon': Icons.person, 'handler': _goToTrainings},
       {'label': 'Awards', 'icon': Icons.emoji_events, 'handler': _goToAwards},
-      {'label': 'Meetup List', 'icon': Icons.event, 'handler': _goToMeetupList},
-      {
-        'label': 'Record SMUS',
-        'icon': Icons.note_alt,
-        'handler': _goToRecordSMUS,
-      },
+      // {'label': 'Meetup List', 'icon': Icons.event, 'handler': _goToAbstractSMUS},
+      // {
+      //   'label': 'Record SMUS',
+      //   'icon': Icons.note_alt,
+      //   'handler': _goToRecordSMUS,
+      // },
       // {
       //   'label': 'Abstract SMUS',
       //   'icon': Icons.list_alt,
@@ -292,6 +293,8 @@ class _SnowDashboardState extends State<SnowDashboard> {
                     );
                   },
                 ),
+
+                
               ],
             ),
           ),
@@ -376,10 +379,10 @@ class _SnowDashboardState extends State<SnowDashboard> {
     );
   }
 
-  void _goToProfile() {
+  void _goToTrainings() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      MaterialPageRoute(builder: (_) => const UpcomingTrainingsScreen()),
     );
   }
 
@@ -387,16 +390,65 @@ class _SnowDashboardState extends State<SnowDashboard> {
     Navigator.push(context, MaterialPageRoute(builder: (_) => AwardsScreen()));
   }
 
-  void _goToMeetupList() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => MeetupListScreen()),
-    );
+  void _goToAbstractSMUS() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AbstractSMUS()));
   }
 
   void _goToRecordSMUS() {
     Navigator.push(context, MaterialPageRoute(builder: (_) => RecordSMUS()));
   }
+Widget _highlightBox(String title, String value, IconData icon) {
+  return Expanded(
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),  // brighter glass
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3), // strong glass reflection
+              width: 1.4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.white.withOpacity(0.25),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 28, color: Color(0xFF014576)),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF014576),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Color(0xFF014576),
+                  fontWeight: FontWeight.w500,),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -587,10 +639,74 @@ class _SnowDashboardState extends State<SnowDashboard> {
                   }).toList(),
             ),
 
-            // <-- QUICK ACTIONS GRID INSERTED HERE -->
-            _buildQuickActions(),
+            // // <-- QUICK ACTIONS GRID INSERTED HERE -->
+            // _buildQuickActions(),
 
             const SizedBox(height: 20),
+
+// ⭐ TODAY'S HIGHLIGHTS STATIC CARDS ⭐
+Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(18),
+  decoration: BoxDecoration(
+    gradient: const LinearGradient(
+      colors: [
+        Color(0xFFEAF5FC),
+        Color(0xFFD8E7FA),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    borderRadius: BorderRadius.circular(20),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black12,
+        blurRadius: 10,
+        offset: Offset(2, 4),
+      ),
+    ],
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        "Today's Highlights",
+        style: GoogleFonts.poppins(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF014576),
+        ),
+      ),
+      const SizedBox(height: 16),
+
+      // ROW 1
+      Row(
+        children: [
+          _highlightBox("SMU Completed", "5", Icons.handshake),
+          const SizedBox(width: 12),
+          _highlightBox("Opportunities", "3", Icons.lightbulb_outline),
+        ],
+      ),
+      const SizedBox(height: 12),
+
+      // ROW 2
+      Row(
+        children: [
+          _highlightBox("Trainings", "1", Icons.school),
+          const SizedBox(width: 12),
+          _highlightBox("Snow Points", "128", Icons.ac_unit),
+        ],
+      ),
+    ],
+  ),
+),
+
+
+
+const SizedBox(height: 20),
+
+
+
 
             // this the api fetch of top givers and top receivers
 
@@ -676,8 +792,6 @@ class _SnowDashboardState extends State<SnowDashboard> {
             //     }
             //   },
             // ),
-           
-           
             const SizedBox(height: 10),
           ],
         ),

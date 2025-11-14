@@ -1,86 +1,113 @@
 class LocationData {
   final bool success;
-  final int count;
-  final List<Location> locations;
+  final List<Country> countries;
 
   LocationData({
     required this.success,
-    required this.count,
-    required this.locations,
+    required this.countries,
   });
 
   factory LocationData.fromJson(Map<String, dynamic> json) {
     return LocationData(
       success: json['success'] ?? false,
-      count: json['count'] ?? 0,
-      locations:
-          (json['locations'] as List<dynamic>?)
-              ?.map((e) => Location.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      countries: (json['data'] as List<dynamic>? ?? [])
+          .map((e) => Country.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
 
-class Location {
-  final String country;
-  final String countryCode;
-  final String timeZone;
+class Country {
+  final int id;
+  final String name;
+  final String code;
   final List<Zone> zones;
 
-  Location({
-    required this.country,
-    required this.countryCode,
-    required this.timeZone,
+  Country({
+    required this.id,
+    required this.name,
+    required this.code,
     required this.zones,
   });
 
-  factory Location.fromJson(Map<String, dynamic> json) {
-    return Location(
-      country: json['country'] ?? '',
-      countryCode: json['country_code'] ?? '',
-      timeZone: json['time_zone'] ?? '',
-      zones:
-          (json['zones'] as List<dynamic>?)
-              ?.map((e) => Zone.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+  factory Country.fromJson(Map<String, dynamic> json) {
+    return Country(
+      id: int.tryParse(json['id'].toString()) ?? 0,
+      name: json['name'] ?? '',
+      code: json['code'] ?? '',
+      zones: (json['zones'] as List<dynamic>? ?? [])
+          .map((e) => Zone.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
 
 class Zone {
-  final String zone;
-  final List<State> states;
+  final int id;
+  final String name;
+  final String code;
+  final List<StateData> states;
 
-  Zone({required this.zone, required this.states});
+  Zone({
+    required this.id,
+    required this.name,
+    required this.code,
+    required this.states,
+  });
 
   factory Zone.fromJson(Map<String, dynamic> json) {
     return Zone(
-      zone: json['zone'] ?? '',
-      states:
-          (json['states'] as List<dynamic>?)
-              ?.map((e) => State.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      id: int.tryParse(json['id'].toString()) ?? 0,
+      name: json['name'] ?? '',
+      code: json['code'] ?? '',
+      states: (json['states'] as List<dynamic>? ?? [])
+          .map((e) => StateData.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
 
-class State {
-  final String state;
-  final List<String> cities;
+class StateData {
+  final int id;
+  final String name;
+  final String code;
+  final List<City> cities;
 
-  State({required this.state, required this.cities});
+  StateData({
+    required this.id,
+    required this.name,
+    required this.code,
+    required this.cities,
+  });
 
-  factory State.fromJson(Map<String, dynamic> json) {
-    return State(
-      state: json['state'] ?? '',
-      cities:
-          (json['cities'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
+  factory StateData.fromJson(Map<String, dynamic> json) {
+    return StateData(
+      id: int.tryParse(json['id'].toString()) ?? 0,
+      name: json['name'] ?? '',
+      code: json['code'] ?? '',
+      cities: (json['cities'] as List<dynamic>? ?? [])
+          .map((e) => City.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class City {
+  final int id;
+  final String name;
+  final String code;
+
+  City({
+    required this.id,
+    required this.name,
+    required this.code,
+  });
+
+  factory City.fromJson(Map<String, dynamic> json) {
+    return City(
+      id: int.tryParse(json['id'].toString()) ?? 0,
+      name: json['name'] ?? '',
+      code: json['code'] ?? '',
     );
   }
 }

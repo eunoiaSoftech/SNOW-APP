@@ -357,6 +357,43 @@ class _EnhancedSearchIgloosDialogState
               // Business Name Field
               _buildDialogTextField('Business Name', _businessNameController),
               const SizedBox(height: 16),
+
+              // Show applied filters as chips (only when any filter is active)
+              if (widget.initialFilters != null &&
+                  widget.initialFilters!.hasAnyFilter)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFB6C6E2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      if (widget.initialFilters!.businessName != null)
+                        _buildChip(
+                          "Name: ${widget.initialFilters!.businessName!}",
+                        ),
+                      if (widget.initialFilters!.country != null)
+                        _buildChip(
+                          "Country: ${widget.initialFilters!.country!}",
+                        ),
+                      if (widget.initialFilters!.zone != null)
+                        _buildChip("Zone: ${widget.initialFilters!.zone!}"),
+                      if (widget.initialFilters!.city != null)
+                        _buildChip("City: ${widget.initialFilters!.city!}"),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 16),
               // Dropdowns 1
               Row(
                 children: [
@@ -479,6 +516,22 @@ class _EnhancedSearchIgloosDialogState
         ),
       ),
       style: GoogleFonts.poppins(fontSize: 15),
+    );
+  }
+
+  Widget _buildChip(String text) {
+    return Chip(
+      label: Text(
+        text,
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          color: const Color(0xFF014576),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      backgroundColor: const Color(0xFFDDEBFA),
+      side: const BorderSide(color: Color(0xFF9BB5D8)),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
     );
   }
 

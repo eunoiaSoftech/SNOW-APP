@@ -1,22 +1,23 @@
+import 'package:snow_app/Data/models/New%20Model/SBOL%20MODEL/sbol_model.dart';
 import 'package:snow_app/core/api_client.dart';
-import 'package:snow_app/Data/models/award.dart';
 
-class AwardRepositoryNew {
+class ReferralsRepositorySbol {
   final ApiClient _api = ApiClient.create();
 
-  /// 🔹 FETCH AWARDS
-  Future<AwardListResponse> fetchAwards() async {
-    const endpoint = "router.php";
+  /// ✅ LIST SBOL (correct Postman endpoint)
+  Future<SbolListResponse> fetchSbolRecords(int businessId) async {
+    const endpoint = "router.php"; 
 
     final query = {
-      "endpoint": "award/list",
+      "endpoint": "sbol/list",
+      "business_id": businessId.toString(),
     };
 
     try {
       final (res, code) = await _api.get(endpoint, query: query);
 
       if (code == 200) {
-        return AwardListResponse.fromJson(res.data);
+        return SbolListResponse.fromJson(res.data);
       } else {
         throw Exception("Error: ${res.data}");
       }
@@ -25,24 +26,19 @@ class AwardRepositoryNew {
     }
   }
 
-  /// 🔹 CREATE AWARD
-  Future<Map<String, dynamic>> createAward(String title, String description) async {
+  /// ✅ CREATE SBOL (correct Postman endpoint)
+  Future<Map<String, dynamic>> recordSbol(Map<String, dynamic> body) async {
     const endpoint = "router.php";
 
     final query = {
-      "endpoint": "award/create",
-    };
-
-    final body = {
-      "title": title,
-      "description": description,
+      "endpoint": "sbol/create",
     };
 
     try {
       final (res, code) = await _api.post(
         endpoint,
-        query: query,
         body: body,
+        query: query,
       );
 
       if (code == 200 || code == 201) {

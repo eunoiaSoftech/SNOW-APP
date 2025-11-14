@@ -1,11 +1,13 @@
+
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Models/admin_igloo.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/SBOG%20REPO/recordSbog.dart';
-import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
-import 'package:snow_app/Data/models/New%20Model/sbog_model.dart';
+
 import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
-import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
-import 'package:snow_app/core/result.dart';
+import 'package:snow_app/common%20api/all_business_api.dart';
+import 'package:snow_app/common%20api/all_business_directory_model.dart';
 
 class RecordSBOG extends StatefulWidget {
   const RecordSBOG({Key? key}) : super(key: key);
@@ -27,23 +29,14 @@ class _RecordSBOGState extends State<RecordSBOG>
 
   bool _isLoading = false;
   bool _isDropdownLoading = true;
+  List<BusinessDirectoryItem> _businessItems = [];
 
-  String? _selectedMemberName;
+
   String? _selectedMyIglooMember;
-  int _selectedConnectLevel = 0;
   int? _selectedBusinessId;
-
-  List<String> _myIglooMembers = [];
-  List<BusinessItem> _businessItems = [];
+  List<Igloo> _igloos = [];
+  int? _selectedIglooId;
   FilterData? _currentFilters;
-
-  final List<String> levelWords = [
-    "Very Poor",
-    "Poor",
-    "Average",
-    "Good",
-    "Excellent",
-  ];
 
   late final AnimationController _dotsController;
   late final Animation<int> _dotsAnimation;
@@ -59,59 +52,30 @@ class _RecordSBOGState extends State<RecordSBOG>
     _fetchMembers();
   }
 
-  Future<void> _fetchMembers() async {
-    print('🎯 RECORDSBOG - _fetchMembers called');
-    print('📋 Current Filters: ${_currentFilters?.toQueryParams()}');
-    print('🔍 Has Any Filter: ${_currentFilters?.hasAnyFilter}');
+Future<void> _fetchMembers() async {
+  setState(() => _isDropdownLoading = true);
 
-    setState(() => _isDropdownLoading = true);
-    try {
-      final repo = BusinessRepository();
+  try {
+    final repo = DirectoryBusinessRepository();
 
-      // Determine if we should pass showAll based on filters
-      bool shouldShowAll =
-          _currentFilters == null || !_currentFilters!.hasAnyFilter;
+    final response = await repo.fetchAllActiveBusinesses();
 
-      print('📊 Should Show All: $shouldShowAll');
+    setState(() {
+      _businessItems = response.data;
+      _isDropdownLoading = false;
+    });
 
-      final Result<List<BusinessItem>> result = await repo.fetchBusiness(
-        page: 1,
-        country: _currentFilters?.country ?? '',
-        zone: _currentFilters?.zone ?? '',
-        city: _currentFilters?.city ?? '',
-        search: _currentFilters?.businessName ?? '',
-        showAll: shouldShowAll,
-      );
-
-      if (result is Ok<List<BusinessItem>>) {
-        setState(() {
-          _businessItems = result.value;
-          _myIglooMembers = result.value
-              .map((e) => e.business.name ?? '')
-              .toList();
-
-          _isDropdownLoading = false;
-        });
-        print('✅ Successfully loaded ${_myIglooMembers.length} members');
-        print('📋 Member names: $_myIglooMembers');
-        print('📋 Business items: ${_businessItems.length} items');
-      } else if (result is Err<List<BusinessItem>>) {
-        setState(() => _isDropdownLoading = false);
-        print('❌ Failed to fetch members: ${result.message}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to fetch members: ${result.message}"),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() => _isDropdownLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.redAccent),
-      );
-    }
+  } catch (e) {
+    setState(() => _isDropdownLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Failed to fetch members: $e"),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
+}
+
 
   @override
   void dispose() {
@@ -136,54 +100,99 @@ class _RecordSBOGState extends State<RecordSBOG>
 
             setState(() {
               _currentFilters = filters;
-              _selectedMemberName = null;
               _selectedMyIglooMember = null;
-              _selectedBusinessId = null;
             });
             // Refresh the members list with new filters
             _fetchMembers();
+            _filterIgloosOffline();
           },
         );
       },
     );
   }
 
+  void _filterIgloosOffline() {
+    List<Igloo> filtered = _igloos;
+
+    // BUSINESS NAME FILTER (matches igloo.name)
+    if (_currentFilters?.businessName != null &&
+        _currentFilters!.businessName!.isNotEmpty) {
+      filtered = filtered
+          .where(
+            (i) => i.name.toLowerCase().contains(
+              _currentFilters!.businessName!.toLowerCase(),
+            ),
+          )
+          .toList();
+    }
+
+    // COUNTRY FILTER (correct field: countryName)
+    if (_currentFilters?.country != null &&
+        _currentFilters!.country!.isNotEmpty) {
+      filtered = filtered
+          .where(
+            (i) =>
+                (i.countryName ?? '').toLowerCase() ==
+                _currentFilters!.country!.toLowerCase(),
+          )
+          .toList();
+    }
+
+    // ZONE FILTER (correct field: zoneName)
+    if (_currentFilters?.zone != null && _currentFilters!.zone!.isNotEmpty) {
+      filtered = filtered
+          .where(
+            (i) =>
+                (i.zoneName ?? '').toLowerCase() ==
+                _currentFilters!.zone!.toLowerCase(),
+          )
+          .toList();
+    }
+
+    // CITY FILTER (correct field: cityName)
+    if (_currentFilters?.city != null && _currentFilters!.city!.isNotEmpty) {
+      filtered = filtered
+          .where(
+            (i) =>
+                (i.cityName ?? '').toLowerCase() ==
+                _currentFilters!.city!.toLowerCase(),
+          )
+          .toList();
+    }
+
+    setState(() {
+      _igloos = filtered;
+    });
+  }
+
   void _submitForm() async {
-    if (!_formKey.currentState!.validate() ||
-        _selectedBusinessId == null ||
-        _selectedConnectLevel == 0) {
+    // Trigger red validation errors on fields
+    final isValid = _formKey.currentState!.validate();
+
+    // Check dropdown
+  if (_selectedBusinessId == null) {
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please fill all fields, select a member, and select a star rating.',
-          ),
-        ),
+        const SnackBar(content: Text('Please select a member from My Business')),
       );
       return;
     }
 
+    if (!isValid) return;
+
     setState(() => _isLoading = true);
 
     try {
-      // Use selected member name and business ID
-      String memberName = _selectedMyIglooMember ?? '';
+    final request = {
+  "to_business_id": _selectedBusinessId,
+  "give": _referralController.text.trim(),
+  "telephone": _telephoneController.text.trim(),
+  "email": _emailController.text.trim(),
+  "comment": _commentsController.text.trim(),
+};
 
-      print('📤 Submitting SBOG with:');
-      print('   - Member: $memberName');
-      print('   - Business ID: $_selectedBusinessId');
 
-      final request = SbogRequest(
-        receiverBusinessId: _selectedBusinessId!.toString(),
-        // to: _toController.text.trim(),
-        toMember: memberName,
-        referral: _referralController.text.trim(),
-        telephone: _telephoneController.text.trim(),
-        email: _emailController.text.trim(),
-        level: levelWords[_selectedConnectLevel - 1],
-        comments: _commentsController.text.trim(),
-      );
-
-      final response = await repository.recordSbog(request.toJson());
+      final response = await repository.recordSbog(request);
 
       setState(() => _isLoading = false);
 
@@ -195,13 +204,12 @@ class _RecordSBOGState extends State<RecordSBOG>
           ),
         );
 
-        // Reset everything
+        // Reset all values
         _formKey.currentState?.reset();
         setState(() {
-          _selectedMemberName = null;
+          _selectedIglooId = null;
           _selectedMyIglooMember = null;
-          _selectedBusinessId = null;
-          _selectedConnectLevel = 0;
+
           _toController.clear();
           _referralController.clear();
           _telephoneController.clear();
@@ -251,68 +259,6 @@ class _RecordSBOGState extends State<RecordSBOG>
     );
   }
 
-  Widget _buildConnectLevelStars() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(5, (index) {
-            int starIndex = index + 1;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedConnectLevel = starIndex;
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 11.0),
-                child: Icon(
-                  Icons.star,
-                  size: 36,
-                  color: _selectedConnectLevel >= starIndex
-                      ? Colors.amber
-                      : Colors.grey[300],
-                  shadows: _selectedConnectLevel >= starIndex
-                      ? [const Shadow(color: Colors.orange, blurRadius: 4)]
-                      : [],
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          transitionBuilder: (child, animation) =>
-              FadeTransition(opacity: animation, child: child),
-          child: _selectedConnectLevel > 0
-              ? Container(
-                  key: ValueKey(_selectedConnectLevel),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.amber[100]?.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    levelWords[_selectedConnectLevel - 1],
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF014576),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
-
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
@@ -332,6 +278,7 @@ class _RecordSBOGState extends State<RecordSBOG>
     TextEditingController controller,
     String hint, {
     TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,7 +288,12 @@ class _RecordSBOGState extends State<RecordSBOG>
           controller: controller,
           keyboardType: keyboardType,
           decoration: _inputDecoration(hint),
-          validator: (value) => value!.isEmpty ? 'Required' : null,
+          validator:
+              validator ??
+              (value) {
+                if (value == null || value.isEmpty) return 'Required';
+                return null;
+              },
         ),
         const SizedBox(height: 16),
       ],
@@ -434,7 +386,7 @@ class _RecordSBOGState extends State<RecordSBOG>
                         'Enter recipient name',
                       ),
 
-                      buildLabel('Select a member from My Igloo'),
+                      buildLabel('Select a member from My Business'),
                       _isDropdownLoading
                           ? TextFormField(
                               enabled: false,
@@ -458,75 +410,52 @@ class _RecordSBOGState extends State<RecordSBOG>
                             )
                           : SizedBox(
                               width: double.infinity,
-                              child: DropdownButtonFormField<int>(
-                                isExpanded: true,
-                                value: _selectedBusinessId,
-                                items: _businessItems.map((BusinessItem item) {
-                                  final businessName =
-                                      item.business.name ?? 'Unknown Business';
-                                  return DropdownMenuItem<int>(
-                                    value: item.id,
-                                    child: Text(
-                                      businessName,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.poppins(fontSize: 14),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (int? businessId) {
-                                  debugPrint(
-                                    "Selected business ID: $businessId",
-                                  );
-                                  setState(() {
-                                    _selectedBusinessId = businessId;
-                                    if (businessId != null) {
-                                      final selectedBusiness = _businessItems
-                                          .firstWhere(
-                                            (item) => item.id == businessId,
-                                            orElse: () => BusinessItem(
-                                              id: 0,
-                                              email: '',
-                                              fullName: '',
-                                              displayName: '',
-                                              registeredDate: DateTime.now(),
-                                              status: '',
-                                              business: BusinessDetails(
-                                                name: '',
-                                                contact: '',
-                                                city: '',
-                                                zone: '',
-                                                country: '',
-                                              ),
-                                            ),
-                                          );
-                                      _selectedMyIglooMember =
-                                          selectedBusiness.business.name;
+                              child: SizedBox(
+  width: double.infinity,
+  child: DropdownButtonFormField<int>(
+    isExpanded: true,
+    value: _selectedBusinessId,
+    items: _businessItems.map((item) {
+      final name = item.data.businessName ?? "Unknown Business";
 
-                                      print(
-                                        '🎯 Selected Member: ${selectedBusiness.business.name}',
-                                      );
-                                      print(
-                                        '🎯 Selected Business ID: $businessId',
-                                      );
-                                    } else {
-                                      _selectedMyIglooMember = null;
-                                    }
-                                  });
-                                },
-                                decoration: _inputDecoration('Select a member'),
-                                validator: (value) =>
-                                    value == null ? 'Required' : null,
-                                menuMaxHeight: 200,
-                              ),
+      return DropdownMenuItem<int>(
+        value: item.id,                     // THIS IS to_business_id 👈
+        child: Text(
+          name,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+      );
+    }).toList(),
+    onChanged: (int? id) {
+      setState(() {
+        _selectedBusinessId = id;
+
+        if (id != null) {
+          final selected = _businessItems.firstWhere(
+            (x) => x.id == id,
+          );
+          _selectedMyIglooMember = selected.data.businessName;
+        } else {
+          _selectedMyIglooMember = null;
+        }
+      });
+    },
+    decoration: _inputDecoration('Select a member'),
+    validator: (value) => value == null ? 'Required' : null,
+    menuMaxHeight: 200,
+  ),
+),
+
                             ),
 
                       const SizedBox(height: 16),
 
-                      if (_selectedMemberName != null)
+                      if (_selectedMyIglooMember != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16.0),
                           child: Text(
-                            'Selected: $_selectedMemberName',
+                            'Selected: $_selectedMyIglooMember',
                             style: GoogleFonts.poppins(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -540,10 +469,30 @@ class _RecordSBOGState extends State<RecordSBOG>
                         _telephoneController,
                         '',
                         keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Required';
+                          if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
+                            return 'Enter a valid 10-digit number';
+                          }
+                          return null;
+                        },
                       ),
-                      _buildTextField('Email', _emailController, ''),
-                      // buildLabel('Level of Connect'),
-                      // _buildConnectLevelStars(),
+
+                      _buildTextField(
+                        'Email',
+                        _emailController,
+                        '',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Required';
+                          if (!RegExp(
+                            r'^[\w\-\.]+@([\w\-]+\.)+[\w]{2,4}$',
+                          ).hasMatch(value)) {
+                            return 'Enter a valid email address';
+                          }
+                          return null;
+                        },
+                      ),
+
                       const SizedBox(height: 16),
 
                       buildLabel('Comments'),

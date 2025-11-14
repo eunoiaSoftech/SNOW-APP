@@ -25,7 +25,6 @@
 //   bool _loading = false;
 //     bool _obscurePassword = true;
 
-
 //   @override
 //   Widget build(BuildContext context) {
 //     final screenWidth = MediaQuery.of(context).size.width;
@@ -259,7 +258,7 @@
 //         await prefs.setBool('isLoggedIn', true);
 //         await prefs.setBool('isAdmin', v.user.isAdmin);
 //         await prefs.setString('userRole', v.user.isAdmin ? 'admin' : 'user');
-//         await prefs.setString('userFullName', v.user.fullName); 
+//         await prefs.setString('userFullName', v.user.fullName);
 
 //         Navigator.pushAndRemoveUntil(
 //           context,
@@ -277,10 +276,10 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snow_app/Admin%20Home%20Page/homewapper.dart';
+import 'package:snow_app/common%20api/all_business_api.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/validators.dart';
 import 'package:snow_app/home/dashboard.dart';
@@ -452,8 +451,9 @@ class _LoginScreenState extends State<LoginPage> {
                             padding: const EdgeInsets.only(top: 14.0),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(8),
-                              splashColor:
-                                  const Color(0x335E9BC8), // soft ripple
+                              splashColor: const Color(
+                                0x335E9BC8,
+                              ), // soft ripple
                               onTap: _loading
                                   ? null
                                   : () {
@@ -468,10 +468,13 @@ class _LoginScreenState extends State<LoginPage> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.lock_reset_rounded,
-                                      color: const Color(0xFF5E9BC8)
-                                          .withOpacity(0.85),
-                                      size: 18),
+                                  Icon(
+                                    Icons.lock_reset_rounded,
+                                    color: const Color(
+                                      0xFF5E9BC8,
+                                    ).withOpacity(0.85),
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 6),
                                   ShaderMask(
                                     shaderCallback: (Rect bounds) {
@@ -489,7 +492,8 @@ class _LoginScreenState extends State<LoginPage> {
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
-                                        color: Colors.white, // masked by gradient
+                                        color:
+                                            Colors.white, // masked by gradient
                                         letterSpacing: 0.3,
                                       ),
                                     ),
@@ -545,6 +549,7 @@ class _LoginScreenState extends State<LoginPage> {
       context.showToast('Fix validation errors');
       return;
     }
+
     setState(() => _loading = true);
 
     final res = await _repo.login(
@@ -559,11 +564,53 @@ class _LoginScreenState extends State<LoginPage> {
         context.showToast('Welcome, ${v.user.fullName}');
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
+
+        // Save basic user info
         await prefs.setBool('isLoggedIn', true);
         await prefs.setBool('isAdmin', v.user.isAdmin);
         await prefs.setString('userRole', v.user.isAdmin ? 'admin' : 'user');
         await prefs.setString('userFullName', v.user.fullName);
 
+        // 🔥 Save user_id for SBOR
+        await prefs.setInt('user_id', v.user.id);
+
+        // 🔥 FETCH BUSINESS DIRECTORY TO FIND THIS USER'S BUSINESS
+        print("🔹 Login successful for user: ${v.user.fullName}");
+        print("🔹 Logged-in User ID: ${v.user.id}");
+
+        try {
+          final repo = DirectoryBusinessRepository();
+          final directoryResponse = await repo.fetchAllActiveBusinesses();
+          final businesses = directoryResponse.data;
+
+          print("📌 Total businesses fetched: ${businesses.length}");
+
+          for (var b in businesses) {
+            print("➡ Business ID: ${b.id}, belongs to userId: ${b.userId}");
+          }
+
+          final myBusiness = businesses.firstWhere(
+            (b) => b.userId == v.user.id,
+            orElse: () => throw Exception("No business entry found for user"),
+          );
+
+          print("🎉 Found matching business! BusinessID = ${myBusiness.id}");
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('business_id', myBusiness.id);
+          await prefs.setInt('user_id', v.user.id);
+
+          print("💾 Saved user_id: ${prefs.getInt("user_id")}");
+          print("💾 Saved business_id: ${prefs.getInt("business_id")}");
+        } catch (e) {
+          print("❌ BUSINESS FETCH ERROR: $e");
+        }
+
+        print("🔹 Login successful for user: ${v.user.fullName}");
+        print("🔹 Saving user_id: ${v.user.id}");
+        print("🔹 Looking for business entry for user_id: ${v.user.id}");
+
+        // Navigate to home
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -572,6 +619,7 @@ class _LoginScreenState extends State<LoginPage> {
           ),
           (Route<dynamic> route) => false,
         );
+
         break;
 
       case Err(message: final msg, code: final code):

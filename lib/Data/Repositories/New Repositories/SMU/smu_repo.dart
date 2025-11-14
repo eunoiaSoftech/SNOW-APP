@@ -1,20 +1,23 @@
-import 'package:snow_app/Data/models/New%20Model/SBOG%20MODEL/abs_sbog.dart';
+import 'package:snow_app/Data/models/New%20Model/SMU%20MODEL/smu_model.dart';
 import 'package:snow_app/core/api_client.dart';
 
-class ReferralsRepositorySbog {
+class ReferralsRepositorySmu {
   final ApiClient _api = ApiClient.create();
 
-  /// LIST SBOG
-  Future<SbogListResponse> fetchSbogRecords() async {
+  /// 🔹 LIST SMU  
+  Future<SmuListResponse> fetchSmuRecords({bool showOnlyMy = true}) async {
     const endpoint = "router.php";
-    const query = {
-      "endpoint": "sbog/list",
+
+    final query = {
+      "endpoint": "smu/list",
+      "show_only_my": showOnlyMy.toString(),
     };
 
     try {
       final (res, code) = await _api.get(endpoint, query: query);
+
       if (code == 200) {
-        return SbogListResponse.fromJson(res.data);
+        return SmuListResponse.fromJson(res.data);
       } else {
         throw Exception("Error: ${res.data}");
       }
@@ -23,16 +26,20 @@ class ReferralsRepositorySbog {
     }
   }
 
-  /// CREATE SBOG
-  Future<Map<String, dynamic>> recordSbog(Map<String, dynamic> body) async {
+  /// 🔹 CREATE SMU
+  Future<Map<String, dynamic>> createSmu(Map<String, dynamic> body) async {
     const endpoint = "router.php";
-    const query = {
-      "endpoint": "sbog/create",
+
+    final query = {
+      "endpoint": "smu/create",
     };
 
     try {
-      final (res, code) =
-          await _api.post(endpoint, query: query, body: body);
+      final (res, code) = await _api.post(
+        endpoint,
+        query: query,
+        body: body,
+      );
 
       if (code == 200 || code == 201) {
         return res.data;

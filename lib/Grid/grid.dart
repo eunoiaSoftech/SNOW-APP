@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// Import Screens
+import 'package:snow_app/SnowBusinessOpporuntines/SBOL/abstract_sbol_screen.dart';
 import 'package:snow_app/Grid/AWARD.dart';
 import 'package:snow_app/Grid/UpcomingTrainingsScreen.dart';
-import 'package:snow_app/Grid/myreferral.dart';
-import 'package:snow_app/Grid/recived_referrals.dart';
-import 'package:snow_app/Grid/meetup_create.dart';
-import 'package:snow_app/SnowBusinessOpporuntines/RecordSBOL.dart';
+import 'package:snow_app/SnowBusinessOpporuntines/SBOL/RecordSBOL.dart';
 
 import 'package:snow_app/Snowflakes/Recordsfg.dart';
 import 'package:snow_app/Snowflakes/abstractofsfg.dart';
 
-import 'package:snow_app/SnowBusinessOpporuntines/RecordSBOG.dart';
-import 'package:snow_app/SnowBusinessOpporuntines/AbstractSBOG.dart';
-import 'package:snow_app/SnowBusinessOpporuntines/AbstractSBOR.dart';
+import 'package:snow_app/SnowBusinessOpporuntines/SBOG/RecordSBOG.dart';
+import 'package:snow_app/SnowBusinessOpporuntines/SBOG/AbstractSBOG.dart';
+import 'package:snow_app/SnowBusinessOpporuntines/SBOR/AbstractSBOR.dart';
 
 import 'package:snow_app/SnowMEETups/RecordSMUS.dart';
 import 'package:snow_app/SnowMEETups/AbstractSMUS.dart';
 import 'package:snow_app/core/module_access_service.dart';
+
+import '../SnowBusinessOpporuntines/SBOR/recordSbor.dart';
 
 class GradientGridScreen extends StatefulWidget {
   const GradientGridScreen({super.key});
@@ -101,6 +99,11 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "icon": Icons.business_center_rounded,
         "screen": RecordSBOL(),
       },
+       {
+        "title": "Abstract SBOL",
+        "icon": Icons.business_center_rounded,
+        "screen": AbstractSBOLScreen(),
+      },
       {
         "title": "Abstract of SBOG",
         "icon": Icons.analytics_rounded,
@@ -110,6 +113,11 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "title": "Abstract of SBOR",
         "icon": Icons.insert_chart_rounded,
         "screen": AbstractSBOR(),
+      },
+      {
+        "title": "Record SBOR",
+        "icon": Icons.insert_chart_rounded,
+        "screen": RecordSBOR(),
       },
     ];
 
@@ -144,11 +152,11 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
       //   "icon": Icons.mark_email_read_rounded,
       //   "screen": ReceivedReferralsScreen(),
       // },
-      {
-        "title": "Meetup List",
-        "icon": Icons.ac_unit_rounded,
-        "screen": MeetupListScreen(),
-      },
+      // {
+      //   "title": "Meetup List",
+      //   "icon": Icons.ac_unit_rounded,
+      //   "screen": MeetupListScreen(),
+      // },
     ];
 
     // ---------- FUNCTION TO BUILD GRID ----------

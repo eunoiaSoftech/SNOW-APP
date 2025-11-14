@@ -1,25 +1,50 @@
-class RecordSfgPostResponse {
-  final bool success;
-  final String message;
-  final int recordId;
+class SfgItem {
+  final int id;
+  final int userId;
+  final int opponentUserId;
+  final String amount;
+  final String comment;
+  final String createdAt;
 
-  RecordSfgPostResponse({
-    required this.success,
-    required this.message,
-    required this.recordId,
+  SfgItem({
+    required this.id,
+    required this.userId,
+    required this.opponentUserId,
+    required this.amount,
+    required this.comment,
+    required this.createdAt,
   });
 
-  factory RecordSfgPostResponse.fromJson(Map<String, dynamic> json) {
-    return RecordSfgPostResponse(
-      success: json['success'] ?? false,
-      message: json['message'] ?? '',
-      recordId: json['record_id'] ?? 0,
+  factory SfgItem.fromJson(Map<String, dynamic> json) {
+    return SfgItem(
+      id: json['id'] ?? 0,
+      userId: json['user_id'] ?? 0,
+      opponentUserId: json['opponent_user_id'] ?? 0,
+      amount: json['amount']?.toString() ?? "",
+      comment: json['comment'] ?? "",
+      createdAt: json['created_at'] ?? "",
     );
   }
+}
 
-  Map<String, dynamic> toJson() => {
-        "success": success,
-        "message": message,
-        "record_id": recordId,
-      };
+class SfgListResponse {
+  final bool success;
+  final int count;
+  final List<SfgItem> data;
+
+  SfgListResponse({
+    required this.success,
+    required this.count,
+    required this.data,
+  });
+
+  factory SfgListResponse.fromJson(Map<String, dynamic> json) {
+    return SfgListResponse(
+      success: json['success'] ?? false,
+      count: json['count'] ?? 0,
+      data: (json['data'] as List<dynamic>? ?? [])
+          .map((e) => SfgItem.fromJson(e))
+          .toList(),
+    );
+  }
 }

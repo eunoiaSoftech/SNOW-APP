@@ -65,10 +65,20 @@ class ApiClient {
     return (res, res.statusCode ?? 0);
   }
 
-  Future<(Response, int)> post(String path, {Object? body}) async {
-    final res = await dio.post(path, data: body);
-    return (res, res.statusCode ?? 0);
-  }
+  Future<(Response, int)> post(
+  String path, {
+  Object? body,
+  Map<String, dynamic>? query,
+}) async {
+  final res = await dio.post(
+    path,
+    data: body,
+    queryParameters: query,
+  );
+
+  return (res, res.statusCode ?? 0);
+}
+
 
   Future<(Response, int)> postUri(
     Uri uri, {

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/sgf/sgf_repo.dart';
-import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
-import 'package:snow_app/core/result.dart';
+import 'package:snow_app/common%20api/all_business_api.dart';
+import 'package:snow_app/common%20api/all_business_directory_model.dart';
 
 class SnowflakesRecordSFG extends StatefulWidget {
   const SnowflakesRecordSFG({Key? key}) : super(key: key);
@@ -24,9 +23,10 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
   int? _selectedBusinessId;
   bool _isLoading = false;
   bool _isDropdownLoading = true;
+  
 
   List<String> _members = [];
-  List<BusinessItem> _businessItems = [];
+  List<BusinessDirectoryItem> _businessItems = [];
   FilterData? _currentFilters;
 
   late final AnimationController _dotsController;
@@ -53,54 +53,24 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
   }
 
   Future<void> _fetchMembers() async {
-    print('🎯 RECORDSFG - _fetchMembers called');
-    print('📋 Current Filters: ${_currentFilters?.toQueryParams()}');
-    print('🔍 Has Any Filter: ${_currentFilters?.hasAnyFilter}');
-
     setState(() => _isDropdownLoading = true);
 
     try {
-      final repo = BusinessRepository();
+      final repo = DirectoryBusinessRepository();
 
-      // Determine if we should pass showAll based on filters
-      bool shouldShowAll =
-          _currentFilters == null || !_currentFilters!.hasAnyFilter;
+      final response = await repo.fetchAllActiveBusinesses();
 
-      print('📊 Should Show All: $shouldShowAll');
-
-      final Result<List<BusinessItem>> result = await repo.fetchBusiness(
-        page: 1,
-        country: _currentFilters?.country ?? '',
-        zone: _currentFilters?.zone ?? '',
-        city: _currentFilters?.city ?? '',
-        search: _currentFilters?.businessName ?? '',
-        showAll: shouldShowAll,
-      );
-
-      if (result is Ok<List<BusinessItem>>) {
-        setState(() {
-          _businessItems = result.value;
-          _members = result.value.map((e) => e.business.name ?? '').toList();
-
-          _isDropdownLoading = false;
-        });
-        print('✅ Successfully loaded ${_members.length} members');
-        print('📋 Member names: $_members');
-        print('📋 Business items: ${_businessItems.length} items');
-      } else if (result is Err<List<BusinessItem>>) {
-        setState(() => _isDropdownLoading = false);
-        print('❌ Failed to fetch members: ${result.message}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to fetch members: ${result.message}"),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+      setState(() {
+        _businessItems = response.data;
+        _isDropdownLoading = false;
+      });
     } catch (e) {
       setState(() => _isDropdownLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.redAccent),
+        SnackBar(
+          content: Text("Failed to fetch members: $e"),
+          backgroundColor: Colors.redAccent,
+        ),
       );
     }
   }
@@ -178,7 +148,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
       return;
     }
 
-    // Check if a member is selected from dropdown
+    // Ensure user selects a business
     if (_selectedBusinessId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -191,49 +161,36 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
     setState(() => _isLoading = true);
 
     try {
-      final repo = ReferralsRepositorySfg();
+      final repo = SfgRepository();
 
-      // Use selected member name from dropdown
-      String memberName = _selectedMyIglooMember ?? '';
+      print("📤 Creating SFG...");
+      print("   opponent_user_id: $_selectedBusinessId");
+      print("   amount: ${_amountController.text.trim()}");
+      print("   comment: ${_commentsController.text.trim()}");
 
-      print('📤 Submitting SFG with:');
-      print('   - Member: $memberName');
-      print('   - Business ID: $_selectedBusinessId');
-
-      final response = await repo.recordSfg(
-        toMember: memberName,
-        giverBusinessId: _selectedBusinessId!,
+      final response = await repo.createSfg(
+        opponentUserId: _selectedBusinessId!,
         amount: _amountController.text.trim(),
-        remarks: _commentsController.text.trim(),
+        comment: _commentsController.text.trim(),
       );
 
-      if (response.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              response.message,
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.green,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            response["message"] ?? "Created successfully",
+            style: const TextStyle(color: Colors.white),
           ),
-        );
+          backgroundColor: Colors.green,
+        ),
+      );
 
-        _formKey.currentState!.reset();
-        _toController.clear();
-        _amountController.clear();
-        _commentsController.clear();
-        setState(() {
-          _selectedMyIglooMember = null;
-          _selectedBusinessId = null;
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed: ${response.message}"),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+      _formKey.currentState!.reset();
+      _amountController.clear();
+      _commentsController.clear();
+      setState(() {
+        _selectedBusinessId = null;
+        _selectedMyIglooMember = null;
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.redAccent),
@@ -346,9 +303,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                                 animation: _dotsAnimation,
                                 builder: (context, child) {
                                   return Text(
-                                    "Loading" +
-                                        "." * _dotsAnimation.value +
-                                        " " * (3 - _dotsAnimation.value),
+                                    "Loading${"." * _dotsAnimation.value}${" " * (3 - _dotsAnimation.value)}",
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       color: Colors.grey.shade600,
@@ -362,53 +317,30 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                               child: DropdownButtonFormField<int>(
                                 isExpanded: true,
                                 value: _selectedBusinessId,
-                                items: _businessItems.map((BusinessItem item) {
-                                  final businessName =
-                                      item.business.name ?? 'Unknown Business';
+                                items: _businessItems.map((item) {
+                                  final name =
+                                      item.data.businessName ??
+                                      "Unknown Business";
+                                      
+
                                   return DropdownMenuItem<int>(
-                                    value: item.id,
+                                    value: item.id, // THIS IS to_business_id 👈
                                     child: Text(
-                                      businessName,
+                                      name,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.poppins(fontSize: 14),
                                     ),
                                   );
                                 }).toList(),
-                                onChanged: (int? businessId) {
-                                  debugPrint(
-                                    "Selected business ID: $businessId",
-                                  );
+                                onChanged: (int? id) {
                                   setState(() {
-                                    _selectedBusinessId = businessId;
-                                    if (businessId != null) {
-                                      final selectedBusiness = _businessItems
-                                          .firstWhere(
-                                            (item) => item.id == businessId,
-                                            orElse: () => BusinessItem(
-                                              id: 0,
-                                              email: '',
-                                              fullName: '',
-                                              displayName: '',
-                                              registeredDate: DateTime.now(),
-                                              status: '',
-                                              business: BusinessDetails(
-                                                name: '',
-                                                contact: '',
-                                                city: '',
-                                                zone: '',
-                                                country: '',
-                                              ),
-                                            ),
-                                          );
-                                      _selectedMyIglooMember =
-                                          selectedBusiness.business.name;
+                                    _selectedBusinessId = id;
 
-                                      print(
-                                        '🎯 Selected Member: ${selectedBusiness.business.name}',
-                                      );
-                                      print(
-                                        '🎯 Selected Business ID: $businessId',
-                                      );
+                                    if (id != null) {
+                                      final selected = _businessItems
+                                          .firstWhere((x) => x.id == id);
+                                      _selectedMyIglooMember =
+                                          selected.data.businessName;
                                     } else {
                                       _selectedMyIglooMember = null;
                                     }
@@ -420,6 +352,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                                 menuMaxHeight: 200,
                               ),
                             ),
+
                       const SizedBox(height: 16),
                       buildLabel("Snowflakes Amount"),
                       TextFormField(

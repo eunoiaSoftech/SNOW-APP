@@ -1,25 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:snow_app/Data/Repositories/New%20Repositories/SBOG%20REPO/abstractSbor.dart';
-import 'package:snow_app/Data/models/New%20Model/abs_sbor.dart';
+import 'package:snow_app/Data/Repositories/New Repositories/SBOL REPO/sbol_repo.dart';
+import 'package:snow_app/Data/models/New Model/SBOL MODEL/sbol_model.dart';
 
-class AbstractSBOR extends StatefulWidget {
-  const AbstractSBOR({Key? key}) : super(key: key);
+class AbstractSBOLScreen extends StatefulWidget {
+  const AbstractSBOLScreen({Key? key}) : super(key: key);
 
   @override
-  _AbstractSBORState createState() => _AbstractSBORState();
+  _AbstractSBOLScreenState createState() => _AbstractSBOLScreenState();
 }
 
-class _AbstractSBORState extends State<AbstractSBOR> {
-  final ReferralsRepositorySbor _repo = ReferralsRepositorySbor();
+class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
+  final ReferralsRepositorySbol _repo = ReferralsRepositorySbol();
 
   DateTime? startDate;
   DateTime? endDate;
   bool isLoading = false;
   String? error;
-  List<SborAbsRecord> records = [];
-  List<SborAbsRecord> filteredRecords = [];
+  List<SbolItem> records = [];
 
   @override
   void initState() {
@@ -34,22 +32,20 @@ class _AbstractSBORState extends State<AbstractSBOR> {
     });
 
     try {
-      final response = await _repo.fetchSborRecords(
-        startDate: startDate,
-        endDate: endDate,
-      );
+      /// NOTE ✔ Backend does not accept date range yet.
+      /// So we fetch all records only.
+      final response = await _repo.fetchSbolRecords(0);
+
       setState(() {
-        records = response.records;
-        filteredRecords = List.from(records);
+        records = response.data;
       });
+
     } catch (e) {
       setState(() {
         error = e.toString();
       });
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 
@@ -66,6 +62,9 @@ class _AbstractSBORState extends State<AbstractSBOR> {
               primary: Color(0xFF014576),
               onPrimary: Colors.white,
               onSurface: Colors.black87,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: Color(0xFF014576)),
             ),
           ),
           child: child!,
@@ -84,31 +83,14 @@ class _AbstractSBORState extends State<AbstractSBOR> {
     }
   }
 
-  void _applyFilter() {
-    setState(() {
-      if (startDate == null && endDate == null) {
-        filteredRecords = List.from(records);
-      } else {
-        filteredRecords = records.where((record) {
-          DateTime? d;
-          try {
-            d = DateTime.parse(record.createdAt);
-          } catch (_) {}
-          if (d == null) return false;
-          if (startDate != null && d.isBefore(startDate!)) return false;
-          if (endDate != null && d.isAfter(endDate!)) return false;
-          return true;
-        }).toList();
-      }
-    });
-  }
+  void _applyFilter() => _fetchRecords();
 
   void _resetFilter() {
     setState(() {
       startDate = null;
       endDate = null;
-      filteredRecords = List.from(records);
     });
+    _fetchRecords();
   }
 
   @override
@@ -138,6 +120,7 @@ class _AbstractSBORState extends State<AbstractSBOR> {
             ],
           ),
         ),
+
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
@@ -145,7 +128,7 @@ class _AbstractSBORState extends State<AbstractSBOR> {
             elevation: 0,
             centerTitle: true,
             title: Text(
-              "Abstract SBOR",
+              "Abstract SBOL",
               style: GoogleFonts.poppins(
                 color: const Color(0xFF014576),
                 fontWeight: FontWeight.w600,
@@ -154,25 +137,25 @@ class _AbstractSBORState extends State<AbstractSBOR> {
             ),
             iconTheme: const IconThemeData(color: Color(0xFF014576)),
           ),
-          body: isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : error != null
-              ? Center(child: Text("Error: $error"))
-              : Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    child: Column(
-                      children: [
-                        _buildDateFilterCard(context),
-                        const SizedBox(height: 14),
-                        Expanded(child: _buildRecordsCard()),
-                      ],
-                    ),
+          body: Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDateFilterCard(context),
+                      const SizedBox(height: 14),
+                      Expanded(child: _buildRecordsSection()),
+                    ],
                   ),
                 ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -186,7 +169,7 @@ class _AbstractSBORState extends State<AbstractSBOR> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _cardTitle("Date Filters", Icons.filter_alt),
+            _cardTitle("Select date range to view slips", Icons.filter_alt),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -222,7 +205,6 @@ class _AbstractSBORState extends State<AbstractSBOR> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        textStyle: GoogleFonts.poppins(fontSize: 13),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -240,7 +222,6 @@ class _AbstractSBORState extends State<AbstractSBOR> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        textStyle: GoogleFonts.poppins(fontSize: 13),
                       ),
                     ),
                   ],
@@ -253,7 +234,8 @@ class _AbstractSBORState extends State<AbstractSBOR> {
     );
   }
 
-  Widget _buildDatePicker(String label, DateTime? value, VoidCallback onTap) {
+  Widget _buildDatePicker(
+      String label, DateTime? value, VoidCallback onTap) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -276,18 +258,14 @@ class _AbstractSBORState extends State<AbstractSBOR> {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Color(0xFF014576),
-                ),
+                const Icon(Icons.calendar_today,
+                    size: 16, color: Color(0xFF014576)),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
                     value == null
-                        ? "Select"
+                        ? "dd-mm-yyyy"
                         : "${value.day}-${value.month}-${value.year}",
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -302,32 +280,49 @@ class _AbstractSBORState extends State<AbstractSBOR> {
     );
   }
 
-  Widget _buildRecordsCard() {
+  Widget _buildRecordsSection() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (error != null) {
+      return Center(
+        child: Text(
+          "Error: $error",
+          style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 14),
+        ),
+      );
+    }
+    if (records.isEmpty) {
+      return Center(
+        child: Text(
+          "No data available in table",
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[600],
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: _cardDecoration(),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            _cardTitle("Snowflakes Records", Icons.receipt_long),
+            _cardTitle("SBOL Records", Icons.receipt_long),
             const SizedBox(height: 14),
-            if (filteredRecords.isEmpty)
-              Center(
-                child: Text(
-                  "No data available in table",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ),
-            for (var record in filteredRecords)
+
+            for (var record in records)
               _buildRecordItem(
-                date: _formatDate(record.createdAt),
-                sogForm: record.toMember,
-                comment: record.comments,
-                connectivity: record.level,
-                amount: record.referral,
+                // date: record.toBusinessId ?? "",
+                sbolTo: record.toBusinessId.toString(),
+                referral: record.referral,
+                phone: record.telephone,
+                email: record.email,
+                comment: record.comment,
+                level: record.level,
               ),
           ],
         ),
@@ -335,21 +330,14 @@ class _AbstractSBORState extends State<AbstractSBOR> {
     );
   }
 
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd-MMM-yy hh:mm a').format(date);
-    } catch (e) {
-      return dateStr;
-    }
-  }
-
   Widget _buildRecordItem({
-    required String date,
-    required String sogForm,
+    // required String date,
+    required String sbolTo,
+    required String referral,
+    required String phone,
+    required String email,
     required String comment,
-    required String connectivity,
-    required String amount,
+    required int level,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -357,57 +345,45 @@ class _AbstractSBORState extends State<AbstractSBOR> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(2, 3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: const Offset(2, 3),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            date,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
-          ),
+          
+
+          Text("SBOL TO: $sbolTo",
+              style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87)),
           const SizedBox(height: 6),
-          Text(
-            "Snowflakes Given To: $sogForm",
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "Comments: $comment",
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Connectivity: $connectivity",
-                style: GoogleFonts.poppins(
+
+          Text("Referral: $referral",
+              style: GoogleFonts.poppins(
+                  fontSize: 13, color: Colors.grey[700])),
+          Text("Phone: $phone",
+              style: GoogleFonts.poppins(
+                  fontSize: 13, color: Colors.grey[700])),
+          Text("Email: $email",
+              style: GoogleFonts.poppins(
+                  fontSize: 13, color: Colors.grey[700])),
+          Text("Comments: $comment",
+              style: GoogleFonts.poppins(
+                  fontSize: 13, color: Colors.grey[700])),
+          const SizedBox(height: 4),
+
+          Text("Lead Level: $level ⭐",
+              style: GoogleFonts.poppins(
                   fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.blueGrey[700],
-                ),
-              ),
-              Text(
-                amount,
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
-                ),
-              ),
-            ],
-          ),
+                  fontWeight: FontWeight.w600,
+                  color: Colors.amber[800])),
         ],
       ),
     );
@@ -434,7 +410,10 @@ class _AbstractSBORState extends State<AbstractSBOR> {
         const SizedBox(width: 8),
         Text(
           title,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
         ),
       ],
     );

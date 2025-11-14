@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:snow_app/Data/Repositories/New%20Repositories/Meetup/Smus.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/SMU/smu_repo.dart';
 
 class AbstractSMUS extends StatefulWidget {
   const AbstractSMUS({Key? key}) : super(key: key);
@@ -13,7 +13,7 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
   DateTime? startDate;
   DateTime? endDate;
 
-  final ReferralsRepositorysums _repo = ReferralsRepositorysums();
+  final ReferralsRepositorySmu _repo = ReferralsRepositorySmu();
   List<Map<String, dynamic>> allRecords = [];
   List<Map<String, dynamic>> filteredRecords = [];
   bool isLoading = false;
@@ -32,40 +32,40 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
     _fetchSmusData();
   }
 
-  Future<void> _fetchSmusData() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
+Future<void> _fetchSmusData() async {
+  setState(() {
+    isLoading = true;
+    errorMessage = null;
+  });
 
-    try {
-      final response = await _repo.fetchSmusRecords();
-      if (response.success && response.records.isNotEmpty) {
-        // Convert to your existing UI record format
-        allRecords = response.records.map((r) {
-          return {
-            "date": DateTime.tryParse(r.date) ?? DateTime.now(),
-            "metWith": r.toMember,
-            "abstract": r.abstractText,
-            "collaboration": r.collabType,
-            "mode": r.mode,
-            "nextFollowUp": DateTime.tryParse(r.followupDate) ?? DateTime.now(),
-          };
-        }).toList();
+  try {
+    final response = await _repo.fetchSmuRecords();
 
-        filteredRecords = List.from(allRecords);
-      } else {
-        errorMessage = "No data available in table.";
-      }
-    } catch (e) {
-      errorMessage = "Failed to fetch data. Please try again later.";
-      debugPrint("❌ SMUS Fetch Error: $e");
+    if (response.success && response.data.isNotEmpty) {
+      allRecords = response.data.map((r) {
+        return {
+          "date": DateTime.tryParse(r.date) ?? DateTime.now(),
+          "metWith": r.toName,
+          "abstract": r.abstractText,
+          "collaboration": r.collaborationType,
+          "mode": r.mode,
+          "nextFollowUp": DateTime.tryParse(r.followupDate) ?? DateTime.now(),
+        };
+      }).toList();
+
+      filteredRecords = List.from(allRecords);
+    } else {
+      errorMessage = "No data available in table.";
     }
-
-    setState(() {
-      isLoading = false;
-    });
+  } catch (e) {
+    errorMessage = "Failed to fetch data. Please try again later.";
+    debugPrint("❌ SMUS Fetch Error: $e");
   }
+
+  setState(() {
+    isLoading = false;
+  });
+}
 
   Future<void> _pickDate(BuildContext context, bool isStart) async {
     DateTime? picked = await showDatePicker(

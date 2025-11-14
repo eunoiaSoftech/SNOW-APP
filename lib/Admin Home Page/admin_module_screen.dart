@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Models/admin_module.dart';
 import 'package:snow_app/Data/Repositories/admin_repository.dart';
 import 'package:snow_app/core/app_toast.dart';
@@ -17,6 +20,7 @@ class _AdminModuleScreenState extends State<AdminModuleScreen>
 
   final List<String> _userTypes = ['elite', 'visitor'];
   late final TabController _tabs;
+  String? _bulkSelected;
 
   bool _loading = false;
   final Map<String, List<AdminModule>> _modulesByUserType = {};
@@ -184,27 +188,121 @@ class _AdminModuleScreenState extends State<AdminModuleScreen>
     final selected = await showModalBottomSheet<AdminModule>(
       context: context,
       builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const ListTile(
-                title: Text('Enable Module'),
-                subtitle: Text('Choose a module to enable for this user type'),
-              ),
-              ...available.map(
-                (module) => ListTile(
-                  leading: const Icon(Icons.extension),
-                  title: Text(module.name),
-                  subtitle: Text(
-                    module.description.isEmpty
-                        ? module.slug
-                        : module.description,
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.75),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(26),
+              topRight: Radius.circular(26),
+            ),
+            border: Border.all(color: Colors.white70),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Sheet Header
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  onTap: () => Navigator.pop(context, module),
-                ),
+
+                  Text(
+                    "Enable Module",
+                    style: GoogleFonts.poppins(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF014576),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "Choose a module to enable for this user type",
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Module List
+                  ...available.map((module) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: Colors.white.withOpacity(0.65),
+                        border: Border.all(color: Colors.white70),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () => Navigator.pop(context, module),
+                        child: Row(
+                          children: [
+                            // Icon
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF5E9BC8).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.extension,
+                                color: Color(0xFF5E9BC8),
+                                size: 20,
+                              ),
+                            ),
+
+                            const SizedBox(width: 14),
+
+                            // Name + description
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    module.name,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF2E4A64),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    module.description.isEmpty
+                                        ? module.slug
+                                        : module.description,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.5,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+
+                  const SizedBox(height: 10),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
@@ -218,115 +316,236 @@ class _AdminModuleScreenState extends State<AdminModuleScreen>
   @override
   Widget build(BuildContext context) {
     final currentUserType = _userTypes[_tabs.index];
+    const Color primaryBlue = Color(0xFF5E9BC8);
+    const Color textColor = Color(0xFF2E4A64);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Module Access Management'),
-        bottom: TabBar(
-          controller: _tabs,
-          tabs: _userTypes
-              .map((type) => Tab(text: type.toUpperCase()))
-              .toList(),
-        ),
-      ),
+      backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showModulePicker(currentUserType),
-        child: const Icon(Icons.add),
+
+        backgroundColor: Colors.white.withOpacity(0.85), // soft white
+        elevation: 2, // very light shadow
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16), // softer shape
+          side: BorderSide(
+            color: Colors.white.withOpacity(0.7), // light white border
+          ),
+        ),
+
+        child: const Icon(
+          Icons.add,
+          color: Color(0xFF014576), // your theme blue
+          size: 26,
+        ),
       ),
+
       body: _loading && !_modulesByUserType.containsKey(currentUserType)
           ? const Center(child: CircularProgressIndicator())
           : Stack(
-        children: [
-          Positioned.fill(
-            child: Stack(
-              fit: StackFit.expand,
               children: [
-                Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(0xAA97DCEB),
-                        Color(0xAA5E9BC8),
-                        Color(0xAA97DCEB),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                Positioned.fill(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xAA97DCEB),
+                              Color(0xAA5E9BC8),
+                              Color(0xAA97DCEB),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 🌟 CUSTOM HEADER (REPLACES APPBAR)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 20), // Status bar spacing
+                    SafeArea(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: Color(0xFF014576),
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+
+                              Expanded(
+                                child: Text(
+                                  "Module Access Management",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: false,
+                                  style: GoogleFonts.poppins(
+                                    color: const Color(0xFF014576),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // TAB BAR
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.45),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(30),
+                            topRight: Radius.circular(30),
+                          ),
+                        ),
+                        child: _loading
+                            ? const Center(child: CircularProgressIndicator())
+                            : Column(
+                                children: [
+                                  const SizedBox(height: 16),
+
+                                  Container(
+                                    height: 48,
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.white30),
+                                    ),
+                                    child: TabBar(
+                                      controller: _tabs,
+                                      labelColor: textColor,
+                                      unselectedLabelColor: Colors.grey[600],
+                                      indicatorColor: Colors.transparent,
+                                      dividerColor: Colors.transparent,
+                                      indicator: UnderlineTabIndicator(
+                                        borderSide: BorderSide(
+                                          color: primaryBlue.withOpacity(0.7),
+                                          width: 2,
+                                        ),
+                                        insets: const EdgeInsets.symmetric(
+                                          horizontal: 40,
+                                        ),
+                                      ),
+                                      labelStyle: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14.5,
+                                      ),
+                                      tabs: _userTypes
+                                          .map(
+                                            (type) =>
+                                                Tab(text: type.toUpperCase()),
+                                          )
+                                          .toList(),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.only(top: 200),
+                  child: TabBarView(
+                    controller: _tabs,
+
+                    children: _userTypes.map((userType) {
+                      final modules = _modulesByUserType[userType];
+                      final states = _moduleStates[userType];
+                      if (modules == null || states == null) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (modules.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('No modules assigned yet.'),
+                                const SizedBox(height: 12),
+                                ElevatedButton.icon(
+                                  onPressed: () => _showModulePicker(userType),
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Assign Module'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      final enabledModules = modules
+                          .where((m) => states[m.id] ?? m.isEnabled)
+                          .toList();
+                      final disabledModules = modules
+                          .where((m) => !(states[m.id] ?? m.isEnabled))
+                          .toList();
+
+                      return RefreshIndicator(
+                        onRefresh: () => _loadModules(userType),
+                        child: ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            _buildBulkActions(
+                              userType,
+                              enabledModules,
+                              disabledModules,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildModuleSection(
+                              title:
+                                  'Enabled Modules (${enabledModules.length})',
+                              modules: enabledModules,
+                              states: states,
+                              userType: userType,
+                              emptyText: 'No modules enabled.',
+                            ),
+                            const SizedBox(height: 24),
+                            _buildModuleSection(
+                              title:
+                                  'Disabled Modules (${disabledModules.length})',
+                              modules: disabledModules,
+                              states: states,
+                              userType: userType,
+                              emptyText: 'No modules disabled.',
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ],
             ),
-          ),
-
-              TabBarView(
-                  controller: _tabs,
-                  children: _userTypes.map((userType) {
-                    final modules = _modulesByUserType[userType];
-                    final states = _moduleStates[userType];
-                    if (modules == null || states == null) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (modules.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('No modules assigned yet.'),
-                              const SizedBox(height: 12),
-                              ElevatedButton.icon(
-                                onPressed: () => _showModulePicker(userType),
-                                icon: const Icon(Icons.add),
-                                label: const Text('Assign Module'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-              
-                    final enabledModules = modules
-                        .where((m) => states[m.id] ?? m.isEnabled)
-                        .toList();
-                    final disabledModules = modules
-                        .where((m) => !(states[m.id] ?? m.isEnabled))
-                        .toList();
-              
-                    return RefreshIndicator(
-                      onRefresh: () => _loadModules(userType),
-                      child: ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          _buildBulkActions(
-                            userType,
-                            enabledModules,
-                            disabledModules,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildModuleSection(
-                            title: 'Enabled Modules (${enabledModules.length})',
-                            modules: enabledModules,
-                            states: states,
-                            userType: userType,
-                            emptyText: 'No modules enabled.',
-                          ),
-                          const SizedBox(height: 24),
-                          _buildModuleSection(
-                            title: 'Disabled Modules (${disabledModules.length})',
-                            modules: disabledModules,
-                            states: states,
-                            userType: userType,
-                            emptyText: 'No modules disabled.',
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-            ],
-          ),
     );
   }
 
@@ -335,28 +554,136 @@ class _AdminModuleScreenState extends State<AdminModuleScreen>
     List<AdminModule> enabled,
     List<AdminModule> disabled,
   ) {
+    const activeColor = Colors.white;
+    const borderColor = Color(0xFFCBD5E1); // soft grey border
+    const textColor = Color(0xFF2E4A64);
+
+    final bool enableActive = _bulkSelected == "enable";
+    final bool disableActive = _bulkSelected == "disable";
+
     return Row(
       children: [
+        // ===================== ENABLE ALL BUTTON =====================
         Expanded(
-          child: ElevatedButton.icon(
+          child: ElevatedButton(
             onPressed: disabled.isEmpty
                 ? null
-                : () => _bulkUpdate(userType, disabled, true),
-            icon: const Icon(Icons.playlist_add_check),
-            label: const Text('Enable All'),
+                : () {
+                    setState(() => _bulkSelected = "enable");
+                    _bulkUpdate(userType, disabled, true);
+                  },
+
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: enableActive
+                  ? activeColor
+                  : Colors.white.withOpacity(0.7),
+              foregroundColor: textColor,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(
+                  color: enableActive
+                      ? borderColor
+                      : borderColor.withOpacity(0.6),
+                ),
+              ),
+            ),
+
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.playlist_add_check,
+                  size: 18,
+                  color: textColor.withOpacity(0.8),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "Enable All",
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+
         const SizedBox(width: 12),
+
+        // ===================== DISABLE ALL BUTTON =====================
         Expanded(
-          child: OutlinedButton.icon(
+          child: ElevatedButton(
             onPressed: enabled.isEmpty
                 ? null
-                : () => _bulkUpdate(userType, enabled, false),
-            icon: const Icon(Icons.block),
-            label: const Text('Disable All'),
+                : () {
+                    setState(() => _bulkSelected = "disable");
+                    _bulkUpdate(userType, enabled, false);
+                  },
+
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: disableActive
+                  ? activeColor
+                  : Colors.white.withOpacity(0.7),
+              foregroundColor: textColor,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(
+                  color: disableActive
+                      ? borderColor
+                      : borderColor.withOpacity(0.6),
+                ),
+              ),
+            ),
+
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.block, size: 18, color: textColor.withOpacity(0.7)),
+                const SizedBox(width: 6),
+                Text(
+                  "Disable All",
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget glassModuleCard({required Widget child}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: Colors.white.withOpacity(0.8),
+        border: Border.all(color: Colors.white70, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blueGrey.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Padding(padding: const EdgeInsets.all(16), child: child),
+        ),
+      ),
     );
   }
 
@@ -367,34 +694,105 @@ class _AdminModuleScreenState extends State<AdminModuleScreen>
     required String userType,
     required String emptyText,
   }) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            if (modules.isEmpty)
-              Text(emptyText)
-            else
-              ...modules.map((module) {
-                final enabled = states[module.id] ?? module.isEnabled;
-                return SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(module.name),
-                  subtitle: Text(
-                    module.description.isEmpty
-                        ? module.slug
-                        : module.description,
-                  ),
-                  value: enabled,
-                  onChanged: (value) => _toggleModule(userType, module, value),
-                );
-              }),
-          ],
-        ),
+    const textColor = Color(0xFF2E4A64);
+
+    return glassModuleCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 15.5,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          if (modules.isEmpty)
+            Text(
+              emptyText,
+              style: GoogleFonts.poppins(fontSize: 13.5, color: textColor),
+            )
+          else
+            ...modules.map((module) {
+              final enabled = states[module.id] ?? module.isEnabled;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: Colors.white.withOpacity(0.65),
+                  border: Border.all(color: Colors.white70),
+                ),
+                child: Row(
+                  children: [
+                    // 🔹 Icon (chip-style)
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5E9BC8).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.extension,
+                        color: const Color(0xFF5E9BC8),
+                        size: 20,
+                      ),
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    // 🔹 Texts
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            module.name,
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14.5,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            module.description.isEmpty
+                                ? module.slug
+                                : module.description,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.5,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // 🔹 Toggle
+                    Switch(
+                      value: enabled,
+                      activeColor: const Color(0xFF5E9BC8), // BLUE THUMB
+                      activeTrackColor: const Color(
+                        0xFF5E9BC8,
+                      ).withOpacity(0.4), // BLUE TRACK
+                      inactiveThumbColor: Colors.white,
+                      inactiveTrackColor: Colors.grey.withOpacity(0.35),
+                      onChanged: (value) {
+                        _toggleModule(userType, module, value);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
       ),
     );
   }

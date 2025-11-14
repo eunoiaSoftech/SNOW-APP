@@ -21,22 +21,29 @@ class AuthRepository {
     return Err(msg, code: code);
   }
 
-  Future<Result<LoginResponse>> login({
-    required String email,
-    required String password,
-  }) async {
-    final (res, code) = await _api.post(
-      '/auth/login',
-      body: {'email': email, 'password': password},
-    );
-    if (code == 200) {
-      final lr = LoginResponse.fromJson(res.data);
-      await _api.storage.saveToken(lr.token);
-      return Ok(lr);
-    }
-    final msg = _extractError(res);
-    return Err(msg, code: code);
+Future<Result<LoginResponse>> login({
+  required String email,
+  required String password,
+}) async {
+  final uri = _routerBase.replace(queryParameters: {
+    'endpoint': 'auth/login',
+  });
+
+  final (res, code) = await _api.postUri(
+    uri,
+    body: {'email': email, 'password': password},
+  );
+
+  if (code == 200) {
+    final lr = LoginResponse.fromJson(res.data);
+    await _api.storage.saveToken(lr.token);
+    return Ok(lr);
   }
+
+  final msg = _extractError(res);
+  return Err(msg, code: code);
+}
+
 
   Future<Result<void>> requestPasswordOtp(String email) async {
     final uri = _routerBase.replace(queryParameters: {'endpoint': 'auth/forgot-password'});
