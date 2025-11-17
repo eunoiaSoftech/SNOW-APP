@@ -159,18 +159,44 @@ class _SignUpPageState extends State<SignUpPage> {
         );
         break;
       case Err(message: final msg, code: final code):
-        final suffix = code > 0 ? ' ($code)' : '';
-        context.showToast('Signup failed$suffix: $msg', bg: Colors.red);
+
+        // Clean backend noise (like 401, 500, etc.)
+        final cleanMsg = msg
+            .replaceAll(RegExp(r"\b\d{3}\b"), "") // remove status codes
+            .replaceAll("Exception:", "")
+            .replaceAll("Error:", "")
+            .trim();
+
+        String userMsg;
+
+        // Custom readable messages based on code
+        if (code == 401) {
+          userMsg =
+              "Unauthorized request. Please try again.";
+        } else if (code == 500) {
+          userMsg =
+              "Server is facing an issue right now. Please try again later.";
+        } else if (code == 422) {
+          userMsg =
+              "Some required details look incorrect. Please review and try again.";
+        } else {
+          // fallback: use backend message IF clean
+          userMsg = cleanMsg.isNotEmpty
+              ? cleanMsg
+              : "Something went wrong. Please try again.";
+        }
+
+        context.showToast(userMsg, bg: Colors.red);
         break;
     }
   }
 
   InputDecoration _fieldDecoration(String label) => InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
-      );
+    labelText: label,
+    border: const OutlineInputBorder(
+      borderRadius: BorderRadius.all(Radius.circular(12)),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -265,8 +291,9 @@ class _SignUpPageState extends State<SignUpPage> {
                                     .toList(),
                                 onChanged: (value) =>
                                     setState(() => _selectedCategory = value),
-                                decoration:
-                                    _fieldDecoration('Business Category *'),
+                                decoration: _fieldDecoration(
+                                  'Business Category *',
+                                ),
                                 validator: (value) {
                                   if (_categories.isEmpty) {
                                     return 'Business categories unavailable';
@@ -280,8 +307,9 @@ class _SignUpPageState extends State<SignUpPage> {
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _contactController,
-                                decoration:
-                                    _fieldDecoration('Contact Number *'),
+                                decoration: _fieldDecoration(
+                                  'Contact Number *',
+                                ),
                                 keyboardType: TextInputType.phone,
                                 validator: (v) =>
                                     Validators.required(v, label: 'Contact'),
@@ -312,7 +340,9 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                               const SizedBox(height: 16),
                               _LocationDropdown<ZoneOption>(
-                                items: _selectedCountry?.zones ?? const <ZoneOption>[],
+                                items:
+                                    _selectedCountry?.zones ??
+                                    const <ZoneOption>[],
                                 label: 'Zone *',
                                 value: _selectedZone,
                                 display: (z) => z.name,
@@ -336,7 +366,9 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                               const SizedBox(height: 16),
                               _LocationDropdown<StateOption>(
-                                items: _selectedZone?.states ?? const <StateOption>[],
+                                items:
+                                    _selectedZone?.states ??
+                                    const <StateOption>[],
                                 label: 'State *',
                                 value: _selectedState,
                                 display: (s) => s.name,
@@ -359,7 +391,9 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                               const SizedBox(height: 16),
                               _LocationDropdown<CityOption>(
-                                items: _selectedState?.cities ?? const <CityOption>[],
+                                items:
+                                    _selectedState?.cities ??
+                                    const <CityOption>[],
                                 label: 'City *',
                                 value: _selectedCity,
                                 display: (c) => c.name,
@@ -379,8 +413,9 @@ class _SignUpPageState extends State<SignUpPage> {
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _companyDescriptionController,
-                                decoration:
-                                    _fieldDecoration('Company Description *'),
+                                decoration: _fieldDecoration(
+                                  'Company Description *',
+                                ),
                                 maxLines: 3,
                                 validator: (v) => Validators.required(
                                   v,
@@ -415,7 +450,10 @@ class _SignUpPageState extends State<SignUpPage> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    minimumSize: const Size(double.infinity, 50),
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      50,
+                                    ),
                                   ),
                                   child: _isSubmitting
                                       ? const SizedBox(
@@ -437,8 +475,9 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                               const SizedBox(height: 8),
                               TextButton(
-                                onPressed:
-                                    _isLoadingLookups ? null : _loadLookups,
+                                onPressed: _isLoadingLookups
+                                    ? null
+                                    : _loadLookups,
                                 child: const Text('Refresh dropdowns'),
                               ),
                             ],
@@ -479,10 +518,8 @@ class _LocationDropdown<T> extends StatelessWidget {
       value: enabled ? value : null,
       items: items
           .map(
-            (item) => DropdownMenuItem<T>(
-              value: item,
-              child: Text(display(item)),
-            ),
+            (item) =>
+                DropdownMenuItem<T>(value: item, child: Text(display(item))),
           )
           .toList(),
       onChanged: enabled ? onChanged : null,

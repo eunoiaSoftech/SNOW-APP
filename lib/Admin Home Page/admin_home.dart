@@ -1,44 +1,22 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Admin%20Home%20Page/admin_create_location.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_module_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_igloo_screen.dart';
+import 'package:snow_app/Admin%20Home%20Page/create_business_category.dart';
 import 'package:snow_app/Admin%20Home%20Page/user_list_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
 
   final List<Map<String, dynamic>> menuItems = const [
-    {
-      "title": "Today's Login",
-      "icon": Icons.access_time,
-      "route": "login",
-    },
-    {
-      "title": "Manage Users",
-      "icon": Icons.people,
-      "route": "users",
-    },
-    {
-      "title": "Igloo Management",
-      "icon": Icons.ac_unit,
-      "route": "igloos",
-    },
-    {
-      "title": "Module Access",
-      "icon": Icons.tune,
-      "route": "modules",
-    },
-    {
-      "title": "Reports",
-      "icon": Icons.bar_chart,
-      "route": "reports",
-    },
-    {
-      "title": "Settings",
-      "icon": Icons.settings,
-      "route": "settings",
-    },
+    {"title": "Today's Login", "icon": Icons.access_time, "route": "login"},
+    {"title": "Add Category", "icon": Icons.category, "route": "category"},
+    {"title": "Igloo Management", "icon": Icons.ac_unit, "route": "igloos"},
+    {"title": "Module Access", "icon": Icons.tune, "route": "modules"},
+    {"title": "Locations", "icon": Icons.location_on, "route": "locations"},
+    {"title": "Settings", "icon": Icons.settings, "route": "settings"},
   ];
 
   @override
@@ -135,11 +113,11 @@ class AdminHomeScreen extends StatelessWidget {
                       physics: const BouncingScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 1,
-                      ),
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 1,
+                          ),
                       itemCount: menuItems.length,
                       itemBuilder: (context, index) {
                         final item = menuItems[index];
@@ -154,6 +132,14 @@ class AdminHomeScreen extends StatelessWidget {
                                   ),
                                 );
                                 break;
+                              case "category":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const AdminCreateBusinessCategory(),
+                                  ),
+                                );
                               case "igloos":
                                 Navigator.push(
                                   context,
@@ -170,6 +156,16 @@ class AdminHomeScreen extends StatelessWidget {
                                   ),
                                 );
                                 break;
+                           
+                              case "locations":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const AdminCreateLocationScreen(),
+                                  ),
+                                );
+                                break;
+
                               default:
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -207,15 +203,19 @@ class AdminHomeScreen extends StatelessWidget {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(22),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     // Consistent Icon Design
                                     CircleAvatar(
                                       radius: 30,
-                                      backgroundColor:
-                                          primaryBlue.withOpacity(0.15),
+                                      backgroundColor: primaryBlue.withOpacity(
+                                        0.15,
+                                      ),
                                       child: Icon(
                                         item["icon"] as IconData,
                                         size: 30,
@@ -225,7 +225,8 @@ class AdminHomeScreen extends StatelessWidget {
                                     const SizedBox(height: 12),
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 8.0),
+                                        horizontal: 8.0,
+                                      ),
                                       child: Text(
                                         item["title"].toString(),
                                         textAlign: TextAlign.center,

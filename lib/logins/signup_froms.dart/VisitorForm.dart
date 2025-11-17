@@ -148,18 +148,44 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
         );
         break;
       case Err(message: final msg, code: final code):
-        final suffix = code > 0 ? ' ($code)' : '';
-        context.showToast('Signup failed$suffix: $msg', bg: Colors.red);
+
+        // Clean backend noise (like 401, 500, etc.)
+        final cleanMsg = msg
+            .replaceAll(RegExp(r"\b\d{3}\b"), "") // remove status codes
+            .replaceAll("Exception:", "")
+            .replaceAll("Error:", "")
+            .trim();
+
+        String userMsg;
+
+        // Custom readable messages based on code
+        if (code == 401) {
+          userMsg =
+              "Unauthorized request. Please try again or contact support.";
+        } else if (code == 500) {
+          userMsg =
+              "Server is facing an issue right now. Please try again later.";
+        } else if (code == 422) {
+          userMsg =
+              "Some required details look incorrect. Please review and try again.";
+        } else {
+          // fallback: use backend message IF clean
+          userMsg = cleanMsg.isNotEmpty
+              ? cleanMsg
+              : "Something went wrong. Please try again.";
+        }
+
+        context.showToast(userMsg, bg: Colors.red);
         break;
     }
   }
 
   InputDecoration _fieldDecoration(String label) => InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
-      );
+    labelText: label,
+    border: const OutlineInputBorder(
+      borderRadius: BorderRadius.all(Radius.circular(12)),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -217,10 +243,8 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                         TextFormField(
                           controller: _businessNameController,
                           decoration: _fieldDecoration('Business Name *'),
-                          validator: (v) => Validators.required(
-                            v,
-                            label: 'Business Name',
-                          ),
+                          validator: (v) =>
+                              Validators.required(v, label: 'Business Name'),
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<BusinessCategory>(
@@ -235,8 +259,7 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                               .toList(),
                           onChanged: (value) =>
                               setState(() => _selectedCategory = value),
-                          decoration:
-                              _fieldDecoration('Business Category *'),
+                          decoration: _fieldDecoration('Business Category *'),
                           validator: (value) {
                             if (_categories.isEmpty) {
                               return 'Business categories unavailable';
@@ -267,11 +290,12 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _yearsInBusinessController,
-                          decoration:
-                              _fieldDecoration('Years in Business *'),
+                          decoration: _fieldDecoration('Years in Business *'),
                           keyboardType: TextInputType.number,
-                          validator: (v) =>
-                              Validators.required(v, label: 'Years in Business'),
+                          validator: (v) => Validators.required(
+                            v,
+                            label: 'Years in Business',
+                          ),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -320,16 +344,19 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                               .toList(),
                           onChanged: (value) =>
                               setState(() => _selectedJoinPreference = value),
-                          decoration:
-                              _fieldDecoration('Preferred SNOW Igloo *'),
-                          validator: (value) =>
-                              value == null ? 'Select joining preference' : null,
+                          decoration: _fieldDecoration(
+                            'Preferred SNOW Igloo *',
+                          ),
+                          validator: (value) => value == null
+                              ? 'Select joining preference'
+                              : null,
                         ),
                         const SizedBox(height: 8),
                         SwitchListTile(
                           value: _paymentDone,
                           activeColor: const Color(0xFF5E9BC8),
-                          onChanged: (value) => setState(() => _paymentDone = value),
+                          onChanged: (value) =>
+                              setState(() => _paymentDone = value),
                           title: const Text('Payment Completed'),
                           subtitle: const Text('Toggle on if payment is done'),
                         ),
@@ -365,7 +392,9 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                         ),
                         const SizedBox(height: 8),
                         TextButton(
-                          onPressed: _isLoadingCategories ? null : _loadCategories,
+                          onPressed: _isLoadingCategories
+                              ? null
+                              : _loadCategories,
                           child: const Text('Refresh categories'),
                         ),
                       ],
