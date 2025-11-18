@@ -4,7 +4,6 @@ import 'package:snow_app/Data/Repositories/New%20Repositories/EXTRA%20FEATURE/tr
 import 'dart:ui';
 
 import 'package:snow_app/Data/models/New Model/extra feature/traning_reg.dart';
-import 'package:snow_app/Grid/traning_from.dart';
 
 class UpcomingTrainingsScreen extends StatefulWidget {
   const UpcomingTrainingsScreen({super.key});

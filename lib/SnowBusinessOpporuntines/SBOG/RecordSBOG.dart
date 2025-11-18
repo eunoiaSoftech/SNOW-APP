@@ -35,7 +35,6 @@ class _RecordSBOGState extends State<RecordSBOG>
   String? _selectedMyIglooMember;
   int? _selectedBusinessId;
   List<Igloo> _igloos = [];
-  int? _selectedIglooId;
   FilterData? _currentFilters;
 
   late final AnimationController _dotsController;
@@ -207,9 +206,7 @@ Future<void> _fetchMembers() async {
         // Reset all values
         _formKey.currentState?.reset();
         setState(() {
-          _selectedIglooId = null;
           _selectedMyIglooMember = null;
-
           _toController.clear();
           _referralController.clear();
           _telephoneController.clear();

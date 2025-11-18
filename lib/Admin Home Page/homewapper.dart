@@ -4,6 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:snow_app/Admin Home Page/admin_home.dart';
+import 'package:snow_app/home/dashboard.dart';
+import 'package:snow_app/Grid/grid.dart';
+import 'package:snow_app/Grid/profile.dart';
 import 'package:snow_app/logins/login.dart';
 
 class MainHome extends StatefulWidget {
@@ -15,12 +18,18 @@ class MainHome extends StatefulWidget {
 }
 
 class _MainHomeState extends State<MainHome> {
-  double _marginTop = 0;
-  double _opacity = 1;
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final isAdmin = widget.role == "admin";
+
+    // USER TABS
+    final userPages = [
+      const SnowDashboard(),
+      const GradientGridScreen(),
+      const ProfileScreen(),
+    ];
 
     return Scaffold(
       extendBody: true,
@@ -30,12 +39,14 @@ class _MainHomeState extends State<MainHome> {
         children: [
           _buildBackground(),
 
-          // ALWAYS SHOW HOME—Admin or User
+          // ⭐ SCREEN BASED ON ROLE
           SafeArea(
-            child: isAdmin ? const AdminHomeScreen() : const AdminHomeScreen(),
+            child: isAdmin
+                ? const AdminHomeScreen()        // ADMIN → ONLY THIS
+                : userPages[_selectedIndex],      // USER → USE TAB INDEX
           ),
 
-          // 🔥 BOTTOM LOGOUT ONLY FOR ADMIN
+          // ⭐ ADMIN → ONLY LOGOUT BUTTON
           if (isAdmin)
             Align(
               alignment: Alignment.bottomCenter,
@@ -45,13 +56,30 @@ class _MainHomeState extends State<MainHome> {
                 backgroundColor: Colors.transparent,
                 color: const Color.fromARGB(255, 184, 223, 247),
                 buttonBackgroundColor: const Color(0xFF5E9BC8),
-                animationDuration: const Duration(milliseconds: 300),
-                animationCurve: Curves.easeInOut,
                 items: const [
-                  Icon(Icons.logout, size: 32, color: Colors.white),
+                  Icon(Icons.logout, size: 30, color: Colors.white),
+                ],
+                onTap: (_) => _confirmLogout(),
+              ),
+            ),
+
+          // ⭐ USER → FULL NAVIGATION BAR
+          if (!isAdmin)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: CurvedNavigationBar(
+                index: _selectedIndex,
+                height: 60.0,
+                backgroundColor: Colors.transparent,
+                color: const Color.fromARGB(255, 184, 223, 247),
+                buttonBackgroundColor: const Color(0xFF5E9BC8),
+                items: const [
+                  Icon(Icons.home, size: 30, color: Colors.white),
+                  Icon(Icons.grid_view, size: 30, color: Colors.white),
+                  Icon(Icons.person, size: 30, color: Colors.white),
                 ],
                 onTap: (index) {
-                  _confirmLogout();
+                  setState(() => _selectedIndex = index);
                 },
               ),
             ),
@@ -60,7 +88,7 @@ class _MainHomeState extends State<MainHome> {
     );
   }
 
-  // ---------- Background Widget ----------
+  // ---------------- BACKGROUND ----------------
   Widget _buildBackground() {
     return Positioned.fill(
       child: Stack(
@@ -87,7 +115,7 @@ class _MainHomeState extends State<MainHome> {
     );
   }
 
-  // ---------- LOGOUT POPUP ----------
+  // ---------------- LOGOUT POPUP ----------------
   void _confirmLogout() {
     showGeneralDialog(
       context: context,
@@ -95,18 +123,13 @@ class _MainHomeState extends State<MainHome> {
       barrierLabel: "Logout",
       transitionDuration: const Duration(milliseconds: 400),
 
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return const SizedBox.shrink();
-      },
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
 
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final curvedValue = Curves.easeInOut.transform(animation.value);
         return Transform.scale(
-          scale: 0.95 + curvedValue * 0.05,
+          scale: 0.95 + animation.value * 0.05,
           child: Opacity(
             opacity: animation.value,
-
-            // ⭐ THIS LINE FIXES THE YELLOW HIGHLIGHT
             child: Material(
               type: MaterialType.transparency,
 
@@ -116,26 +139,22 @@ class _MainHomeState extends State<MainHome> {
                   margin: const EdgeInsets.symmetric(horizontal: 28),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [
-                        Colors.white,
-                        Color(0xFFE3F3FE),
-                        Color(0xFFBDE2FC),
-                      ],
+                      colors: [Colors.white, Color(0xFFE3F3FE), Color(0xFFBDE2FC)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF5E9BC8).withOpacity(0.25),
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
                     border: Border.all(
-                      color: const Color.fromARGB(255, 179, 220, 255),
+                      color: Color.fromARGB(255, 179, 220, 255),
                       width: 2,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF5E9BC8).withOpacity(0.25),
+                        blurRadius: 24,
+                        offset: Offset(0, 10),
+                      )
+                    ],
                   ),
 
                   child: Column(
@@ -149,7 +168,7 @@ class _MainHomeState extends State<MainHome> {
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
                           fontSize: 20,
-                          color: const Color(0xFF014576),
+                          color: Color(0xFF014576),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -174,12 +193,11 @@ class _MainHomeState extends State<MainHome> {
                             onPressed: () => Navigator.pop(context),
                             child: Text(
                               "Cancel",
-                              style: GoogleFonts.poppins(
-                                color: Colors.blueGrey,
-                              ),
+                              style: GoogleFonts.poppins(color: Colors.blueGrey),
                             ),
                           ),
-                          const SizedBox(width: 18),
+
+                          const SizedBox(width: 16),
 
                           ElevatedButton(
                             onPressed: () async {
@@ -187,26 +205,21 @@ class _MainHomeState extends State<MainHome> {
 
                               final prefs =
                                   await SharedPreferences.getInstance();
-                              await prefs.setBool("isLoggedIn", false);
-                              await prefs.remove("isAdmin");
-                              await prefs.remove("userRole");
+                              await prefs.clear();
 
                               if (!mounted) return;
 
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const LoginPage(),
-                                ),
+                                    builder: (_) => const LoginPage()),
                                 (route) => false,
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF014576),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 22,
-                                vertical: 12,
-                              ),
+                              backgroundColor: Color(0xFF014576),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 22, vertical: 12),
                             ),
                             child: Text(
                               "Logout",

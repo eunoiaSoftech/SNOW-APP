@@ -500,7 +500,7 @@ Future<void> loadAwards() async {
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(
-              'AWARDS',
+              'Snow Wall Of Rewards',
               style: GoogleFonts.poppins(
                 color: Color(0xFF014576),
                 fontWeight: FontWeight.w600,

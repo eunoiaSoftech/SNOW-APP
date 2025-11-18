@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snow_app/Data/Models/profile_overview.dart';
+import 'package:snow_app/core/app_error_handler.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/module_access_service.dart';
 import 'package:snow_app/core/result.dart';
+import 'package:snow_app/core/snow_snackbar.dart';
 import 'package:snow_app/data/repositories/profile_repository.dart';
 import 'package:snow_app/logins/login.dart';
 
@@ -34,23 +36,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     setState(() => _loading = true);
+
     final res = await _repo.fetchProfile();
     if (!mounted) return;
+
+    setState(() => _loading = false);
 
     switch (res) {
       case Ok(value: final profile):
         _moduleService.updateModules(profile.modules);
         setState(() {
           _profile = profile;
-          _loading = false;
         });
+        break;
+
       case Err(message: final msg, code: final code):
-        setState(() => _loading = false);
-        final suffix = code > 0 ? " ($code)" : "";
-        context.showToast(
-          "Failed to load profile$suffix: $msg",
-          bg: Colors.red,
-        );
+        AppErrorHandler.show(context, error: msg, code: code, message: msg);
+        break;
     }
   }
 
@@ -61,15 +63,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final res = await _repo.switchUserType(userTypeId);
     if (!mounted) return;
 
+    setState(() => _switching = false);
+
     switch (res) {
       case Ok():
-        context.showToast("Switched user type successfully");
-        setState(() => _switching = false);
+        SnowSnackBar.show(
+          context,
+          message: "Switched user type successfully",
+          bgColor: Colors.green,
+          icon: Icons.check_circle,
+        );
         await _loadProfile();
+        break;
+
       case Err(message: final msg, code: final code):
-        setState(() => _switching = false);
-        final suffix = code > 0 ? " ($code)" : "";
-        context.showToast("Switch failed$suffix: $msg", bg: Colors.red);
+        AppErrorHandler.show(context, error: msg, code: code, message: msg);
+        break;
     }
   }
 
@@ -217,15 +226,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
 
                           onPressed: () async {
-                            Navigator.pop(context); // close dialog first
+                            Navigator.pop(context);
 
-                            // ORIGINAL LOGOUT LOGIC
                             SharedPreferences prefs =
                                 await SharedPreferences.getInstance();
+                            await prefs.clear();
 
-                            await prefs.setBool("isLoggedIn", false);
-                            await prefs.remove("isAdmin");
-                            await prefs.remove("userRole");
+                            SnowSnackBar.show(
+                              context,
+                              message: "Logged out successfully!",
+                              bgColor: Colors.green,
+                              icon: Icons.check_circle,
+                            );
 
                             if (!mounted) return;
 
@@ -517,8 +529,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 12),
 
           if (modules.isEmpty)
-            SizedBox(  
-            width: double.infinity,child: const Text("No modules assigned."))
+            SizedBox(
+              width: double.infinity,
+              child: const Text("No modules assigned."),
+            )
           else
             Column(
               children: modules.map((module) {

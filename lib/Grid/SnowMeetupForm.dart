@@ -87,7 +87,6 @@ Future<void> _submitMeetup() async {
         SnackBar(content: Text('Submitting meetup...')),
       );
 
-      final meetup = await meetupRepository.createMeetup(body);
 
       Navigator.pop(context, true); // ✅ Pop screen and return true
 
