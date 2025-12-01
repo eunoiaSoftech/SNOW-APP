@@ -114,11 +114,11 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "icon": Icons.insert_chart_rounded,
         "screen": AbstractSBOR(),
       },
-      {
-        "title": "Record SBOR",
-        "icon": Icons.insert_chart_rounded,
-        "screen": RecordSBOR(),
-      },
+      // {
+      //   "title": "Record SBOR",
+      //   "icon": Icons.insert_chart_rounded,
+      //   "screen": RecordSBOR(),
+      // },
     ];
 
     // ---------------- SNOW MEET UPS ----------------

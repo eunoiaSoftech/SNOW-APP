@@ -23,6 +23,8 @@ class _UserListScreenState extends State<UserListScreen>
   List<AdminUserEntry> _pendingUsers = [];
   List<AdminUserEntry> _activeUsers = [];
   List<Igloo> _igloos = [];
+  final TextEditingController roleCtrl = TextEditingController();
+
 
   @override
   void initState() {
@@ -75,6 +77,8 @@ class _UserListScreenState extends State<UserListScreen>
   }
 
   Future<void> _approveUser(AdminUserEntry entry, List<int> iglooIds) async {
+
+    
     final res = await _adminRepo.approveUser(
       userTypeId: entry.userTypeId,
       action: 'approve',
@@ -89,6 +93,30 @@ class _UserListScreenState extends State<UserListScreen>
         context.showToast('Approval failed: $msg', bg: Colors.red);
     }
   }
+
+//   Future<void> _approveUser(
+//   AdminUserEntry entry,
+//   List<int> iglooIds,
+//   String roleName,
+// ) async {
+//   final res = await _adminRepo.approveUser(
+//     userTypeId: entry.userTypeId,
+//     action: 'approve',
+//     iglooIds: iglooIds.isEmpty ? null : iglooIds,
+//     roleName: roleName, // NEW FIELD
+//   );
+//   if (!mounted) return;
+
+//   switch (res) {
+//     case Ok():
+//       context.showToast('${entry.displayName} approved');
+//       await _loadUsers();
+
+//     case Err(message: final msg, code: _):
+//       context.showToast('Approval failed: $msg', bg: Colors.red);
+//   }
+// }
+
 
   Future<void> _rejectUser(AdminUserEntry entry) async {
     final res = await _adminRepo.approveUser(
