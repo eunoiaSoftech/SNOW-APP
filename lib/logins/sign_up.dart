@@ -478,7 +478,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                 onPressed: _isLoadingLookups
                                     ? null
                                     : _loadLookups,
-                                child: const Text('Refresh dropdowns'),
+                                child: const Text('Refresh dropdowns', style: TextStyle(color: Color(0xFF5E9BC8))),
                               ),
                             ],
                           ),

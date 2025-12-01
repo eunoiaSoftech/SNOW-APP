@@ -395,7 +395,7 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                           onPressed: _isLoadingCategories
                               ? null
                               : _loadCategories,
-                          child: const Text('Refresh categories'),
+                          child: const Text('Refresh categories', style: TextStyle(color: Color(0xFF5E9BC8))),
                         ),
                       ],
                     ),

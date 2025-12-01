@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snow_app/logins/sign_up.dart';
+import 'package:snow_app/logins/signup_froms.dart/SnowRealEstateForm.dart';
 import 'package:snow_app/logins/signup_froms.dart/VisitorForm.dart';
 
 class SelectTypePage extends StatelessWidget {
@@ -13,6 +14,7 @@ class SelectTypePage extends StatelessWidget {
     final List<Map<String, dynamic>> options = [
       {'title': 'Elite Member', 'icon': Icons.star, 'page': const SignUpPage()},
       {'title': 'Visitor', 'icon': Icons.person_outline, 'page': const VisitorFormPage()},
+      {'title': 'Snow Real Estate', 'icon': Icons.business, 'page': const SnowRealEstateFormPage()},
     ];
 
     return Scaffold(
