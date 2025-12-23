@@ -8,6 +8,8 @@ import 'package:snow_app/Data/Repositories/common_repository.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/result.dart';
 import 'package:snow_app/core/validators.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class SnowRealEstateFormPage extends StatefulWidget {
   const SnowRealEstateFormPage({super.key});
@@ -21,7 +23,8 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
 
   final _nameController = TextEditingController();
   final _businessNameController = TextEditingController();
-  final _businessCategoryTextController = TextEditingController(); // kept if needed
+  final _businessCategoryTextController =
+      TextEditingController(); // kept if needed
   final _citiesController = TextEditingController();
   final _contactController = TextEditingController();
   final _emailController = TextEditingController();
@@ -43,6 +46,8 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
   ZoneOption? _selectedZone;
   StateOption? _selectedState;
   CityOption? _selectedCity;
+  File? _aadharFile;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -62,6 +67,27 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
     _cityTextController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAadhar() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70, // compress
+    );
+
+    if (picked == null) return;
+
+    final file = File(picked.path);
+    final size = await file.length();
+
+    const maxSize = 2 * 1024 * 1024; // 2 MB
+
+    if (size > maxSize) {
+      context.showToast('Aadhaar image must be under 2MB', bg: Colors.red);
+      return;
+    }
+
+    setState(() => _aadharFile = file);
   }
 
   Future<void> _loadLookups() async {
@@ -98,98 +124,109 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
       _isLoadingLookups = false;
     });
   }
-Future<void> _submit() async {
-  if (!_formKey.currentState!.validate()) {
-    if (mounted) context.showToast('Fix validation errors', bg: Colors.red);
-    return;
-  }
 
-  if (_selectedCategory == null) {
-    if (mounted) context.showToast('Please select a business category', bg: Colors.red);
-    return;
-  }
+  Future<void> _submit() async {
+    if (_aadharFile == null) {
+      context.showToast('Please upload Aadhaar card', bg: Colors.red);
+      return;
+    }
 
-  if (_selectedCountry == null ||
-      _selectedZone == null ||
-      _selectedState == null ||
-      _selectedCity == null) {
-    if (mounted) context.showToast('Please complete your location details', bg: Colors.red);
-    return;
-  }
+    if (!_formKey.currentState!.validate()) {
+      if (mounted) context.showToast('Fix validation errors', bg: Colors.red);
+      return;
+    }
 
-  setState(() => _isLoading = true);
+    if (_selectedCategory == null) {
+      if (mounted)
+        context.showToast('Please select a business category', bg: Colors.red);
+      return;
+    }
 
-  final fullName = _nameController.text.trim();
-  final email = _emailController.text.trim();
-  final password = _passwordController.text;
-  final businessName = _businessNameController.text.trim();
-  final contact = _contactController.text.trim();
-  final website = _websiteController.text.trim();
+    if (_selectedCountry == null ||
+        _selectedZone == null ||
+        _selectedState == null ||
+        _selectedCity == null) {
+      if (mounted)
+        context.showToast(
+          'Please complete your location details',
+          bg: Colors.red,
+        );
+      return;
+    }
 
-  final int countryId = _selectedCountry!.id;
-  final int zoneId = _selectedZone!.id;
-  final int stateId = _selectedState!.id;
-  final int cityId = _selectedCity!.id;
+    setState(() => _isLoading = true);
 
-  try {
-    final resp = await _repository.registerRealEstate(
-      fullName: fullName,
-      email: email,
-      password: password,
-      businessName: businessName,
-      businessCategory: _selectedCategory!.id.toString(), // <--- fix
-      country: countryId,
-      zone: zoneId,
-      state: stateId,
-      city: cityId,
-      contact: contact,
-      website: website.isEmpty ? null : website,
-    );
+    final fullName = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final businessName = _businessNameController.text.trim();
+    final contact = _contactController.text.trim();
+    final website = _websiteController.text.trim();
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+    final int countryId = _selectedCountry!.id;
+    final int zoneId = _selectedZone!.id;
+    final int stateId = _selectedState!.id;
+    final int cityId = _selectedCity!.id;
 
-    if (resp != null) {
-      final success = resp.success;
-      final message = resp.message.isNotEmpty ? resp.message : (success ? 'Submitted' : 'Failed');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
+    try {
+      final resp = await _repository.registerRealEstate(
+        fullName: fullName,
+        email: email,
+        password: password,
+        businessName: businessName,
+        businessCategory: _selectedCategory!.id.toString(), // <--- fix
+        country: countryId,
+        zone: zoneId,
+        state: stateId,
+        city: cityId,
+        contact: contact,
+        website: website.isEmpty ? null : website,
       );
 
-      if (success) {
-        _formKey.currentState!.reset();
-        setState(() {
-          _selectedCategory = null;
-          _selectedCountry = null;
-          _selectedZone = null;
-          _selectedState = null;
-          _selectedCity = null;
-        });
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (resp != null) {
+        final success = resp.success;
+        final message = resp.message.isNotEmpty
+            ? resp.message
+            : (success ? 'Submitted' : 'Failed');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+
+        if (success) {
+          _formKey.currentState!.reset();
+          setState(() {
+            _selectedCategory = null;
+            _selectedCountry = null;
+            _selectedZone = null;
+            _selectedState = null;
+            _selectedCity = null;
+          });
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unexpected response from server')),
+        );
       }
-    } else {
+    } catch (e, st) {
+      if (kDebugMode) {
+        print('Register error: $e\n$st');
+      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unexpected response from server')),
+        SnackBar(content: Text('Registration failed: ${e.toString()}')),
       );
     }
-  } catch (e, st) {
-    if (kDebugMode) {
-      print('Register error: $e\n$st');
-    }
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Registration failed: ${e.toString()}')),
-    );
   }
-}
 
-  InputDecoration _fieldDecoration(String label) => InputDecoration(
-        hintText: label,
-        border: const OutlineInputBorder(),
-      );
+  InputDecoration _fieldDecoration(String label) =>
+      InputDecoration(hintText: label, border: const OutlineInputBorder());
 
   @override
   Widget build(BuildContext context) {
@@ -209,7 +246,11 @@ Future<void> _submit() async {
                   color: Colors.white.withOpacity(0.92),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5)),
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 15,
+                      offset: Offset(0, 5),
+                    ),
                   ],
                 ),
                 child: _isLoadingLookups
@@ -226,9 +267,10 @@ Future<void> _submit() async {
                               const Text(
                                 'SnowRealEstate Registration',
                                 style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF5E9BC8)),
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF5E9BC8),
+                                ),
                               ),
                               const SizedBox(height: 24),
 
@@ -236,7 +278,8 @@ Future<void> _submit() async {
                               TextFormField(
                                 controller: _nameController,
                                 decoration: _fieldDecoration('Full Name *'),
-                                validator: (v) => Validators.required(v, label: 'Full Name'),
+                                validator: (v) =>
+                                    Validators.required(v, label: 'Full Name'),
                               ),
                               const SizedBox(height: 16),
 
@@ -244,12 +287,17 @@ Future<void> _submit() async {
                               TextFormField(
                                 controller: _businessNameController,
                                 decoration: _fieldDecoration('Business Name *'),
-                                validator: (v) => Validators.required(v, label: 'Business Name'),
+                                validator: (v) => Validators.required(
+                                  v,
+                                  label: 'Business Name',
+                                ),
                               ),
                               const SizedBox(height: 16),
 
                               // Business Category - dropdown (mirrors SignUpPage)
                               DropdownButtonFormField<BusinessCategory>(
+                                  isExpanded: true, // 🔥 prevents width/height jump
+
                                 value: _selectedCategory,
                                 items: _categories
                                     .map(
@@ -259,11 +307,16 @@ Future<void> _submit() async {
                                       ),
                                     )
                                     .toList(),
-                                onChanged: (value) => setState(() => _selectedCategory = value),
-                                decoration: _fieldDecoration('Business Category *'),
+                                onChanged: (value) =>
+                                    setState(() => _selectedCategory = value),
+                                decoration: _fieldDecoration(
+                                  'Business Category *',
+                                ),
                                 validator: (value) {
-                                  if (_categories.isEmpty) return 'Business categories unavailable';
-                                  if (value == null) return 'Please select business category';
+                                  if (_categories.isEmpty)
+                                    return 'Business categories unavailable';
+                                  if (value == null)
+                                    return 'Please select business category';
                                   return null;
                                 },
                               ),
@@ -272,17 +325,35 @@ Future<void> _submit() async {
                               // Cities you operate in (free text)
                               TextFormField(
                                 controller: _citiesController,
-                                decoration: _fieldDecoration('Cities you operate in *'),
-                                validator: (v) => Validators.required(v, label: 'Cities'),
+                                decoration: _fieldDecoration(
+                                  'Cities you operate in *',
+                                ),
+                                validator: (v) =>
+                                    Validators.required(v, label: 'Cities'),
                               ),
                               const SizedBox(height: 16),
 
                               // Contact Number
                               TextFormField(
                                 controller: _contactController,
+                                decoration: _fieldDecoration(
+                                  'Contact Number *',
+                                ),
                                 keyboardType: TextInputType.phone,
-                                decoration: _fieldDecoration('Contact Number *'),
-                                validator: (v) => Validators.required(v, label: 'Contact Number'),
+                                maxLength: 10,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Contact Number is required';
+                                  }
+
+                                  final value = v.trim();
+
+                                  if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                                    return 'Contact Number must be exactly 10 digits';
+                                  }
+
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: 16),
 
@@ -300,14 +371,17 @@ Future<void> _submit() async {
                                 controller: _passwordController,
                                 obscureText: true,
                                 decoration: _fieldDecoration('Password *'),
-                                validator: (v) => Validators.minLen(v, 6, label: 'Password'),
+                                validator: (v) =>
+                                    Validators.minLen(v, 6, label: 'Password'),
                               ),
                               const SizedBox(height: 16),
 
                               // Website (optional)
                               TextFormField(
                                 controller: _websiteController,
-                                decoration: _fieldDecoration('Website (if any)'),
+                                decoration: _fieldDecoration(
+                                  'Website (if any)',
+                                ),
                               ),
                               const SizedBox(height: 16),
 
@@ -326,14 +400,17 @@ Future<void> _submit() async {
                                   });
                                 },
                                 validator: (value) {
-                                  if (_countries.isEmpty) return 'Locations unavailable';
+                                  if (_countries.isEmpty)
+                                    return 'Locations unavailable';
                                   if (value == null) return 'Select country';
                                   return null;
                                 },
                               ),
                               const SizedBox(height: 16),
                               _LocationDropdown<ZoneOption>(
-                                items: _selectedCountry?.zones ?? const <ZoneOption>[],
+                                items:
+                                    _selectedCountry?.zones ??
+                                    const <ZoneOption>[],
                                 label: 'Zone *',
                                 value: _selectedZone,
                                 display: (z) => z.name,
@@ -346,14 +423,17 @@ Future<void> _submit() async {
                                   });
                                 },
                                 validator: (value) {
-                                  if ((_selectedCountry?.zones ?? []).isEmpty) return 'Zones unavailable';
+                                  if ((_selectedCountry?.zones ?? []).isEmpty)
+                                    return 'Zones unavailable';
                                   if (value == null) return 'Select zone';
                                   return null;
                                 },
                               ),
                               const SizedBox(height: 16),
                               _LocationDropdown<StateOption>(
-                                items: _selectedZone?.states ?? const <StateOption>[],
+                                items:
+                                    _selectedZone?.states ??
+                                    const <StateOption>[],
                                 label: 'State *',
                                 value: _selectedState,
                                 display: (s) => s.name,
@@ -365,25 +445,86 @@ Future<void> _submit() async {
                                   });
                                 },
                                 validator: (value) {
-                                  if ((_selectedZone?.states ?? []).isEmpty) return 'States unavailable';
+                                  if ((_selectedZone?.states ?? []).isEmpty)
+                                    return 'States unavailable';
                                   if (value == null) return 'Select state';
                                   return null;
                                 },
                               ),
                               const SizedBox(height: 16),
                               _LocationDropdown<CityOption>(
-                                items: _selectedState?.cities ?? const <CityOption>[],
+                                items:
+                                    _selectedState?.cities ??
+                                    const <CityOption>[],
                                 label: 'City *',
                                 value: _selectedCity,
                                 display: (c) => c.name,
                                 enabled: _selectedState != null,
-                                onChanged: (city) => setState(() => _selectedCity = city),
+                                onChanged: (city) =>
+                                    setState(() => _selectedCity = city),
                                 validator: (value) {
-                                  if ((_selectedState?.cities ?? []).isEmpty) return 'Cities unavailable';
+                                  if ((_selectedState?.cities ?? []).isEmpty)
+                                    return 'Cities unavailable';
                                   if (value == null) return 'Select city';
                                   return null;
                                 },
                               ),
+                              const SizedBox(height: 16),
+
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Aadhaar Card *',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              InkWell(
+                                onTap: _pickAadhar,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 14,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.grey.shade50,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.upload_file,
+                                        color: Color(0xFF5E9BC8),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _aadharFile == null
+                                              ? 'Upload Aadhaar image (jpg/png, max 2MB)'
+                                              : 'Aadhaar selected ✔',
+                                          style: TextStyle(
+                                            color: _aadharFile == null
+                                                ? Colors.grey
+                                                : Colors.green,
+                                          ),
+                                        ),
+                                      ),
+                                      if (_aadharFile != null)
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Colors.green,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
                               const SizedBox(height: 24),
 
                               // Submit Button
@@ -391,17 +532,32 @@ Future<void> _submit() async {
                                 onPressed: _isLoading ? null : _submit,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF5E9BC8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                   minimumSize: const Size(double.infinity, 50),
                                 ),
                                 child: _isLoading
-                                    ? const CircularProgressIndicator(color: Colors.white)
-                                    : const Text('Submit', style: TextStyle(color: Colors.white, fontSize: 16)),
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white,
+                                      )
+                                    : const Text(
+                                        'Submit',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                        ),
+                                      ),
                               ),
                               const SizedBox(height: 8),
                               TextButton(
-                                onPressed: _isLoadingLookups ? null : _loadLookups,
-                                child: const Text('Refresh dropdowns', style: TextStyle(color: Color(0xFF5E9BC8))),
+                                onPressed: _isLoadingLookups
+                                    ? null
+                                    : _loadLookups,
+                                child: const Text(
+                                  'Refresh dropdowns',
+                                  style: TextStyle(color: Color(0xFF5E9BC8)),
+                                ),
                               ),
                             ],
                           ),
@@ -442,7 +598,8 @@ class _LocationDropdown<T> extends StatelessWidget {
       value: enabled ? value : null,
       items: items
           .map(
-            (item) => DropdownMenuItem<T>(value: item, child: Text(display(item))),
+            (item) =>
+                DropdownMenuItem<T>(value: item, child: Text(display(item))),
           )
           .toList(),
       onChanged: enabled ? onChanged : null,

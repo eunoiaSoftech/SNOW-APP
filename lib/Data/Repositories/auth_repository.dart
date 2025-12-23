@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:snow_app/Data/models/login_response.dart';
 import 'package:snow_app/Data/models/register_response.dart';
@@ -8,45 +10,93 @@ class AuthRepository {
   AuthRepository();
 
   final ApiClient _api = ApiClient.create();
-  static final Uri _routerBase =
-      Uri.parse('https://mediumvioletred-chough-398772.hostingersite.com/api/v1/router.php');
+  static final Uri _routerBase = Uri.parse(
+    'https://mediumvioletred-chough-398772.hostingersite.com/api/v1/router.php',
+  );
 
-  Future<Result<RegisterResponse>> signup(Map<String, dynamic> body) async {
-    final uri = _routerBase.replace(queryParameters: {'endpoint': 'user/register'});
-    final (res, code) = await _api.postUri(uri, body: body);
-    if (code == 201 || code == 200 || code == 202) {
-      return Ok(RegisterResponse.fromJson(res.data as Map<String, dynamic>));
+  // Future<Result<RegisterResponse>> signup(Map<String, dynamic> body) async {
+  //   final uri = _routerBase.replace(queryParameters: {'endpoint': 'user/register'});
+  //   final (res, code) = await _api.postUri(uri, body: body);
+  //   if (code == 201 || code == 200 || code == 202) {
+  //     return Ok(RegisterResponse.fromJson(res.data as Map<String, dynamic>));
+  //   }
+  //   final msg = _extractError(res);
+  //   return Err(msg, code: code);
+  // }
+  Future<Result<RegisterResponse>> signup({
+    required Map<String, dynamic> body,
+    File? aadharFile,
+  }) async {
+    final uri = _routerBase.replace(
+      queryParameters: {'endpoint': 'user/register'},
+    );
+
+    const int maxAadharSize = 2 * 1024 * 1024; // 2 MB
+
+    final formData = FormData();
+
+    Future<void> validateAadharFile(File file) async {
+      final size = await file.length();
+      if (size > maxAadharSize) {
+        throw Exception('Aadhaar image must be under 2MB');
+      }
     }
+
+    // Add text fields
+    body.forEach((key, value) {
+      if (value != null) {
+        formData.fields.add(MapEntry(key, value.toString()));
+      }
+    });
+
+    // Add Aadhaar file
+    if (aadharFile != null) {
+      await validateAadharFile(aadharFile);
+
+      formData.files.add(
+        MapEntry(
+          'aadhar_file',
+          await MultipartFile.fromFile(aadharFile.path, filename: 'aadhar.jpg'),
+        ),
+      );
+    }
+
+    final (res, code) = await _api.postUri(uri, body: formData);
+
+    if (code == 200 || code == 201 || code == 202) {
+      return Ok(RegisterResponse.fromJson(res.data));
+    }
+
+    return Err(_extractError(res), code: code);
+  }
+
+  Future<Result<LoginResponse>> login({
+    required String email,
+    required String password,
+  }) async {
+    final uri = _routerBase.replace(
+      queryParameters: {'endpoint': 'auth/login'},
+    );
+
+    final (res, code) = await _api.postUri(
+      uri,
+      body: {'email': email, 'password': password},
+    );
+
+    if (code == 200) {
+      final lr = LoginResponse.fromJson(res.data);
+      await _api.storage.saveToken(lr.token);
+      return Ok(lr);
+    }
+
     final msg = _extractError(res);
     return Err(msg, code: code);
   }
 
-Future<Result<LoginResponse>> login({
-  required String email,
-  required String password,
-}) async {
-  final uri = _routerBase.replace(queryParameters: {
-    'endpoint': 'auth/login',
-  });
-
-  final (res, code) = await _api.postUri(
-    uri,
-    body: {'email': email, 'password': password},
-  );
-
-  if (code == 200) {
-    final lr = LoginResponse.fromJson(res.data);
-    await _api.storage.saveToken(lr.token);
-    return Ok(lr);
-  }
-
-  final msg = _extractError(res);
-  return Err(msg, code: code);
-}
-
-
   Future<Result<void>> requestPasswordOtp(String email) async {
-    final uri = _routerBase.replace(queryParameters: {'endpoint': 'auth/forgot-password'});
+    final uri = _routerBase.replace(
+      queryParameters: {'endpoint': 'auth/forgot-password'},
+    );
     final (res, code) = await _api.postUri(uri, body: {'email': email});
     if (code == 200) {
       return const Ok(null);
@@ -55,11 +105,20 @@ Future<Result<LoginResponse>> login({
     return Err(msg, code: code);
   }
 
-  Future<Result<String>> verifyResetOtp({required String email, required String otp}) async {
-    final uri = _routerBase.replace(queryParameters: {'endpoint': 'auth/verify-reset-otp'});
-    final (res, code) = await _api.postUri(uri, body: {'email': email, 'otp': otp});
+  Future<Result<String>> verifyResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final uri = _routerBase.replace(
+      queryParameters: {'endpoint': 'auth/verify-reset-otp'},
+    );
+    final (res, code) = await _api.postUri(
+      uri,
+      body: {'email': email, 'otp': otp},
+    );
     if (code == 200 && res.data is Map<String, dynamic>) {
-      final token = (res.data as Map<String, dynamic>)['reset_token']?.toString();
+      final token = (res.data as Map<String, dynamic>)['reset_token']
+          ?.toString();
       if (token != null && token.isNotEmpty) {
         return Ok(token);
       }
@@ -73,7 +132,9 @@ Future<Result<LoginResponse>> login({
     required String resetToken,
     required String newPassword,
   }) async {
-    final uri = _routerBase.replace(queryParameters: {'endpoint': 'auth/reset-password'});
+    final uri = _routerBase.replace(
+      queryParameters: {'endpoint': 'auth/reset-password'},
+    );
     final body = {
       'email': email,
       'reset_token': resetToken,

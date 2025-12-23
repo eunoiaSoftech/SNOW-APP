@@ -6,6 +6,8 @@ import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/result.dart';
 import 'package:snow_app/core/validators.dart';
 import 'package:snow_app/logins/login.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class VisitorFormPage extends StatefulWidget {
   const VisitorFormPage({super.key});
@@ -16,6 +18,8 @@ class VisitorFormPage extends StatefulWidget {
 
 class _VisitorFormPageState extends State<VisitorFormPage> {
   final _formKey = GlobalKey<FormState>();
+  File? _aadharFile;
+  final ImagePicker _picker = ImagePicker();
 
   final _fullNameController = TextEditingController();
   final _businessNameController = TextEditingController();
@@ -37,6 +41,26 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
 
   bool _isLoadingCategories = false;
   bool _isSubmitting = false;
+  Future<void> _pickAadhar() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70, // compress
+    );
+
+    if (picked == null) return;
+
+    final file = File(picked.path);
+    final size = await file.length();
+
+    const maxSize = 2 * 1024 * 1024; // 2 MB
+
+    if (size > maxSize) {
+      context.showToast('Aadhaar image must be under 2MB', bg: Colors.red);
+      return;
+    }
+
+    setState(() => _aadharFile = file);
+  }
 
   static const _businessTypeOptions = <Map<String, String>>[
     {'label': 'Products', 'value': 'products'},
@@ -91,6 +115,11 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
   }
 
   Future<void> _submit() async {
+    if (_aadharFile == null) {
+      context.showToast('Please upload Aadhaar card', bg: Colors.red);
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       context.showToast('Fix validation errors');
       return;
@@ -129,7 +158,7 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
       'want_to_join': _selectedJoinPreference,
     };
 
-    final res = await _auth.signup(body);
+    final res = await _auth.signup(body: body, aadharFile: _aadharFile);
 
     if (!mounted) return;
 
@@ -328,9 +357,22 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                           controller: _contactController,
                           decoration: _fieldDecoration('Contact Number *'),
                           keyboardType: TextInputType.phone,
-                          validator: (v) =>
-                              Validators.required(v, label: 'Contact Number'),
+                          maxLength: 10,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Contact Number is required';
+                            }
+
+                            final value = v.trim();
+
+                            if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                              return 'Contact Number must be exactly 10 digits';
+                            }
+
+                            return null;
+                          },
                         ),
+
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
                           value: _selectedJoinPreference,
@@ -352,6 +394,62 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                               : null,
                         ),
                         const SizedBox(height: 8),
+                        const SizedBox(height: 16),
+
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Aadhaar Card *',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        InkWell(
+                          onTap: _pickAadhar,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.grey.shade50,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.upload_file,
+                                  color: Color(0xFF5E9BC8),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _aadharFile == null
+                                        ? 'Upload Aadhaar image (jpg/png, max 2MB)'
+                                        : 'Aadhaar selected ✔',
+                                    style: TextStyle(
+                                      color: _aadharFile == null
+                                          ? Colors.grey
+                                          : Colors.green,
+                                    ),
+                                  ),
+                                ),
+                                if (_aadharFile != null)
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         SwitchListTile(
                           value: _paymentDone,
                           activeColor: const Color(0xFF5E9BC8),
@@ -395,7 +493,10 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                           onPressed: _isLoadingCategories
                               ? null
                               : _loadCategories,
-                          child: const Text('Refresh categories', style: TextStyle(color: Color(0xFF5E9BC8))),
+                          child: const Text(
+                            'Refresh categories',
+                            style: TextStyle(color: Color(0xFF5E9BC8)),
+                          ),
                         ),
                       ],
                     ),

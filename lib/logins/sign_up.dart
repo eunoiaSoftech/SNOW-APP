@@ -7,6 +7,8 @@ import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/result.dart';
 import 'package:snow_app/core/validators.dart';
 import 'package:snow_app/logins/login.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -43,6 +45,9 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isSubmitting = false;
   bool _isLoadingLookups = false;
 
+  File? _aadharFile;
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +66,27 @@ class _SignUpPageState extends State<SignUpPage> {
     _facebookController.dispose();
     _instagramController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAadhar() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70, // compress
+    );
+
+    if (picked == null) return;
+
+    final file = File(picked.path);
+    final size = await file.length();
+
+    const maxSize = 2 * 1024 * 1024; // 2 MB
+
+    if (size > maxSize) {
+      context.showToast('Aadhaar image must be under 2MB', bg: Colors.red);
+      return;
+    }
+
+    setState(() => _aadharFile = file);
   }
 
   Future<void> _loadLookups() async {
@@ -100,6 +126,11 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Future<void> _signUp() async {
+    if (_aadharFile == null) {
+      context.showToast('Please upload Aadhaar card', bg: Colors.red);
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       context.showToast('Fix validation errors');
       return;
@@ -140,7 +171,7 @@ class _SignUpPageState extends State<SignUpPage> {
         'instagram_id': _instagramController.text.trim(),
     };
 
-    final res = await _auth.signup(body);
+    final res = await _auth.signup(body: body, aadharFile: _aadharFile);
 
     if (!mounted) return;
 
@@ -171,8 +202,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
         // Custom readable messages based on code
         if (code == 401) {
-          userMsg =
-              "Unauthorized request. Please try again.";
+          userMsg = "Unauthorized request. Please try again.";
         } else if (code == 500) {
           userMsg =
               "Server is facing an issue right now. Please try again later.";
@@ -280,6 +310,8 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                               const SizedBox(height: 16),
                               DropdownButtonFormField<BusinessCategory>(
+                                isExpanded: true,
+
                                 value: _selectedCategory,
                                 items: _categories
                                     .map(
@@ -311,8 +343,20 @@ class _SignUpPageState extends State<SignUpPage> {
                                   'Contact Number *',
                                 ),
                                 keyboardType: TextInputType.phone,
-                                validator: (v) =>
-                                    Validators.required(v, label: 'Contact'),
+                                maxLength: 10,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Contact Number is required';
+                                  }
+
+                                  final value = v.trim();
+
+                                  if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                                    return 'Contact Number must be exactly 10 digits';
+                                  }
+
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: 16),
                               _LocationDropdown<CountryOption>(
@@ -440,6 +484,61 @@ class _SignUpPageState extends State<SignUpPage> {
                                 decoration: _fieldDecoration('Instagram URL'),
                                 keyboardType: TextInputType.url,
                               ),
+                              const SizedBox(height: 16),
+
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Aadhaar Card *',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              InkWell(
+                                onTap: _pickAadhar,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 14,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.grey.shade50,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.upload_file,
+                                        color: Color(0xFF5E9BC8),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _aadharFile == null
+                                              ? 'Upload Aadhaar image (jpg/png, max 2MB)'
+                                              : 'Aadhaar selected ✔',
+                                          style: TextStyle(
+                                            color: _aadharFile == null
+                                                ? Colors.grey
+                                                : Colors.green,
+                                          ),
+                                        ),
+                                      ),
+                                      if (_aadharFile != null)
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Colors.green,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                               const SizedBox(height: 24),
                               SizedBox(
                                 width: double.infinity,
@@ -478,7 +577,10 @@ class _SignUpPageState extends State<SignUpPage> {
                                 onPressed: _isLoadingLookups
                                     ? null
                                     : _loadLookups,
-                                child: const Text('Refresh dropdowns', style: TextStyle(color: Color(0xFF5E9BC8))),
+                                child: const Text(
+                                  'Refresh dropdowns',
+                                  style: TextStyle(color: Color(0xFF5E9BC8)),
+                                ),
                               ),
                             ],
                           ),
