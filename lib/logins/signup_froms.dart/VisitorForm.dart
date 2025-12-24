@@ -277,6 +277,8 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<BusinessCategory>(
+                            isExpanded: true, 
+
                           value: _selectedCategory,
                           items: _categories
                               .map(

@@ -10,6 +10,8 @@ class AdminUserEntry {
   final DateTime registeredAt;
   final int? approvedBy;
   final DateTime? approvedAt;
+  final String? aadharFile;
+
 
   const AdminUserEntry({
     required this.userTypeId,
@@ -23,6 +25,7 @@ class AdminUserEntry {
     required this.registeredAt,
     this.approvedBy,
     this.approvedAt,
+    this.aadharFile,
   });
 
   factory AdminUserEntry.fromJson(Map<String, dynamic> json) => AdminUserEntry(
@@ -39,6 +42,7 @@ class AdminUserEntry {
         approvedAt: json['approved_at'] == null
             ? null
             : DateTime.tryParse(json['approved_at'].toString()),
+        aadharFile: json['aadhar_file']?.toString(),
       );
 }
 

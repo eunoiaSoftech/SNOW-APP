@@ -296,7 +296,7 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
 
                               // Business Category - dropdown (mirrors SignUpPage)
                               DropdownButtonFormField<BusinessCategory>(
-                                  isExpanded: true, // 🔥 prevents width/height jump
+                                  isExpanded: true, 
 
                                 value: _selectedCategory,
                                 items: _categories

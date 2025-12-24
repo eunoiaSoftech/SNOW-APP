@@ -25,7 +25,6 @@ class _UserListScreenState extends State<UserListScreen>
   List<Igloo> _igloos = [];
   final TextEditingController roleCtrl = TextEditingController();
 
-
   @override
   void initState() {
     super.initState();
@@ -77,8 +76,6 @@ class _UserListScreenState extends State<UserListScreen>
   }
 
   Future<void> _approveUser(AdminUserEntry entry, List<int> iglooIds) async {
-
-    
     final res = await _adminRepo.approveUser(
       userTypeId: entry.userTypeId,
       action: 'approve',
@@ -94,29 +91,28 @@ class _UserListScreenState extends State<UserListScreen>
     }
   }
 
-//   Future<void> _approveUser(
-//   AdminUserEntry entry,
-//   List<int> iglooIds,
-//   String roleName,
-// ) async {
-//   final res = await _adminRepo.approveUser(
-//     userTypeId: entry.userTypeId,
-//     action: 'approve',
-//     iglooIds: iglooIds.isEmpty ? null : iglooIds,
-//     roleName: roleName, // NEW FIELD
-//   );
-//   if (!mounted) return;
+  //   Future<void> _approveUser(
+  //   AdminUserEntry entry,
+  //   List<int> iglooIds,
+  //   String roleName,
+  // ) async {
+  //   final res = await _adminRepo.approveUser(
+  //     userTypeId: entry.userTypeId,
+  //     action: 'approve',
+  //     iglooIds: iglooIds.isEmpty ? null : iglooIds,
+  //     roleName: roleName, // NEW FIELD
+  //   );
+  //   if (!mounted) return;
 
-//   switch (res) {
-//     case Ok():
-//       context.showToast('${entry.displayName} approved');
-//       await _loadUsers();
+  //   switch (res) {
+  //     case Ok():
+  //       context.showToast('${entry.displayName} approved');
+  //       await _loadUsers();
 
-//     case Err(message: final msg, code: _):
-//       context.showToast('Approval failed: $msg', bg: Colors.red);
-//   }
-// }
-
+  //     case Err(message: final msg, code: _):
+  //       context.showToast('Approval failed: $msg', bg: Colors.red);
+  //   }
+  // }
 
   Future<void> _rejectUser(AdminUserEntry entry) async {
     final res = await _adminRepo.approveUser(
@@ -135,6 +131,9 @@ class _UserListScreenState extends State<UserListScreen>
 
   Future<void> _showApproveDialog(AdminUserEntry entry) async {
     final selected = <int>{};
+    final String aadharUrl = entry.aadharFile ?? '';
+    debugPrint('Aadhaar URL => $aadharUrl');
+
     await showDialog<void>(
       context: context,
       barrierDismissible: true,
@@ -176,6 +175,104 @@ class _UserListScreenState extends State<UserListScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (aadharUrl.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.credit_card,
+                          size: 18,
+                          color: Color(0xFF014576),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Aadhaar Card',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: const Color(0xFF014576),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => Dialog(
+                            backgroundColor: Colors.black,
+                            insetPadding: const EdgeInsets.all(20),
+                            child: Stack(
+                              children: [
+                                InteractiveViewer(
+                                  child: Image.network(
+                                    aadharUrl,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 12,
+                                  right: 12,
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                    ),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF5E9BC8).withOpacity(0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.visibility,
+                              size: 18,
+                              color: Color(0xFF5E9BC8),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'View Aadhaar',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF014576),
+                              ),
+                            ),
+                            const Spacer(),
+                            const Icon(
+                              Icons.open_in_new,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
+
                   // 🩵 Title
                   Text(
                     'Assign Igloos to ${entry.displayName}',
@@ -364,16 +461,19 @@ class _UserListScreenState extends State<UserListScreen>
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: const Color(0xFF014576),),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: const Color(0xFF014576),
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                       Text(
                         "Today's Login",
                         style: GoogleFonts.poppins(
-                color: const Color(0xFF014576),
-                fontWeight: FontWeight.w600,
-                fontSize: 20,
-              ),
+                          color: const Color(0xFF014576),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                        ),
                       ),
                     ],
                   ),
