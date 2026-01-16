@@ -79,7 +79,6 @@
 //   return (res, res.statusCode ?? 0);
 // }
 
-
 //   Future<(Response, int)> postUri(
 //     Uri uri, {
 //     Object? body,
@@ -94,8 +93,6 @@
 //     return (res, res.statusCode ?? 0);
 //   }
 // }
-
-
 
 import 'dart:io';
 import 'package:dio/dio.dart';
@@ -126,10 +123,10 @@ class ApiClient {
     // 🔸 Ignore SSL errors (DEV ONLY)
     (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
         (HttpClient client) {
-      client.badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true;
-      return client;
-    };
+          client.badCertificateCallback =
+              (X509Certificate cert, String host, int port) => true;
+          return client;
+        };
 
     // 🔹 Interceptor
     dio.interceptors.add(
@@ -161,10 +158,21 @@ class ApiClient {
 
           handler.next(options);
         },
-        onResponse: (response, handler) {
-          print('✅ RESPONSE [${response.statusCode}] ${response.requestOptions.uri}');
+        onResponse: (response, handler) async {
+          print(
+            '✅ RESPONSE [${response.statusCode}] ${response.requestOptions.uri}',
+          );
+
+          // 🔴 AUTO LOGOUT ON INVALID / EXPIRED TOKEN
+          if (response.statusCode == 401) {
+            print('🚪 Token expired or invalid. Clearing session.');
+
+            await storage.clearToken();
+          }
+
           handler.next(response);
         },
+
         onError: (error, handler) {
           print('❌ ERROR: ${error.message}');
           handler.next(error);
@@ -178,6 +186,9 @@ class ApiClient {
   // ========================
   // HTTP METHODS
   // ========================
+  Future<void> clearAuthToken() async {
+    await storage.clearToken();
+  }
 
   Future<(Response, int)> get(
     String path, {
@@ -197,19 +208,12 @@ class ApiClient {
     Object? body,
     Map<String, dynamic>? query,
   }) async {
-    final res = await dio.post(
-      path,
-      data: body,
-      queryParameters: query,
-    );
+    final res = await dio.post(path, data: body, queryParameters: query);
     return (res, res.statusCode ?? 0);
   }
 
   /// 🔹 Handles JSON & multipart automatically
-  Future<(Response, int)> postUri(
-    Uri uri, {
-    Object? body,
-  }) async {
+  Future<(Response, int)> postUri(Uri uri, {Object? body}) async {
     final res = await dio.postUri(
       uri,
       data: body,

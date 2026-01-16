@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snow_app/Data/models/New%20Model/APP%20SETTING/app_settings_repository.dart';
+import 'package:snow_app/core/secure_storage.dart';
 import 'package:snow_app/home/dashboard.dart';
 import 'package:snow_app/logins/under_maintenance_screen.dart';
 import 'package:snow_app/logins/update_required_screen.dart';
@@ -48,8 +49,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const UnderMaintenanceScreen()),
+          MaterialPageRoute(
+            builder: (_) => UnderMaintenanceScreen(
+              message:
+                  settings?.maintenanceMessage ??
+                  "The app is under maintenance.",
+            ),
+          ),
         );
+
         return;
       }
 
@@ -59,8 +67,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const UpdateRequiredScreen()),
+          MaterialPageRoute(
+            builder: (_) => UpdateRequiredScreen(
+              message:
+                  settings?.updateMessage ??
+                  "Please update the app to continue.",
+            ),
+          ),
         );
+
         return;
       }
 
@@ -68,7 +83,26 @@ class _SplashScreenState extends State<SplashScreen> {
       if (settings?.forceLogout == true) {
         debugPrint('➡️ Force logout triggered');
 
-        await prefs.clear();
+        final message = settings?.updateMessage.isNotEmpty == true
+            ? settings!.updateMessage
+            : "Session expired. Please login again.";
+
+        final storage = SecureStorageService();
+
+        await prefs.clear(); // clears SharedPreferences
+        await storage.clearToken(); // 🔥 clears JWT token
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        await Future.delayed(const Duration(seconds: 2));
 
         Navigator.pushReplacement(
           context,

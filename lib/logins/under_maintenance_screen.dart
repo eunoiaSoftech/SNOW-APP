@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class UnderMaintenanceScreen extends StatelessWidget {
-  const UnderMaintenanceScreen({super.key});
+  final String message;
+
+  const UnderMaintenanceScreen({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -46,9 +48,7 @@ class UnderMaintenanceScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.75),
                       borderRadius: BorderRadius.circular(26),
-                      border: Border.all(
-                        color: primaryBlue.withOpacity(0.3),
-                      ),
+                      border: Border.all(color: primaryBlue.withOpacity(0.3)),
                       boxShadow: [
                         BoxShadow(
                           color: primaryBlue.withOpacity(0.2),
@@ -79,7 +79,7 @@ class UnderMaintenanceScreen extends StatelessWidget {
                         const SizedBox(height: 12),
 
                         Text(
-                          'We are currently improving our system.\nPlease check back in some time.',
+                          message,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize: 14.5,
