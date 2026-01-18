@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:snow_app/Data/models/New%20Model/APP%20SETTING/app_settings_repository.dart';
 import 'package:snow_app/core/secure_storage.dart';
@@ -34,7 +36,8 @@ class _SplashScreenState extends State<SplashScreen> {
     debugPrint('🟡 SPLASH: Starting app settings check');
 
     try {
-      final settings = await _settingsRepo.fetchAppSettings('android');
+      final platform = Platform.isAndroid ? 'android' : 'ios';
+      final settings = await _settingsRepo.fetchAppSettings(platform);
 
       debugPrint('🟢 SETTINGS RECEIVED');
       debugPrint('🟢 maintenanceMode = ${settings?.maintenanceMode}');
@@ -89,8 +92,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
         final storage = SecureStorageService();
 
-        await prefs.clear(); // clears SharedPreferences
-        await storage.clearToken(); // 🔥 clears JWT token
+        await prefs.clear();
+        await storage.clearToken();
 
         if (!mounted) return;
 
