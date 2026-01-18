@@ -31,7 +31,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   lottie: ^2.7.0
   snow_fall_animation: ^0.0.1+2
-  google_fonts: ^6.1.0
+  google_fonts: ^7.0.2
   intl: ^0.18.1
   dropdown_button2: ^2.3.9
   shared_preferences: ^2.2.2
@@ -46,6 +46,7 @@ dependencies:
   carousel_slider: ^5.1.1
   path_provider: ^2.1.5
   url_launcher: ^6.3.2
+  package_info_plus: ^8.0.2
 
 
 

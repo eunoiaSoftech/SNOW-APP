@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class UpdateRequiredScreen extends StatelessWidget {
-  const UpdateRequiredScreen({super.key});
+  UpdateRequiredScreen({super.key, required this.message});
+
+String message;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +82,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                         const SizedBox(height: 12),
 
                         Text(
-                          'A new version of the app is available.\nPlease update to continue using Snow.',
+                          message ?? 'A new version of the app is available.\nPlease update to continue using Snow.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize: 14.5,

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:snow_app/Data/models/New%20Model/APP%20SETTING/app_settings_repository.dart';
 import 'package:snow_app/core/secure_storage.dart';
 import 'package:snow_app/home/dashboard.dart';
@@ -27,6 +28,32 @@ class _SplashScreenState extends State<SplashScreen> {
     navigateBasedOnLogin();
   }
 
+  /// Compares two version strings (e.g., "1.0.0" vs "1.2.1")
+  /// Returns -1 if version1 < version2, 0 if equal, 1 if version1 > version2
+  int _compareVersions(String version1, String version2) {
+    final parts1 = version1
+        .split('.')
+        .map((e) => int.tryParse(e) ?? 0)
+        .toList();
+    final parts2 = version2
+        .split('.')
+        .map((e) => int.tryParse(e) ?? 0)
+        .toList();
+
+    // Normalize lengths by padding with zeros
+    final maxLength = parts1.length > parts2.length
+        ? parts1.length
+        : parts2.length;
+    while (parts1.length < maxLength) parts1.add(0);
+    while (parts2.length < maxLength) parts2.add(0);
+
+    for (int i = 0; i < maxLength; i++) {
+      if (parts1[i] < parts2[i]) return -1;
+      if (parts1[i] > parts2[i]) return 1;
+    }
+    return 0;
+  }
+
   Future<void> navigateBasedOnLogin() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -42,6 +69,12 @@ class _SplashScreenState extends State<SplashScreen> {
       debugPrint('🟢 SETTINGS RECEIVED');
       debugPrint('🟢 maintenanceMode = ${settings?.maintenanceMode}');
       debugPrint('🟢 forceUpdate = ${settings?.forceUpdate}');
+      debugPrint('🟢 minRequiredVersion = ${settings?.minRequiredVersion}');
+
+      // Get current app version
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+      debugPrint('🟢 Current app version = $currentVersion');
 
       await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return;
@@ -64,22 +97,62 @@ class _SplashScreenState extends State<SplashScreen> {
         return;
       }
 
-      // 🔄 2️⃣ FORCE UPDATE
+      // 🔄 2️⃣ FORCE UPDATE - Only check if force_update is true
       if (settings?.forceUpdate == true) {
-        debugPrint('➡️ Navigating to UPDATE REQUIRED');
+        final minRequiredVersion = settings?.minRequiredVersion ?? '';
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => UpdateRequiredScreen(
-              message:
-                  settings?.updateMessage ??
-                  "Please update the app to continue.",
+        // If minRequiredVersion is provided, compare versions
+        if (minRequiredVersion.isNotEmpty) {
+          final versionComparison = _compareVersions(
+            currentVersion,
+            minRequiredVersion,
+          );
+          debugPrint(
+            '🟢 forceUpdate is true - Version comparison: $currentVersion vs $minRequiredVersion = $versionComparison',
+          );
+
+          if (versionComparison < 0) {
+            // Current version is less than min required version
+            debugPrint(
+              '➡️ Navigating to UPDATE REQUIRED (app version is outdated)',
+            );
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => UpdateRequiredScreen(
+                  message:
+                      settings?.updateMessage ??
+                      "Please update the app to continue.",
+                ),
+              ),
+            );
+
+            return;
+          } else {
+            debugPrint(
+              '✅ App version is up to date (current: $currentVersion >= min: $minRequiredVersion)',
+            );
+          }
+        } else {
+          // Fallback: if minRequiredVersion is empty but forceUpdate flag is true
+          debugPrint(
+            '➡️ Navigating to UPDATE REQUIRED (forceUpdate flag is true, no version check)',
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => UpdateRequiredScreen(
+                message:
+                    settings?.updateMessage ??
+                    "Please update the app to continue.",
+              ),
             ),
-          ),
-        );
+          );
 
-        return;
+          return;
+        }
       }
 
       // 🚪 FORCE LOGOUT

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snow_app/Admin%20Home%20Page/homewapper.dart';
@@ -166,65 +165,64 @@ class _LoginScreenState extends State<LoginPage> {
                         ),
 
                         // ✨ Improved Forgot Password Section
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 14.0),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              splashColor: const Color(
-                                0x335E9BC8,
-                              ), // soft ripple
-                              onTap: _loading
-                                  ? null
-                                  : () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ForgotPasswordPage(),
-                                        ),
-                                      );
-                                    },
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.lock_reset_rounded,
-                                    color: const Color(
-                                      0xFF5E9BC8,
-                                    ).withOpacity(0.85),
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  ShaderMask(
-                                    shaderCallback: (Rect bounds) {
-                                      return const LinearGradient(
-                                        colors: [
-                                          Color(0xFF5E9BC8),
-                                          Color(0xFF8ABDF0),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ).createShader(bounds);
-                                    },
-                                    child: const Text(
-                                      'Forgot Password?',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color:
-                                            Colors.white, // masked by gradient
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
+                        // Align(
+                        //   alignment: Alignment.centerRight,
+                        //   child: Padding(
+                        //     padding: const EdgeInsets.only(top: 14.0),
+                        //     child: InkWell(
+                        //       borderRadius: BorderRadius.circular(8),
+                        //       splashColor: const Color(
+                        //         0x335E9BC8,
+                        //       ), // soft ripple
+                        //       onTap: _loading
+                        //           ? null
+                        //           : () {
+                        //               Navigator.push(
+                        //                 context,
+                        //                 MaterialPageRoute(
+                        //                   builder: (_) =>
+                        //                       const ForgotPasswordPage(),
+                        //                 ),
+                        //               );
+                        //             },
+                        //       child: Row(
+                        //         mainAxisSize: MainAxisSize.min,
+                        //         children: [
+                        //           Icon(
+                        //             Icons.lock_reset_rounded,
+                        //             color: const Color(
+                        //               0xFF5E9BC8,
+                        //             ).withOpacity(0.85),
+                        //             size: 18,
+                        //           ),
+                        //           const SizedBox(width: 6),
+                        //           ShaderMask(
+                        //             shaderCallback: (Rect bounds) {
+                        //               return const LinearGradient(
+                        //                 colors: [
+                        //                   Color(0xFF5E9BC8),
+                        //                   Color(0xFF8ABDF0),
+                        //                 ],
+                        //                 begin: Alignment.topLeft,
+                        //                 end: Alignment.bottomRight,
+                        //               ).createShader(bounds);
+                        //             },
+                        //             child: const Text(
+                        //               'Forgot Password?',
+                        //               style: TextStyle(
+                        //                 fontSize: 14,
+                        //                 fontWeight: FontWeight.w700,
+                        //                 color:
+                        //                     Colors.white, // masked by gradient
+                        //                 letterSpacing: 0.3,
+                        //               ),
+                        //             ),
+                        //           ),
+                        //         ],
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
                         const SizedBox(height: 24),
 
                         // Sign Up Button
@@ -351,95 +349,91 @@ class _LoginScreenState extends State<LoginPage> {
   //   }
   // }
 
- Future<void> _onLogin() async {
+  Future<void> _onLogin() async {
+    if (!_formKey.currentState!.validate()) {
+      context.showToast('Fix validation errors');
+      return;
+    }
 
-  
-  if (!_formKey.currentState!.validate()) {
-    context.showToast('Fix validation errors');
-    return;
-  }
+    setState(() => _loading = true);
 
-  setState(() => _loading = true);
+    final res = await _repo.login(
+      email: _email.text.trim(),
+      password: _password.text,
+    );
 
-  final res = await _repo.login(
-    email: _email.text.trim(),
-    password: _password.text,
-  );
+    setState(() => _loading = false);
 
-  setState(() => _loading = false);
+    switch (res) {
+      case Ok(value: final v):
+        context.showToast('Welcome, ${v.user.fullName}');
+        final prefs = await SharedPreferences.getInstance();
 
-  switch (res) {
-    case Ok(value: final v):
-      context.showToast('Welcome, ${v.user.fullName}');
-      final prefs = await SharedPreferences.getInstance();
+        // ------------------------------
+        // SAVE BASIC USER INFO
+        // ------------------------------
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setBool('isAdmin', v.user.isAdmin);
+        await prefs.setString('userRole', v.user.isAdmin ? 'admin' : 'user');
+        await prefs.setString('userFullName', v.user.fullName);
 
-      // ------------------------------
-      // SAVE BASIC USER INFO
-      // ------------------------------
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setBool('isAdmin', v.user.isAdmin);
-      await prefs.setString('userRole', v.user.isAdmin ? 'admin' : 'user');
-      await prefs.setString('userFullName', v.user.fullName);
+        // save user_id
+        await prefs.setInt('user_id', v.user.id);
 
-      // save user_id
-      await prefs.setInt('user_id', v.user.id);
+        print("🔹 Login successful for user: ${v.user.fullName}");
+        print("🔹 Logged-in User ID: ${v.user.id}");
 
-      print("🔹 Login successful for user: ${v.user.fullName}");
-      print("🔹 Logged-in User ID: ${v.user.id}");
+        // -------------------------------------------------------------
+        // BUSINESS DIRECTORY LOOKUP (KEEPING YOUR ORIGINAL LOGIC)
+        // -------------------------------------------------------------
+        try {
+          final repo = DirectoryBusinessRepository();
+          final directoryResponse = await repo.fetchAllActiveBusinesses();
+          final businesses = directoryResponse.data;
 
-      // -------------------------------------------------------------
-      // BUSINESS DIRECTORY LOOKUP (KEEPING YOUR ORIGINAL LOGIC)
-      // -------------------------------------------------------------
-      try {
-        final repo = DirectoryBusinessRepository();
-        final directoryResponse = await repo.fetchAllActiveBusinesses();
-        final businesses = directoryResponse.data;
+          print("📌 Total businesses fetched: ${businesses.length}");
 
-        print("📌 Total businesses fetched: ${businesses.length}");
+          for (var b in businesses) {
+            print("➡ Business ID: ${b.id}, belongs to userId: ${b.userId}");
+          }
 
-        for (var b in businesses) {
-          print("➡ Business ID: ${b.id}, belongs to userId: ${b.userId}");
+          final myBusiness = businesses.firstWhere(
+            (b) => b.userId == v.user.id,
+            orElse: () => throw Exception("No business entry found for user"),
+          );
+
+          print("🎉 Found matching business! BusinessID = ${myBusiness.id}");
+
+          await prefs.setInt('business_id', myBusiness.id);
+
+          print("💾 Saved business_id: ${prefs.getInt("business_id")}");
+          print("💾 Saved user_id: ${prefs.getInt("user_id")}");
+        } catch (e) {
+          print("❌ BUSINESS FETCH ERROR: $e");
         }
 
-        final myBusiness = businesses.firstWhere(
-          (b) => b.userId == v.user.id,
-          orElse: () => throw Exception("No business entry found for user"),
+        // ------------------------------
+        // ⭐ READ FINAL ROLE AGAIN
+        // ------------------------------
+        final finalRole = prefs.getString('userRole') ?? 'user';
+        print("🔹 FINAL ROLE USED FOR NAVIGATION = $finalRole");
+
+        // ------------------------------
+        // NAVIGATE BASED ON CLEAN ROLE
+        // ------------------------------
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => MainHome(role: finalRole)),
+          (route) => false,
         );
 
-        print("🎉 Found matching business! BusinessID = ${myBusiness.id}");
+        break;
 
-        await prefs.setInt('business_id', myBusiness.id);
-
-        print("💾 Saved business_id: ${prefs.getInt("business_id")}");
-        print("💾 Saved user_id: ${prefs.getInt("user_id")}");
-
-      } catch (e) {
-        print("❌ BUSINESS FETCH ERROR: $e");
-      }
-
-      // ------------------------------
-      // ⭐ READ FINAL ROLE AGAIN
-      // ------------------------------
-      final finalRole = prefs.getString('userRole') ?? 'user';
-      print("🔹 FINAL ROLE USED FOR NAVIGATION = $finalRole");
-
-      // ------------------------------
-      // NAVIGATE BASED ON CLEAN ROLE
-      // ------------------------------
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => MainHome(role: finalRole)),
-        (route) => false,
-      );
-
-      break;
-
-    case Err(message: final msg, code: final code):
-      final errorMessage =
-          (msg != null && msg.isNotEmpty) ? msg : "Something went wrong ($code)";
-      context.showToast(errorMessage, bg: Colors.red);
+      case Err(message: final msg, code: final code):
+        final errorMessage = (msg != null && msg.isNotEmpty)
+            ? msg
+            : "Something went wrong ($code)";
+        context.showToast(errorMessage, bg: Colors.red);
+    }
   }
-}
-
-
 }

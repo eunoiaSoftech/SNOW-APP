@@ -16,7 +16,7 @@ class AppSettingsRepository {
     try {
       final (res, code) = await _api.get(endpoint, query: query);
 
-      if (code == 200 && res.data['success'] == true) {
+      if (res.data['success'] == true) {
         return AppSettingsModel.fromJson(res.data);
       } else {
         throw Exception("App settings fetch failed");
