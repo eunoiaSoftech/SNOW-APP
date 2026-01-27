@@ -163,7 +163,7 @@ class ApiClient {
             '✅ RESPONSE [${response.statusCode}] ${response.requestOptions.uri}',
           );
 
-          // 🔴 AUTO LOGOUT ON INVALID / EXPIRED TOKEN
+          // AUTO LOGOUT ON INVALID / EXPIRED TOKEN
           if (response.statusCode == 401) {
             print('🚪 Token expired or invalid. Clearing session.');
 

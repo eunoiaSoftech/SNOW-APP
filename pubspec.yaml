@@ -31,7 +31,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   lottie: ^2.7.0
   snow_fall_animation: ^0.0.1+2
-  google_fonts: ^7.0.2
+  google_fonts: 6.3.2
   intl: ^0.18.1
   dropdown_button2: ^2.3.9
   shared_preferences: ^2.2.2

@@ -34,6 +34,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfile();
   }
 
+  void _showDeleteAccountPopup() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            "Account Deletion",
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF014576),
+            ),
+          ),
+          content: Text(
+            "If you wish to delete your account, please contact our support team at:\n\n"
+            "delete@app.snowbiizglobal.com\n\n"
+            "Our team will guide you through the process.",
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              height: 1.5,
+              color: Colors.blueGrey[700],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Okay",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF014576),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDeleteAccountButton() {
+    return _glassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Account Settings",
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF014576),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: const Color(0xFF5E9BC8).withOpacity(0.6),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: _showDeleteAccountPopup,
+              child: Text(
+                "Delete Account",
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFF014576),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _loadProfile() async {
     setState(() => _loading = true);
 
@@ -373,6 +458,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _buildModulesCard(_profile!.modules),
                           const SizedBox(height: 16),
                           _buildIgloosCard(_profile!.igloos),
+                          const SizedBox(height: 20),
+                          _buildDeleteAccountButton(),
+                          const SizedBox(height: 60),
                         ],
                       ),
                     ),
