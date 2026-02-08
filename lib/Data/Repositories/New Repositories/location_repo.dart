@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 import 'package:snow_app/Data/models/New%20Model/location_data123.dart';
+=======
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:snow_app/Data/models/New%20Model/location_data.dart';
+>>>>>>> 97053e07ab6f7b5892dd944b85dae0eb11640803
 import 'package:snow_app/core/api_client.dart';
 import 'package:snow_app/core/result.dart';
 
@@ -9,9 +14,7 @@ class LocationRepository {
   Future<Result<LocationData>> fetchLocationData() async {
     print('🌍 LOCATION REPOSITORY - fetchLocationData called');
 
-    final uri = Uri.parse(
-      'https://mediumvioletred-chough-398772.hostingersite.com/api/v1/router.php',
-    ).replace(queryParameters: {
+    final uri = Uri.parse(dotenv.env['BASE_URL'] ?? '').replace(queryParameters: {
       'endpoint': 'location/list',
     });
 

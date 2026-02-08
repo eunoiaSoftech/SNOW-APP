@@ -140,6 +140,7 @@
 
 
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:snow_app/Data/Models/admin_igloo.dart';
 import 'package:snow_app/Data/Models/admin_module.dart';
 import 'package:snow_app/Data/Models/admin_user_entry.dart';
@@ -151,8 +152,8 @@ class AdminRepository {
   AdminRepository();
 
   final ApiClient _api = ApiClient.create();
-  static final Uri _routerBase =
-      Uri.parse('https://mediumvioletred-chough-398772.hostingersite.com/api/v1/router.php');
+  static Uri get _routerBase =>
+      Uri.parse(dotenv.env['BASE_URL'] ?? '');
 
   // ---------------- IGLOOS ----------------
 

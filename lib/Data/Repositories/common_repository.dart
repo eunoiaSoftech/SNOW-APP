@@ -1,3 +1,4 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:snow_app/Data/Models/business_category.dart';
 
 import '../../core/api_client.dart';
@@ -9,8 +10,8 @@ class CommonRepository {
   CommonRepository();
 
   final ApiClient _api = ApiClient.create();
-  static final Uri _routerBase =
-      Uri.parse('https://mediumvioletred-chough-398772.hostingersite.com/api/v1/router.php');
+  static Uri get _routerBase =>
+      Uri.parse(dotenv.env['BASE_URL'] ?? '');
 
   Future<Result<List<BusinessCategory>>> fetchBusinessCategories() async {
     final uri = _routerBase.replace(queryParameters: {'endpoint': 'business-category/list'});
