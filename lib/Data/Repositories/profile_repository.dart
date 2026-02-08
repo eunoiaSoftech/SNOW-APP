@@ -1,3 +1,4 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:snow_app/Data/Models/profile_overview.dart';
 
 import '../../core/api_client.dart';
@@ -7,8 +8,8 @@ class ProfileRepository {
   ProfileRepository();
 
   final ApiClient _api = ApiClient.create();
-  static final Uri _routerBase =
-      Uri.parse('https://mediumvioletred-chough-398772.hostingersite.com/api/v1/router.php');
+  static Uri get _routerBase =>
+      Uri.parse(dotenv.env['BASE_URL'] ?? '');
 
   Future<Result<ProfileOverview>> fetchProfile() async {
     final uri = _routerBase.replace(queryParameters: {'endpoint': 'user/profile'});

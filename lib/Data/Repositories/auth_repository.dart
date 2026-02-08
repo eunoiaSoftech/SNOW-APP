@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:snow_app/Data/models/login_response.dart';
 import 'package:snow_app/Data/models/register_response.dart';
 import '../../core/api_client.dart';
@@ -10,9 +11,8 @@ class AuthRepository {
   AuthRepository();
 
   final ApiClient _api = ApiClient.create();
-  static final Uri _routerBase = Uri.parse(
-    'https://mediumvioletred-chough-398772.hostingersite.com/api/v1/router.php',
-  );
+  static Uri get _routerBase =>
+      Uri.parse(dotenv.env['BASE_URL'] ?? '');
 
   // Future<Result<RegisterResponse>> signup(Map<String, dynamic> body) async {
   //   final uri = _routerBase.replace(queryParameters: {'endpoint': 'user/register'});
