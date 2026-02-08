@@ -1,4 +1,4 @@
-import 'package:snow_app/Data/models/New%20Model/location_data.dart';
+import 'package:snow_app/Data/models/New%20Model/location_data123.dart';
 import 'package:snow_app/core/api_client.dart';
 import 'package:snow_app/core/result.dart';
 

@@ -53,169 +53,202 @@ class _SplashScreenState extends State<SplashScreen> {
     }
     return 0;
   }
+Future<void> navigateBasedOnLogin() async {
+  final prefs = await SharedPreferences.getInstance();
 
-  Future<void> navigateBasedOnLogin() async {
-    final prefs = await SharedPreferences.getInstance();
+  final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  final bool isAdmin = prefs.getBool('isAdmin') ?? false;
 
-    final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    final bool isAdmin = prefs.getBool('isAdmin') ?? false;
+  debugPrint('🟡 SPLASH: Starting app settings check');
 
-    debugPrint('🟡 SPLASH: Starting app settings check');
+  try {
+    final platform = Platform.isAndroid ? 'android' : 'ios';
 
-    try {
-      final platform = Platform.isAndroid ? 'android' : 'ios';
-      final settings = await _settingsRepo.fetchAppSettings(platform);
-
-      debugPrint('🟢 SETTINGS RECEIVED');
-      debugPrint('🟢 maintenanceMode = ${settings?.maintenanceMode}');
-      debugPrint('🟢 forceUpdate = ${settings?.forceUpdate}');
-      debugPrint('🟢 minRequiredVersion = ${settings?.minRequiredVersion}');
-
-      // Get current app version
-      final packageInfo = await PackageInfo.fromPlatform();
-      final currentVersion = packageInfo.version;
-      debugPrint('🟢 Current app version = $currentVersion');
-
-      await Future.delayed(const Duration(seconds: 3));
-      if (!mounted) return;
-
-      // 🚧 1️⃣ UNDER MAINTENANCE
-      if (settings?.maintenanceMode == true) {
-        debugPrint('➡️ Navigating to UNDER MAINTENANCE');
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => UnderMaintenanceScreen(
-              message:
-                  settings?.maintenanceMessage ??
-                  "The app is under maintenance.",
-            ),
-          ),
+    /// 🔐 Fetch app settings WITH TIMEOUT (CRITICAL FIX)
+    final settings = await _settingsRepo
+        .fetchAppSettings(platform)
+        .timeout(
+          const Duration(seconds: 8),
+          onTimeout: () {
+            debugPrint('⏱️ App settings API timeout');
+            return null;
+          },
         );
 
-        return;
-      }
+    // App version
+    final packageInfo = await PackageInfo.fromPlatform();
+    final currentVersion = packageInfo.version;
+    debugPrint('🟢 Current app version = $currentVersion');
 
-      // 🔄 2️⃣ FORCE UPDATE - Only check if force_update is true
-      if (settings?.forceUpdate == true) {
-        final minRequiredVersion = settings?.minRequiredVersion ?? '';
+    // Keep splash visible for UX
+    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
 
-        // If minRequiredVersion is provided, compare versions
-        if (minRequiredVersion.isNotEmpty) {
-          final versionComparison = _compareVersions(
-            currentVersion,
-            minRequiredVersion,
-          );
-          debugPrint(
-            '🟢 forceUpdate is true - Version comparison: $currentVersion vs $minRequiredVersion = $versionComparison',
-          );
+    /// 🛑 SAFETY NET — If settings API FAILED or returned null
+    if (settings == null) {
+      debugPrint('⚠️ Settings NULL — continuing normal flow');
 
-          if (versionComparison < 0) {
-            // Current version is less than min required version
-            debugPrint(
-              '➡️ Navigating to UPDATE REQUIRED (app version is outdated)',
-            );
-
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => UpdateRequiredScreen(
-                  message:
-                      settings?.updateMessage ??
-                      "Please update the app to continue.",
-                ),
-              ),
-            );
-
-            return;
-          } else {
-            debugPrint(
-              '✅ App version is up to date (current: $currentVersion >= min: $minRequiredVersion)',
-            );
-          }
-        } else {
-          // Fallback: if minRequiredVersion is empty but forceUpdate flag is true
-          debugPrint(
-            '➡️ Navigating to UPDATE REQUIRED (forceUpdate flag is true, no version check)',
-          );
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => UpdateRequiredScreen(
-                message:
-                    settings?.updateMessage ??
-                    "Please update the app to continue.",
-              ),
-            ),
-          );
-
-          return;
-        }
-      }
-
-      // 🚪 FORCE LOGOUT
-      if (settings?.forceLogout == true) {
-        debugPrint('➡️ Force logout triggered');
-
-        final message = settings?.updateMessage.isNotEmpty == true
-            ? settings!.updateMessage
-            : "Session expired. Please login again.";
-
-        final storage = SecureStorageService();
-
-        await prefs.clear();
-        await storage.clearToken();
-
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-
-        await Future.delayed(const Duration(seconds: 2));
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
-        return;
-      }
-
-      // 🔐 3️⃣ NORMAL FLOW
       if (isLoggedIn) {
         if (isAdmin) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const MainHome(role: 'admin')),
+            MaterialPageRoute(
+              builder: (_) => const MainHome(role: 'admin'),
+            ),
           );
         } else {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const SnowDashboard()),
+            MaterialPageRoute(
+              builder: (_) => const SnowDashboard(),
+            ),
           );
         }
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          MaterialPageRoute(
+            builder: (_) => const OnboardingScreen(),
+          ),
         );
       }
-    } catch (e) {
-      debugPrint('❌ App settings API failed: $e');
+      return;
+    }
+
+    debugPrint('🟢 SETTINGS RECEIVED');
+    debugPrint('🟢 maintenanceMode = ${settings.maintenanceMode}');
+    debugPrint('🟢 forceUpdate = ${settings.forceUpdate}');
+    debugPrint('🟢 minRequiredVersion = ${settings.minRequiredVersion}');
+    debugPrint('🟢 forceLogout = ${settings.forceLogout}');
+
+    /// 🚧 1️⃣ UNDER MAINTENANCE
+    if (settings.maintenanceMode == true) {
+      debugPrint('➡️ Navigating to UNDER MAINTENANCE');
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        MaterialPageRoute(
+          builder: (_) => UnderMaintenanceScreen(
+            message: settings.maintenanceMessage ??
+                "The app is under maintenance.",
+          ),
+        ),
+      );
+      return;
+    }
+
+    /// 🔄 2️⃣ FORCE UPDATE
+    if (settings.forceUpdate == true) {
+      final minRequiredVersion = settings.minRequiredVersion ?? '';
+
+      if (minRequiredVersion.isNotEmpty) {
+        final versionComparison =
+            _compareVersions(currentVersion, minRequiredVersion);
+
+        debugPrint(
+          '🟢 Version check: $currentVersion vs $minRequiredVersion = $versionComparison',
+        );
+
+        if (versionComparison < 0) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => UpdateRequiredScreen(
+                message: settings.updateMessage ??
+                    "Please update the app to continue.",
+              ),
+            ),
+          );
+          return;
+        }
+      } else {
+        // forceUpdate true but no version info → still update
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UpdateRequiredScreen(
+              message: settings.updateMessage ??
+                  "Please update the app to continue.",
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    /// 🚪 3️⃣ FORCE LOGOUT
+    if (settings.forceLogout == true) {
+      debugPrint('➡️ Force logout triggered');
+
+      final message = settings.updateMessage?.isNotEmpty == true
+          ? settings.updateMessage!
+          : "Session expired. Please login again.";
+
+      final storage = SecureStorageService();
+
+      await prefs.clear();
+      await storage.clearToken();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      await Future.delayed(const Duration(seconds: 2));
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const OnboardingScreen(),
+        ),
+      );
+      return;
+    }
+
+    /// 🔐 4️⃣ NORMAL FLOW
+    if (isLoggedIn) {
+      if (isAdmin) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const MainHome(role: 'admin'),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SnowDashboard(),
+          ),
+        );
+      }
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const OnboardingScreen(),
+        ),
       );
     }
-  }
+  } catch (e) {
+    /// ❌ ABSOLUTE FALLBACK — NEVER STUCK
+    debugPrint('❌ Splash error: $e');
 
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const OnboardingScreen(),
+      ),
+    );
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

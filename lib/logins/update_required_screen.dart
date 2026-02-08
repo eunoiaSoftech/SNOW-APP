@@ -1,15 +1,30 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UpdateRequiredScreen extends StatelessWidget {
-  UpdateRequiredScreen({super.key, required this.message});
+  final String message;
 
-String message;
+  const UpdateRequiredScreen({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF5E9BC8);
+    void _openStore() async {
+      final Uri url = Platform.isAndroid
+          ? Uri.parse(
+              'https://play.google.com/store/apps/details?id=com.app.snow_app',
+            )
+          : Uri.parse(
+              'https://apps.apple.com/us/app/snow-business-community-app/id6757808858',
+            );
+
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        throw 'Could not launch store';
+      }
+    }
 
     return Scaffold(
       body: Stack(
@@ -49,9 +64,7 @@ String message;
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.75),
                       borderRadius: BorderRadius.circular(26),
-                      border: Border.all(
-                        color: primaryBlue.withOpacity(0.3),
-                      ),
+                      border: Border.all(color: primaryBlue.withOpacity(0.3)),
                       boxShadow: [
                         BoxShadow(
                           color: primaryBlue.withOpacity(0.2),
@@ -82,7 +95,7 @@ String message;
                         const SizedBox(height: 12),
 
                         Text(
-                          message ?? 'A new version of the app is available.\nPlease update to continue using Snow.',
+                          message,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize: 14.5,
@@ -93,9 +106,7 @@ String message;
                         const SizedBox(height: 24),
 
                         ElevatedButton(
-                          onPressed: () {
-                            // TODO: Open Play Store / App Store
-                          },
+                          onPressed: _openStore,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryBlue,
                             padding: const EdgeInsets.symmetric(

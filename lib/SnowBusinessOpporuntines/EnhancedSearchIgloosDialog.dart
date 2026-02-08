@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/location_repo.dart';
-import 'package:snow_app/Data/models/New%20Model/location_data.dart'
+import 'package:snow_app/Data/models/New%20Model/location_data123.dart'
     as location_models;
 import 'package:snow_app/core/result.dart';
 
