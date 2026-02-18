@@ -1,11 +1,8 @@
-<<<<<<< HEAD
-import 'package:snow_app/Data/models/New%20Model/location_data123.dart';
-=======
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:snow_app/Data/models/New%20Model/location_data.dart';
->>>>>>> 97053e07ab6f7b5892dd944b85dae0eb11640803
 import 'package:snow_app/core/api_client.dart';
 import 'package:snow_app/core/result.dart';
+
+import '../../models/New Model/location_data123.dart';
 
 class LocationRepository {
   final ApiClient _api = ApiClient.create();
