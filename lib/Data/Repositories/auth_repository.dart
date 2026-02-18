@@ -326,7 +326,7 @@ return Err(
   code: e.response?.statusCode ?? 0,
 );
     }
-  }
+  } 
 
   Future<Result<void>> resetPassword({
     required String email,

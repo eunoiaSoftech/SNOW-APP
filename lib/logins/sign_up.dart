@@ -29,6 +29,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final _linkedinController = TextEditingController();
   final _facebookController = TextEditingController();
   final _instagramController = TextEditingController();
+  bool _obscurePassword = true;
 
   final AuthRepository _auth = AuthRepository();
   final CommonRepository _common = CommonRepository();
@@ -156,7 +157,7 @@ class _SignUpPageState extends State<SignUpPage> {
       'email': _emailController.text.trim(),
       'password': _passwordController.text,
       'business_name': _businessNameController.text.trim(),
-      'business_category': _selectedCategory!.id,
+      'business_category': _selectedCategory!.name,
       'contact': _contactController.text.trim(),
       'country': _selectedCountry!.id,
       'zone': _selectedZone!.id,
@@ -189,34 +190,46 @@ class _SignUpPageState extends State<SignUpPage> {
           (route) => false,
         );
         break;
+      // case Err(message: final msg, code: final code):
+
+      //   // Clean backend noise (like 401, 500, etc.)
+      //   final cleanMsg = msg
+      //       .replaceAll(RegExp(r"\b\d{3}\b"), "") // remove status codes
+      //       .replaceAll("Exception:", "")
+      //       .replaceAll("Error:", "")
+      //       .trim();
+
+      //   String userMsg;
+
+      //   // Custom readable messages based on code
+      //   if (code == 401) {
+      //     userMsg = "Unauthorized request. Please try again.";
+      //   } else if (code == 500) {
+      //     userMsg =
+      //         "Server is facing an issue right now. Please try again later.";
+      //   } else if (code == 422) {
+      //     userMsg =
+      //         "Some required details look incorrect. Please review and try again.";
+      //   } else {
+      //     // fallback: use backend message IF clean
+      //     userMsg = cleanMsg.isNotEmpty
+      //         ? cleanMsg
+      //         : "Something went wrong. Please try again.";
+      //   }
+
+      //   context.showToast(userMsg, bg: Colors.red);
+      //   break;
+
       case Err(message: final msg, code: final code):
+        final cleanMsg = msg.replaceAll("Exception:", "").trim();
 
-        // Clean backend noise (like 401, 500, etc.)
-        final cleanMsg = msg
-            .replaceAll(RegExp(r"\b\d{3}\b"), "") // remove status codes
-            .replaceAll("Exception:", "")
-            .replaceAll("Error:", "")
-            .trim();
-
-        String userMsg;
-
-        // Custom readable messages based on code
-        if (code == 401) {
-          userMsg = "Unauthorized request. Please try again.";
-        } else if (code == 500) {
-          userMsg =
-              "Server is facing an issue right now. Please try again later.";
-        } else if (code == 422) {
-          userMsg =
-              "Some required details look incorrect. Please review and try again.";
-        } else {
-          // fallback: use backend message IF clean
-          userMsg = cleanMsg.isNotEmpty
+        context.showToast(
+          cleanMsg.isNotEmpty
               ? cleanMsg
-              : "Something went wrong. Please try again.";
-        }
+              : "Something went wrong. Please try again.",
+          bg: Colors.red,
+        );
 
-        context.showToast(userMsg, bg: Colors.red);
         break;
     }
   }
@@ -294,11 +307,31 @@ class _SignUpPageState extends State<SignUpPage> {
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _passwordController,
-                                obscureText: true,
-                                decoration: _fieldDecoration('Password *'),
+                                obscureText: _obscurePassword,
+                                decoration: InputDecoration(
+                                  labelText: 'Password *',
+                                  border: const OutlineInputBorder(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(12),
+                                    ),
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                ),
                                 validator: (v) =>
                                     Validators.minLen(v, 6, label: 'Password'),
                               ),
+
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _businessNameController,
