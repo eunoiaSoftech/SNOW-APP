@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snow_app/Data/Models/profile_overview.dart';
@@ -10,6 +11,8 @@ import 'package:snow_app/core/result.dart';
 import 'package:snow_app/core/snow_snackbar.dart';
 import 'package:snow_app/data/repositories/profile_repository.dart';
 import 'package:snow_app/logins/login.dart';
+import 'package:url_launcher/url_launcher.dart';
+// import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -34,10 +37,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfile();
   }
 
+  static const String _deleteAccountEmail = 'delete@app.snowbiizglobal.com';
+
   void _showDeleteAccountPopup() {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -50,9 +55,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           content: Text(
-            "If you wish to delete your account, please contact our support team at:\n\n"
-            "delete@app.snowbiizglobal.com\n\n"
-            "Our team will guide you through the process.",
+            "We will review your account and will delete your data within 3 days. "
+            "You cannot revoke this action.\n\n"
+            "To proceed, tap \"Send request email\" below. Your email app will open with a pre-filled message to our support team.",
             style: GoogleFonts.poppins(
               fontSize: 14,
               height: 1.5,
@@ -61,9 +66,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: Text(
-                "Okay",
+                "Cancel",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF014576),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _openDeleteAccountEmail();
+              },
+              child: Text(
+                "Send request email",
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF014576),
@@ -71,6 +89,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openDeleteAccountEmail() async {
+    const subject = 'Account Deletion Request';
+    const body =
+        'I request to delete my account. '
+        'I understand that you will review my account and delete my data within 3 days and I cannot revoke this action.';
+    final mailtoUri = Uri(
+      scheme: 'mailto',
+      path: _deleteAccountEmail,
+      queryParameters: <String, String>{'subject': subject, 'body': body},
+    );
+    try {
+      final launched = await launchUrl(
+        mailtoUri,
+        mode: LaunchMode.platformDefault,
+      );
+      if (!launched && mounted) {
+        _showCopyEmailBottomSheet();
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showCopyEmailBottomSheet();
+    }
+  }
+
+  void _showCopyEmailBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Email app could not be opened',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF014576),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Please copy the email below and send your account deletion request manually.',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Colors.blueGrey[700],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF014576).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF014576).withOpacity(0.3),
+                  ),
+                ),
+                child: SelectableText(
+                  _deleteAccountEmail,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF014576),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: _deleteAccountEmail));
+                    Navigator.pop(sheetContext);
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 22),
+                  label: Text(
+                    'Copy email',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF014576),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
