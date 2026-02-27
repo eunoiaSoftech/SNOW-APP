@@ -40,164 +40,167 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfile();
   }
 
+  void _showDeleteAccountPopup() {
+    _confirmCtrl.clear();
+    _secondsLeft = 5;
+    _countdownActive = false;
 
-void _showDeleteAccountPopup() {
-  _confirmCtrl.clear();
-  _secondsLeft = 5;
-  _countdownActive = false;
-
-  showGeneralDialog(
-    context: context,
-    barrierDismissible: !_deleting,
-    barrierLabel: "Delete Account",
-    transitionDuration: const Duration(milliseconds: 300),
-    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
-    transitionBuilder: (context, animation, _, __) {
-      return FadeTransition(
-        opacity: animation,
-        child: ScaleTransition(
-          scale: CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutBack,
-          ),
-          child: Center(
-            child: Material( // ✅ THIS FIXES YOUR ERROR
-              color: Colors.transparent,
-              child: StatefulBuilder(
-                builder: (context, setLocalState) {
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: Colors.red.shade300, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: !_deleting,
+      barrierLabel: "Delete Account",
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+      transitionBuilder: (context, animation, _, __) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutBack,
+            ),
+            child: Center(
+              child: Material(
+                // ✅ THIS FIXES YOUR ERROR
+                color: Colors.transparent,
+                child: StatefulBuilder(
+                  builder: (context, setLocalState) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: Colors.red.shade300,
+                          width: 2,
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.warning_rounded,
-                          size: 60,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(height: 16),
-
-                        Text(
-                          "Permanent Account Deletion",
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: Colors.red.shade800,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        Text(
-                          "This action is irreversible.\nType DELETE to confirm.",
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(fontSize: 14),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        TextField(
-                          controller: _confirmCtrl,
-                          onChanged: (_) {
-                            setLocalState(() {}); // refresh button state
-                          },
-                          decoration: const InputDecoration(
-                            hintText: "Type DELETE",
-                            border: OutlineInputBorder(),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.warning_rounded,
+                            size: 60,
+                            color: Colors.red,
                           ),
-                        ),
+                          const SizedBox(height: 16),
 
-                        const SizedBox(height: 16),
-
-                        if (_countdownActive)
                           Text(
-                            "Deleting in $_secondsLeft...",
-                            style: const TextStyle(
-                              color: Colors.red,
+                            "Permanent Account Deletion",
+                            style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Colors.red.shade800,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          Text(
+                            "This action is irreversible.\nType DELETE to confirm.",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(fontSize: 14),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          TextField(
+                            controller: _confirmCtrl,
+                            onChanged: (_) {
+                              setLocalState(() {}); // refresh button state
+                            },
+                            decoration: const InputDecoration(
+                              hintText: "Type DELETE",
+                              border: OutlineInputBorder(),
                             ),
                           ),
 
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 16),
 
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            TextButton(
-                              onPressed: (_deleting || _countdownActive)
-                                  ? null
-                                  : () => Navigator.pop(context),
-                              child: const Text("Cancel"),
-                            ),
-
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
+                          if (_countdownActive)
+                            Text(
+                              "Deleting in $_secondsLeft...",
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
                               ),
-                              onPressed: (_confirmCtrl.text == "DELETE" &&
-                                      !_deleting &&
-                                      !_countdownActive)
-                                  ? () async {
-                                      await _startDeleteProcess(
-                                          setLocalState);
-                                    }
-                                  : null,
-                              child: _deleting
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text("Delete"),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
+
+                          const SizedBox(height: 20),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              TextButton(
+                                onPressed: (_deleting || _countdownActive)
+                                    ? null
+                                    : () => Navigator.pop(context),
+                                child: const Text("Cancel"),
+                              ),
+
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                onPressed:
+                                    (_confirmCtrl.text == "DELETE" &&
+                                        !_deleting &&
+                                        !_countdownActive)
+                                    ? () async {
+                                        await _startDeleteProcess(
+                                          setLocalState,
+                                        );
+                                      }
+                                    : null,
+                                child: _deleting
+                                    ? const SizedBox(
+                                        height: 18,
+                                        width: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text("Delete"),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
-
-
-
-Future<void> _startDeleteProcess(StateSetter setLocalState) async {
-  setLocalState(() {
-    _countdownActive = true;
-  });
-
-  for (int i = 5; i > 0; i--) {
-    setLocalState(() {
-      _secondsLeft = i;
-    });
-    await Future.delayed(const Duration(seconds: 1));
+        );
+      },
+    );
   }
 
-  await _deleteAccount();
-}
+  Future<void> _startDeleteProcess(StateSetter setLocalState) async {
+    setLocalState(() {
+      _countdownActive = true;
+    });
+
+    for (int i = 5; i > 0; i--) {
+      setLocalState(() {
+        _secondsLeft = i;
+      });
+      await Future.delayed(const Duration(seconds: 1));
+    }
+
+    await _deleteAccount();
+  }
 
   Future<void> _deleteAccount() async {
     setState(() => _deleting = true);
