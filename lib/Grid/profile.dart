@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snow_app/Data/Models/profile_overview.dart';
+import 'package:snow_app/Data/Repositories/auth_repository.dart';
 import 'package:snow_app/core/app_error_handler.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/module_access_service.dart';
@@ -21,6 +22,11 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final ProfileRepository _repo = ProfileRepository();
   final ModuleAccessService _moduleService = ModuleAccessService();
+  final AuthRepository _authRepo = AuthRepository();
+  bool _deleting = false;
+  bool _countdownActive = false;
+  int _secondsLeft = 5;
+  final TextEditingController _confirmCtrl = TextEditingController();
 
   ProfileOverview? _profile;
   bool _loading = false;
@@ -34,46 +40,200 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfile();
   }
 
-  void _showDeleteAccountPopup() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+
+void _showDeleteAccountPopup() {
+  _confirmCtrl.clear();
+  _secondsLeft = 5;
+  _countdownActive = false;
+
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: !_deleting,
+    barrierLabel: "Delete Account",
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    transitionBuilder: (context, animation, _, __) {
+      return FadeTransition(
+        opacity: animation,
+        child: ScaleTransition(
+          scale: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutBack,
           ),
-          title: Text(
-            "Account Deletion",
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF014576),
-            ),
-          ),
-          content: Text(
-            "If you wish to delete your account, please contact our support team at:\n\n"
-            "delete@app.snowbiizglobal.com\n\n"
-            "Our team will guide you through the process.",
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              height: 1.5,
-              color: Colors.blueGrey[700],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                "Okay",
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF014576),
-                ),
+          child: Center(
+            child: Material( // ✅ THIS FIXES YOUR ERROR
+              color: Colors.transparent,
+              child: StatefulBuilder(
+                builder: (context, setLocalState) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: Colors.red.shade300, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.warning_rounded,
+                          size: 60,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+
+                        Text(
+                          "Permanent Account Deletion",
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.red.shade800,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        Text(
+                          "This action is irreversible.\nType DELETE to confirm.",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(fontSize: 14),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        TextField(
+                          controller: _confirmCtrl,
+                          onChanged: (_) {
+                            setLocalState(() {}); // refresh button state
+                          },
+                          decoration: const InputDecoration(
+                            hintText: "Type DELETE",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        if (_countdownActive)
+                          Text(
+                            "Deleting in $_secondsLeft...",
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                        const SizedBox(height: 20),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            TextButton(
+                              onPressed: (_deleting || _countdownActive)
+                                  ? null
+                                  : () => Navigator.pop(context),
+                              child: const Text("Cancel"),
+                            ),
+
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                              ),
+                              onPressed: (_confirmCtrl.text == "DELETE" &&
+                                      !_deleting &&
+                                      !_countdownActive)
+                                  ? () async {
+                                      await _startDeleteProcess(
+                                          setLocalState);
+                                    }
+                                  : null,
+                              child: _deleting
+                                  ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text("Delete"),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
-          ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
+
+Future<void> _startDeleteProcess(StateSetter setLocalState) async {
+  setLocalState(() {
+    _countdownActive = true;
+  });
+
+  for (int i = 5; i > 0; i--) {
+    setLocalState(() {
+      _secondsLeft = i;
+    });
+    await Future.delayed(const Duration(seconds: 1));
+  }
+
+  await _deleteAccount();
+}
+
+  Future<void> _deleteAccount() async {
+    setState(() => _deleting = true);
+
+    final res = await _authRepo.deleteAccount();
+
+    if (!mounted) return;
+
+    setState(() => _deleting = false);
+
+    switch (res) {
+      case Ok(value: final message):
+        Navigator.pop(context); // close dialog
+
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+
+        SnowSnackBar.show(
+          context,
+          message: message,
+          bgColor: Colors.green,
+          icon: Icons.check_circle,
         );
-      },
-    );
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+        break;
+
+      case Err(message: final msg, code: final code):
+        Navigator.pop(context);
+        AppErrorHandler.show(context, error: msg, code: code, message: msg);
+        break;
+    }
   }
 
   Widget _buildDeleteAccountButton() {

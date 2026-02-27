@@ -162,8 +162,6 @@
 //   }
 // }
 
-
-
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -177,8 +175,7 @@ class AuthRepository {
 
   final ApiClient _api = ApiClient.create();
 
-  static Uri get _routerBase =>
-      Uri.parse(dotenv.env['BASE_URL'] ?? '');
+  static Uri get _routerBase => Uri.parse(dotenv.env['BASE_URL'] ?? '');
 
   // ==============================
   // SIGNUP
@@ -228,10 +225,7 @@ class AuthRepository {
 
       return Err(_extractError(res), code: code);
     } on DioException catch (e) {
-return Err(
-  _extractDioError(e),
-  code: e.response?.statusCode ?? 0,
-);
+      return Err(_extractDioError(e), code: e.response?.statusCode ?? 0);
     } catch (e) {
       return Err(e.toString());
     }
@@ -262,10 +256,7 @@ return Err(
 
       return Err(_extractError(res), code: code);
     } on DioException catch (e) {
-return Err(
-  _extractDioError(e),
-  code: e.response?.statusCode ?? 0,
-);
+      return Err(_extractDioError(e), code: e.response?.statusCode ?? 0);
     } catch (e) {
       return Err(e.toString());
     }
@@ -280,8 +271,7 @@ return Err(
         queryParameters: {'endpoint': 'auth/forgot-password'},
       );
 
-      final (res, code) =
-          await _api.postUri(uri, body: {'email': email});
+      final (res, code) = await _api.postUri(uri, body: {'email': email});
 
       if (code == 200) {
         return const Ok(null);
@@ -289,10 +279,7 @@ return Err(
 
       return Err(_extractError(res), code: code);
     } on DioException catch (e) {
-return Err(
-  _extractDioError(e),
-  code: e.response?.statusCode ?? 0,
-);
+      return Err(_extractDioError(e), code: e.response?.statusCode ?? 0);
     }
   }
 
@@ -311,8 +298,8 @@ return Err(
       );
 
       if (code == 200 && res.data is Map<String, dynamic>) {
-        final token =
-            (res.data as Map<String, dynamic>)['reset_token']?.toString();
+        final token = (res.data as Map<String, dynamic>)['reset_token']
+            ?.toString();
 
         if (token != null && token.isNotEmpty) {
           return Ok(token);
@@ -321,12 +308,9 @@ return Err(
 
       return Err(_extractError(res), code: code);
     } on DioException catch (e) {
-return Err(
-  _extractDioError(e),
-  code: e.response?.statusCode ?? 0,
-);
+      return Err(_extractDioError(e), code: e.response?.statusCode ?? 0);
     }
-  } 
+  }
 
   Future<Result<void>> resetPassword({
     required String email,
@@ -352,10 +336,7 @@ return Err(
 
       return Err(_extractError(res), code: code);
     } on DioException catch (e) {
-return Err(
-  _extractDioError(e),
-  code: e.response?.statusCode ?? 0,
-);
+      return Err(_extractDioError(e), code: e.response?.statusCode ?? 0);
     }
   }
 
@@ -368,13 +349,11 @@ return Err(
     print("❌ API Error: ${res.statusCode} - ${res.data}");
 
     if (data is Map<String, dynamic>) {
-      if (data['message'] is String &&
-          data['message'].toString().isNotEmpty) {
+      if (data['message'] is String && data['message'].toString().isNotEmpty) {
         return data['message'];
       }
 
-      if (data['error'] is String &&
-          data['error'].toString().isNotEmpty) {
+      if (data['error'] is String && data['error'].toString().isNotEmpty) {
         return data['error'];
       }
     }
@@ -388,17 +367,39 @@ return Err(
     print("❌ Dio Error: ${e.response?.statusCode} - $data");
 
     if (data is Map<String, dynamic>) {
-      if (data['message'] is String &&
-          data['message'].toString().isNotEmpty) {
+      if (data['message'] is String && data['message'].toString().isNotEmpty) {
         return data['message'];
       }
 
-      if (data['error'] is String &&
-          data['error'].toString().isNotEmpty) {
+      if (data['error'] is String && data['error'].toString().isNotEmpty) {
         return data['error'];
       }
     }
 
     return e.message ?? "Network error occurred";
+  }
+
+  // ==============================
+  // DELETE ACCOUNT
+  // ==============================
+  Future<Result<String>> deleteAccount() async {
+    try {
+      final uri = _routerBase.replace(
+        queryParameters: {'endpoint': 'user/delete-account'},
+      );
+
+      final (res, code) = await _api.postUri(uri);
+
+      if (code == 200) {
+        final message = res.data['message']?.toString() ?? "Account deleted";
+        return Ok(message);
+      }
+
+      return Err(_extractError(res), code: code);
+    } on DioException catch (e) {
+      return Err(_extractDioError(e), code: e.response?.statusCode ?? 0);
+    } catch (e) {
+      return Err(e.toString());
+    }
   }
 }
