@@ -48,6 +48,7 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
   CityOption? _selectedCity;
   File? _aadharFile;
   final ImagePicker _picker = ImagePicker();
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -174,13 +175,14 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
         email: email,
         password: password,
         businessName: businessName,
-        businessCategory: _selectedCategory!.id.toString(), // <--- fix
+        businessCategory: _selectedCategory!.id.toString(),
         country: countryId,
         zone: zoneId,
         state: stateId,
         city: cityId,
         contact: contact,
         website: website.isEmpty ? null : website,
+        aadharFile: _aadharFile!, // IMPORTANT
       );
 
       if (!mounted) return;
@@ -296,7 +298,7 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
 
                               // Business Category - dropdown (mirrors SignUpPage)
                               DropdownButtonFormField<BusinessCategory>(
-                                  isExpanded: true, 
+                                isExpanded: true,
 
                                 value: _selectedCategory,
                                 items: _categories
@@ -369,8 +371,23 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
                               // Password (required by repo)
                               TextFormField(
                                 controller: _passwordController,
-                                obscureText: true,
-                                decoration: _fieldDecoration('Password *'),
+                                obscureText: _obscurePassword,
+                                decoration: InputDecoration(
+                                  hintText: 'Password *',
+                                  border: const OutlineInputBorder(),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                ),
                                 validator: (v) =>
                                     Validators.minLen(v, 6, label: 'Password'),
                               ),

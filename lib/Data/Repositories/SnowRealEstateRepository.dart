@@ -91,17 +91,14 @@ class SnowRealEstateRepository {
     required int city,
     required String contact,
     String? website,
-    File? aadharFile,
+    required File aadharFile,
   }) async {
     const routerEndpoint = 'user/register';
-    const int maxAadharSize = 2 * 1024 * 1024; // 2 MB
+    const int maxAadharSize = 2 * 1024 * 1024; // 2MB
 
-    Future<File> validateAadharFile(File file) async {
-      final size = await file.length();
-      if (size > maxAadharSize) {
-        throw Exception('Aadhaar image must be under 2MB');
-      }
-      return file;
+    final size = await aadharFile.length();
+    if (size > maxAadharSize) {
+      throw Exception('Aadhaar image must be under 2MB');
     }
 
     final formData = FormData.fromMap({
@@ -111,31 +108,32 @@ class SnowRealEstateRepository {
       'password': password,
       'business_name': businessName,
       'business_category': businessCategory,
-      'country': country,
-      'zone': zone,
-      'state': state,
-      'city': city,
+      'country': country.toString(),
+      'zone': zone.toString(),
+      'state': state.toString(),
+      'city': city.toString(),
       'contact': contact,
-      'website': website ?? '',
     });
 
-    if (aadharFile != null) {
-      await validateAadharFile(aadharFile);
-
-      formData.files.add(
-        MapEntry(
-          'aadhar_file',
-          await MultipartFile.fromFile(aadharFile.path, filename: 'aadhar.jpg'),
-        ),
-      );
+    if (website != null && website.isNotEmpty) {
+      formData.fields.add(MapEntry('website', website));
     }
 
-   final (res, code) = await _api.post(
-  '',
-  body: formData,
-  query: {'endpoint': routerEndpoint},
-);
+    formData.files.add(
+      MapEntry(
+        'aadhar_file',
+        await MultipartFile.fromFile(
+          aadharFile.path,
+          filename: aadharFile.path.split('/').last,
+        ),
+      ),
+    );
 
+    final (res, code) = await _api.post(
+      '',
+      body: formData,
+      query: {'endpoint': routerEndpoint},
+    );
 
     if (code == 200 || code == 201) {
       return SnowRegisterResponse.fromJson(Map<String, dynamic>.from(res.data));
