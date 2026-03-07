@@ -132,9 +132,8 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final endpoint = options.uri.queryParameters['endpoint'];
+          final endpoint = options.uri.path;
 
-          // 🟢 Public APIs (NO AUTH HEADER)
           const publicEndpoints = {
             'user/register',
             'auth/login',
@@ -143,17 +142,19 @@ class ApiClient {
             'auth/reset-password',
           };
 
-          if (!publicEndpoints.contains(endpoint)) {
+          final isPublic = publicEndpoints.any((e) => endpoint.contains(e));
+
+          if (!isPublic) {
             final token = await storage.token;
+            print("TOKEN FROM STORAGE => ${await storage.token}");
+
             if (token != null && token.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $token';
             }
-          } else {
-            options.headers.remove('Authorization');
           }
 
-          // 🧾 Logs
           print('🚀 ${options.method} ${options.uri}');
+          print('🔑 TOKEN: ${await storage.token}');
           print('🧾 Headers: ${options.headers}');
 
           handler.next(options);
@@ -163,16 +164,13 @@ class ApiClient {
             '✅ RESPONSE [${response.statusCode}] ${response.requestOptions.uri}',
           );
 
-          // AUTO LOGOUT ON INVALID / EXPIRED TOKEN
           if (response.statusCode == 401) {
             print('🚪 Token expired or invalid. Clearing session.');
-
             await storage.clearToken();
           }
 
           handler.next(response);
         },
-
         onError: (error, handler) {
           print('❌ ERROR: ${error.message}');
           handler.next(error);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Grid/MemberListScreen.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/SBOL/abstract_sbol_screen.dart';
 import 'package:snow_app/Grid/AWARD.dart';
 import 'package:snow_app/Grid/UpcomingTrainingsScreen.dart';
@@ -94,12 +95,12 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "icon": Icons.receipt_long_rounded,
         "screen": RecordSBOG(),
       },
-       {
+      {
         "title": "Record SBOL",
         "icon": Icons.business_center_rounded,
         "screen": RecordSBOL(),
       },
-       {
+      {
         "title": "Abstract SBOL",
         "icon": Icons.business_center_rounded,
         "screen": AbstractSBOLScreen(),
@@ -147,6 +148,13 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "icon": Icons.school_rounded,
         "screen": UpcomingTrainingsScreen(),
       },
+
+      {
+        "title": "Member List",
+        "icon": Icons.people,
+        "screen": MemberListScreen(),
+      },
+
       // {
       //   "title": "Received Referrals",
       //   "icon": Icons.mark_email_read_rounded,
@@ -236,7 +244,6 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
                   child: SingleChildScrollView(
                     controller: _scrollController,
                     child: Column(
-                      
                       children: [
                         _buildExpansionTile(
                           context,
