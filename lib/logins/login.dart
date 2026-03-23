@@ -165,64 +165,64 @@ class _LoginScreenState extends State<LoginPage> {
                         ),
 
                         // ✨ Improved Forgot Password Section
-                        // Align(
-                        //   alignment: Alignment.centerRight,
-                        //   child: Padding(
-                        //     padding: const EdgeInsets.only(top: 14.0),
-                        //     child: InkWell(
-                        //       borderRadius: BorderRadius.circular(8),
-                        //       splashColor: const Color(
-                        //         0x335E9BC8,
-                        //       ), // soft ripple
-                        //       onTap: _loading
-                        //           ? null
-                        //           : () {
-                        //               Navigator.push(
-                        //                 context,
-                        //                 MaterialPageRoute(
-                        //                   builder: (_) =>
-                        //                       const ForgotPasswordPage(),
-                        //                 ),
-                        //               );
-                        //             },
-                        //       child: Row(
-                        //         mainAxisSize: MainAxisSize.min,
-                        //         children: [
-                        //           Icon(
-                        //             Icons.lock_reset_rounded,
-                        //             color: const Color(
-                        //               0xFF5E9BC8,
-                        //             ).withOpacity(0.85),
-                        //             size: 18,
-                        //           ),
-                        //           const SizedBox(width: 6),
-                        //           ShaderMask(
-                        //             shaderCallback: (Rect bounds) {
-                        //               return const LinearGradient(
-                        //                 colors: [
-                        //                   Color(0xFF5E9BC8),
-                        //                   Color(0xFF8ABDF0),
-                        //                 ],
-                        //                 begin: Alignment.topLeft,
-                        //                 end: Alignment.bottomRight,
-                        //               ).createShader(bounds);
-                        //             },
-                        //             child: const Text(
-                        //               'Forgot Password?',
-                        //               style: TextStyle(
-                        //                 fontSize: 14,
-                        //                 fontWeight: FontWeight.w700,
-                        //                 color:
-                        //                     Colors.white, // masked by gradient
-                        //                 letterSpacing: 0.3,
-                        //               ),
-                        //             ),
-                        //           ),
-                        //         ],
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 14.0),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              splashColor: const Color(
+                                0x335E9BC8,
+                              ), // soft ripple
+                              onTap: _loading
+                                  ? null
+                                  : () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ForgotPasswordPage(),
+                                        ),
+                                      );
+                                    },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.lock_reset_rounded,
+                                    color: const Color(
+                                      0xFF5E9BC8,
+                                    ).withOpacity(0.85),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ShaderMask(
+                                    shaderCallback: (Rect bounds) {
+                                      return const LinearGradient(
+                                        colors: [
+                                          Color(0xFF5E9BC8),
+                                          Color(0xFF8ABDF0),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ).createShader(bounds);
+                                    },
+                                    child: const Text(
+                                      'Forgot Password?',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color:
+                                            Colors.white, // masked by gradient
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 24),
 
                         // Sign Up Button

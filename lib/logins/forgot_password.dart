@@ -3,7 +3,7 @@ import 'package:snow_app/Data/Repositories/auth_repository.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/validators.dart';
 import 'package:snow_app/logins/login.dart';
-
+import 'dart:async';
 import '../core/result.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -25,8 +25,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   _ResetStage _stage = _ResetStage.request;
   String? _resetToken;
 
+  int _secondsRemaining = 0;
+  Timer? _timer;
+
+  // 🔥 OTP values (NEW)
+  List<String> otpValues = ["", "", "", ""];
+
   @override
   void dispose() {
+    _timer?.cancel();
     _emailController.dispose();
     _otpController.dispose();
     _passwordController.dispose();
@@ -39,17 +46,42 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       return;
     }
     setState(() => _loading = true);
+
     final res = await _auth.requestPasswordOtp(_emailController.text.trim());
+
     if (!mounted) return;
     setState(() => _loading = false);
+
     switch (res) {
       case Ok():
-        context.showToast('OTP sent. Check your email.');
+        context.showToast(
+          'OTP sent. Valid for 10 minutes. Check inbox or spam.',
+        );
+        _startTimer();
         setState(() => _stage = _ResetStage.verify);
+
       case Err(message: final msg, code: final code):
         final suffix = code > 0 ? ' ($code)' : '';
         context.showToast('Failed to send OTP$suffix: $msg', bg: Colors.red);
     }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+
+    setState(() {
+      _secondsRemaining = 60;
+    });
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining == 0) {
+        timer.cancel();
+      } else {
+        setState(() {
+          _secondsRemaining--;
+        });
+      }
+    });
   }
 
   Future<void> _verifyOtp() async {
@@ -57,13 +89,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       context.showToast('Enter the OTP sent to your email');
       return;
     }
+
     setState(() => _loading = true);
+
     final res = await _auth.verifyResetOtp(
       email: _emailController.text.trim(),
       otp: _otpController.text.trim(),
     );
+
     if (!mounted) return;
     setState(() => _loading = false);
+
     switch (res) {
       case Ok(value: final token):
         context.showToast('OTP verified. Set a new password.');
@@ -71,9 +107,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           _resetToken = token;
           _stage = _ResetStage.reset;
         });
+
       case Err(message: final msg, code: final code):
         final suffix = code > 0 ? ' ($code)' : '';
-        context.showToast('OTP verification failed$suffix: $msg', bg: Colors.red);
+        context.showToast(
+          'OTP verification failed$suffix: $msg',
+          bg: Colors.red,
+        );
     }
   }
 
@@ -82,18 +122,26 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       context.showToast('Enter a valid password');
       return;
     }
+
     if (_resetToken == null) {
-      context.showToast('Missing reset token. Restart the process.', bg: Colors.red);
+      context.showToast(
+        'Missing reset token. Restart the process.',
+        bg: Colors.red,
+      );
       return;
     }
+
     setState(() => _loading = true);
+
     final res = await _auth.resetPassword(
       email: _emailController.text.trim(),
       resetToken: _resetToken!,
       newPassword: _passwordController.text,
     );
+
     if (!mounted) return;
     setState(() => _loading = false);
+
     switch (res) {
       case Ok():
         context.showToast('Password updated. Please sign in.');
@@ -102,6 +150,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           MaterialPageRoute(builder: (_) => const LoginPage()),
           (route) => false,
         );
+
       case Err(message: final msg, code: final code):
         final suffix = code > 0 ? ' ($code)' : '';
         context.showToast('Reset failed$suffix: $msg', bg: Colors.red);
@@ -141,146 +190,203 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           SizedBox.expand(
             child: Image.asset('assets/bglogin.jpg', fit: BoxFit.cover),
           ),
-          Container(
-            color: Colors.black.withOpacity(0.3),
-          ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 15,
-                      offset: Offset(0, 5),
-                    ),
-                  ],
-                ),
-                width: 360,
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _stage == _ResetStage.request
-                            ? 'Forgot Password'
-                            : _stage == _ResetStage.verify
-                                ? 'Verify OTP'
-                                : 'Set New Password',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF5E9BC8),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _stage == _ResetStage.request
-                            ? 'Enter the email associated with your account.'
-                            : _stage == _ResetStage.verify
-                                ? 'Enter the OTP sent to your email. (Dev OTP: 1111)'
-                                : 'Create a strong new password to secure your account.',
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                      const SizedBox(height: 24),
-                      if (_stage == _ResetStage.request)
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            border: OutlineInputBorder(),
+          Container(color: Colors.black.withOpacity(0.3)),
+
+          // 🔥 FIXED OVERFLOW
+          // 🔥 FIXED OVERFLOW + CENTERED + PREMIUM FEEL
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOut,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.90),
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 25,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
                           ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: Validators.email,
-                        ),
-                      if (_stage == _ResetStage.verify) ...[
-                        TextFormField(
-                          controller: _otpController,
-                          decoration: const InputDecoration(
-                            labelText: 'OTP',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: (v) => Validators.required(v, label: 'OTP'),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _emailController,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ],
-                      if (_stage == _ResetStage.reset) ...[
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'New Password',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (v) => Validators.minLen(v, 6, label: 'Password'),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _emailController,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _loading ? null : _onSubmit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5E9BC8),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: _loading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(
-                                  _buttonLabel(),
+                          width: 360,
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _stage == _ResetStage.request
+                                      ? 'Forgot Password'
+                                      : _stage == _ResetStage.verify
+                                      ? 'Verify OTP'
+                                      : 'Set New Password',
                                   style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF5E9BC8),
                                   ),
                                 ),
+                                const SizedBox(height: 8),
+
+                                Text(
+                                  _stage == _ResetStage.request
+                                      ? 'Enter your email. OTP will be sent (check spam).'
+                                      : _stage == _ResetStage.verify
+                                      ? 'Enter 4-digit OTP (valid for 10 mins)'
+                                      : 'Create a strong new password.',
+                                  style: const TextStyle(color: Colors.black54),
+                                ),
+
+                                const SizedBox(height: 24),
+
+                                if (_stage == _ResetStage.request)
+                                  TextFormField(
+                                    controller: _emailController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Email',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    validator: Validators.email,
+                                  ),
+
+                                if (_stage == _ResetStage.verify) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: List.generate(4, (index) {
+                                      return SizedBox(
+                                        width: 60,
+                                        child: TextField(
+                                          textAlign: TextAlign.center,
+                                          keyboardType: TextInputType.number,
+                                          maxLength: 1,
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          decoration: InputDecoration(
+                                            counterText: "",
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          onChanged: (val) {
+                                            otpValues[index] = val;
+
+                                            if (val.isNotEmpty && index < 3) {
+                                              FocusScope.of(
+                                                context,
+                                              ).nextFocus();
+                                            }
+
+                                            _otpController.text = otpValues
+                                                .join();
+                                          },
+                                        ),
+                                      );
+                                    }),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  if (_secondsRemaining > 0)
+                                    Text(
+                                      "Resend in $_secondsRemaining sec",
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                ],
+
+                                if (_stage == _ResetStage.reset)
+                                  TextFormField(
+                                    controller: _passwordController,
+                                    obscureText: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'New Password',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    validator: (v) => Validators.minLen(
+                                      v,
+                                      6,
+                                      label: 'Password',
+                                    ),
+                                  ),
+
+                                const SizedBox(height: 24),
+
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: _loading ? null : _onSubmit,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF5E9BC8),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: _loading
+                                        ? const SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : Text(
+                                            _buttonLabel(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+
+                                if (_stage == _ResetStage.verify)
+                                  TextButton(
+                                    onPressed:
+                                        (_secondsRemaining == 0 && !_loading)
+                                        ? _requestOtp
+                                        : null,
+                                    child: Text(
+                                      style: TextStyle(
+                                        color: _secondsRemaining == 0
+                                            ? const Color(0xFF5E9BC8)
+                                            : Colors.grey,
+                                      ),
+                                      _secondsRemaining == 0
+                                          ? 'Resend OTP'
+                                          : 'Wait $_secondsRemaining sec',
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      if (_stage == _ResetStage.verify)
-                        TextButton(
-                          onPressed: _loading ? null : () => setState(() => _stage = _ResetStage.request),
-                          child: const Text('Resend OTP'),
-                        ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),
