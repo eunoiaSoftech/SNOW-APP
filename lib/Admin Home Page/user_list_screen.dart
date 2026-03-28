@@ -649,10 +649,10 @@ class _SoftUserCard extends StatelessWidget {
 
     final business = entry.data['business_name']?.toString() ?? '-';
     final category = entry.data['business_category']?.toString();
-      final iglooNames = entry.approvedIgloos
-    .map((e) => e['name']?.toString() ?? '')
-    .where((name) => name.isNotEmpty)
-    .join(', ');
+    final iglooNames = entry.approvedIgloos
+        .map((e) => e['name']?.toString() ?? '')
+        .where((name) => name.isNotEmpty)
+        .join(', ');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -733,17 +733,16 @@ class _SoftUserCard extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: 14),
-                const SizedBox(height: 6),
 
- 
-
-Text(
-  'Igloos: ${iglooNames.isEmpty ? "No Igloo Assigned" : iglooNames}',
-  style: GoogleFonts.poppins(
-    fontSize: 13.5,
-    color: const Color(0xFF2E4A64),
-  ),
-),
+                // const SizedBox(height: 6),
+                if (isActive && iglooNames.isNotEmpty)
+                  Text(
+                    'Igloos: $iglooNames',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13.5,
+                      color: const Color(0xFF2E4A64),
+                    ),
+                  ),
 
                 if (!isActive)
                   Row(
