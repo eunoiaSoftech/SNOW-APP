@@ -6,8 +6,8 @@ class User {
   final String businessCategory;
   final String contact;
   final String city;
-  final String status;   
-  final bool isAdmin;   
+  final String status;
+  final bool isAdmin;
 
   const User({
     required this.id,
@@ -22,14 +22,14 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> j) => User(
-        id: j['id'] ?? 0,
-        email: j['email'] ?? '',
-        fullName: j['full_name'] ?? '',
-        businessName: j['business_name'] ?? '',
-        businessCategory: j['business_category'] ?? '',
-        contact: j['contact'] ?? '',
-        city: j['city'] ?? '',
-        status: j['status'] ?? 'PENDING',
-        isAdmin: j['is_admin'] ?? false,
-      );
+    id: j['user_id'] ?? j['id'] ?? 0, // 🔥 FIXED
+    email: j['email'] ?? '',
+    fullName: j['display_name'] ?? j['data']?['full_name'] ?? '', // 🔥 FIXED
+    businessName: j['data']?['business_name'] ?? '',
+    businessCategory: j['data']?['business_category'] ?? '',
+    contact: j['data']?['contact'] ?? '',
+    city: j['data']?['city']?.toString() ?? '',
+    status: j['status'] ?? 'PENDING',
+    isAdmin: j['is_admin'] ?? false,
+  );
 }

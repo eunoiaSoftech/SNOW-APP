@@ -4,6 +4,7 @@ import 'package:snow_app/Data/Models/admin_igloo.dart';
 import 'package:snow_app/Data/Models/location_option.dart';
 import 'package:snow_app/Data/Repositories/admin_repository.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
+import 'package:snow_app/Data/models/user.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/result.dart';
 import 'igloo_list_screen.dart';
@@ -26,8 +27,9 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
   List<CountryOption> _countries = [];
 
   final TextEditingController _iglooName = TextEditingController();
-  final TextEditingController _meetingTime =
-      TextEditingController(text: '10:30');
+  final TextEditingController _meetingTime = TextEditingController(
+    text: '10:30',
+  );
   final TextEditingController _notes = TextEditingController();
 
   CountryOption? _selectedCountry;
@@ -36,7 +38,7 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
   CityOption? _selectedCity;
   String _durationType = 'weekly';
   String _meetingMode = 'online';
-
+  List<User> users = [];
   @override
   void initState() {
     super.initState();
@@ -51,13 +53,36 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
     super.dispose();
   }
 
+  // ✅ FIXED USER NAME FUNCTION (safe + clean)
+  String getUserName(int id) {
+    final user = users.where((u) => u.id == id).toList();
+    if (user.isEmpty) return "Unknown";
+    return user.first.fullName ?? user.first.email ?? "Unknown";
+  }
+
+  // ✅ UPDATED INIT (ADDED USERS LOAD)
   Future<void> _init() async {
     setState(() => _loading = true);
     await Future.wait([
       _loadIgloos(),
       _loadLocations(),
+      _loadUsers(), // 🔥 IMPORTANT FIX
     ]);
     if (mounted) setState(() => _loading = false);
+  }
+
+  // ✅ NEW FUNCTION (MOST IMPORTANT FIX)
+  Future<void> _loadUsers() async {
+    final res = await _commonRepo.fetchUsers();
+
+    if (!mounted) return;
+
+    switch (res) {
+      case Ok(value: final list):
+        setState(() => users = list);
+      case Err(message: final msg, code: _):
+        context.showToast('User load failed: $msg', bg: Colors.red);
+    }
   }
 
   Future<void> _loadLocations() async {
@@ -169,18 +194,50 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
             actions: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: IconButton(
-                  icon: const Icon(Icons.info,
-                      color: Color(0xFF014576),size:24,),
-                  tooltip: "View Existing Igloos",
-                  onPressed: () {
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) =>
-                              IglooListScreen(igloos: _igloos)),
+                        builder: (context) => IglooListScreen(
+                          igloos: _igloos,
+                          users: users, // 🔥 ADD THIS
+                        ),
+                      ),
                     );
                   },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF014576).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF014576).withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(
+                          Icons.list_alt,
+                          color: Color(0xFF014576),
+                          size: 20,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          "Igloo List",
+                          style: TextStyle(
+                            color: Color(0xFF014576),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -189,8 +246,10 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 400),
                     curve: Curves.easeOut,
@@ -238,22 +297,24 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
         Row(
           children: [
             Expanded(
-              child: _inputField('Meeting Time (HH:mm)',
-                  controller: _meetingTime),
+              child: _inputField(
+                'Meeting Time (HH:mm)',
+                controller: _meetingTime,
+              ),
             ),
             const SizedBox(width: 16),
-            
+
             Expanded(
               child: _dropdownField<String>(
                 label: 'Frequency',
                 value: _durationType,
                 items: const ['daily', 'weekly', 'monthly'],
-                onChanged: (v) =>
-                    setState(() => _durationType = v ?? 'weekly'),
+                onChanged: (v) => setState(() => _durationType = v ?? 'weekly'),
               ),
             ),
           ],
         ),
+
         const SizedBox(height: 18),
 
         _dropdownField<String>(
@@ -262,7 +323,7 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
           items: const ['online', 'offline', 'hybrid'],
           onChanged: (v) => setState(() => _meetingMode = v ?? 'online'),
         ),
-                const SizedBox(height: 18),
+        const SizedBox(height: 18),
 
         _dropdownField<CountryOption>(
           label: 'Country',
@@ -312,8 +373,12 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
         ),
         const SizedBox(height: 18),
 
-        _inputField('Notes (optional)',
-            controller: _notes, maxLines: 4, minLines: 2),
+        _inputField(
+          'Notes (optional)',
+          controller: _notes,
+          maxLines: 4,
+          minLines: 2,
+        ),
         const SizedBox(height: 24),
 
         Align(
@@ -324,8 +389,10 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child:
-                        CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Icon(Icons.add_circle_outline_rounded),
             label: const Text('Create Igloo'),
@@ -335,8 +402,7 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
             ),
           ),
         ),
@@ -344,10 +410,12 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
     );
   }
 
-  Widget _inputField(String label,
-      {required TextEditingController controller,
-      int minLines = 1,
-      int maxLines = 1}) {
+  Widget _inputField(
+    String label, {
+    required TextEditingController controller,
+    int minLines = 1,
+    int maxLines = 1,
+  }) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
@@ -358,21 +426,23 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
         decoration: InputDecoration(
           labelText: label,
           labelStyle: GoogleFonts.poppins(
-              fontSize: 14, color: const Color(0xFF014576)),
+            fontSize: 14,
+            color: const Color(0xFF014576),
+          ),
           filled: true,
           fillColor: Colors.white.withOpacity(0.8),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: Color(0xFF5E9BC8), width: 1.2),
+            borderSide: const BorderSide(color: Color(0xFF5E9BC8), width: 1.2),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: Color(0xFF014576), width: 1.5),
+            borderSide: const BorderSide(color: Color(0xFF014576), width: 1.5),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -405,23 +475,29 @@ class _AdminIglooScreenState extends State<AdminIglooScreen> {
           decoration: InputDecoration(
             labelText: label,
             labelStyle: GoogleFonts.poppins(
-                fontSize: 14, color: const Color(0xFF014576)),
+              fontSize: 14,
+              color: const Color(0xFF014576),
+            ),
             border: InputBorder.none,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
           ),
           dropdownColor: Colors.white,
           items: items
-              .map((item) => DropdownMenuItem<T>(
-                    value: item,
-                    child: Text(
-                      display != null ? display(item) : item.toString(),
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: const Color(0xFF014576),
-                      ),
+              .map(
+                (item) => DropdownMenuItem<T>(
+                  value: item,
+                  child: Text(
+                    display != null ? display(item) : item.toString(),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFF014576),
                     ),
-                  ))
+                  ),
+                ),
+              )
               .toList(),
           onChanged: onChanged,
         ),

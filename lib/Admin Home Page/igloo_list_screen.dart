@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Models/admin_igloo.dart';
+import 'package:snow_app/Data/models/user.dart';
 
 class IglooListScreen extends StatefulWidget {
   final List<Igloo> igloos;
-
-  const IglooListScreen({super.key, required this.igloos});
+  final List<User> users; // 🔥 ADD THIS
+  const IglooListScreen({super.key, required this.igloos, required this.users});
 
   @override
   State<IglooListScreen> createState() => _IglooListScreenState();
@@ -30,6 +31,14 @@ class _IglooListScreenState extends State<IglooListScreen> {
             (igloo.cityName?.toLowerCase().contains(query) ?? false);
       }).toList();
     });
+  }
+
+  User? getUser(int id) {
+    try {
+      return widget.users.firstWhere((u) => u.id == id);
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
@@ -86,64 +95,73 @@ class _IglooListScreenState extends State<IglooListScreen> {
           body: Column(
             children: [
               // Search bar
-             Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  child: AnimatedContainer(
-    duration: const Duration(milliseconds: 300),
-    curve: Curves.easeOut,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(20),
-      gradient: const LinearGradient(
-        colors: [Color(0xFFEAF5FC), Color(0xFFD8E7FA)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      boxShadow: const [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 8,
-          offset: Offset(2, 4),
-        ),
-      ],
-    ),
-    child: TextField(
-      controller: _searchController,
-      style: GoogleFonts.poppins(
-        color: const Color(0xFF014576),
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(left: 12, right: 8),
-          child: Icon(
-            Icons.search_rounded,
-            color: const Color(0xFF014576).withOpacity(0.9),
-            size: 22,
-          ),
-        ),
-        hintText: 'Search by name or city...',
-        hintStyle: GoogleFonts.poppins(
-          color: Colors.grey[600],
-          fontSize: 14,
-        ),
-        border: InputBorder.none,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: Color(0xFF014576), width: 1),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide:
-              BorderSide(color: Colors.blueGrey.withOpacity(0.1), width: 0.5),
-        ),
-      ),
-    ),
-  ),
-),
-
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFEAF5FC), Color(0xFFD8E7FA)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: Offset(2, 4),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF014576),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    decoration: InputDecoration(
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 12, right: 8),
+                        child: Icon(
+                          Icons.search_rounded,
+                          color: const Color(0xFF014576).withOpacity(0.9),
+                          size: 22,
+                        ),
+                      ),
+                      hintText: 'Search by name or city...',
+                      hintStyle: GoogleFonts.poppins(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 14,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF014576),
+                          width: 1,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.blueGrey.withOpacity(0.1),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
               Expanded(
                 child: filteredIgloos.isEmpty
@@ -158,7 +176,9 @@ class _IglooListScreenState extends State<IglooListScreen> {
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         physics: const BouncingScrollPhysics(),
                         itemCount: filteredIgloos.length,
                         itemBuilder: (context, index) {
@@ -218,8 +238,10 @@ class _IglooListScreenState extends State<IglooListScreen> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF5E9BC8).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -241,10 +263,7 @@ class _IglooListScreenState extends State<IglooListScreen> {
           if (subtitle.isNotEmpty)
             Text(
               subtitle,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: Colors.grey[700],
-              ),
+              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
             ),
 
           const SizedBox(height: 8),
@@ -252,8 +271,7 @@ class _IglooListScreenState extends State<IglooListScreen> {
           // Meeting + Duration
           Row(
             children: [
-              const Icon(Icons.access_time,
-                  size: 16, color: Color(0xFF014576)),
+              const Icon(Icons.access_time, size: 16, color: Color(0xFF014576)),
               const SizedBox(width: 6),
               Text(
                 'Meeting: ${igloo.meetingTime}',
@@ -277,11 +295,76 @@ class _IglooListScreenState extends State<IglooListScreen> {
           // Assignments
           Text(
             'Assignments: ${igloo.assignments.length}',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.grey[700],
-            ),
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
           ),
+          if (igloo.assignments.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: igloo.assignments.map((a) {
+                final user = getUser(a.userId);
+
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6, bottom: 6),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.person,
+                          size: 18,
+                          color: Color(0xFF014576),
+                        ),
+                        const SizedBox(width: 8),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user?.fullName ?? "Unknown",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF014576),
+                                ),
+                              ),
+
+                              if ((user?.email ?? '').isNotEmpty)
+                                Text(
+                                  user!.email,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+
+                              if ((user?.businessName ?? '').isNotEmpty)
+                                Text(
+                                  user!.businessName,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            )
+          else
+            Text(
+              "No assignments",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
         ],
       ),
     );

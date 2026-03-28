@@ -1,5 +1,6 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:snow_app/Data/Models/business_category.dart';
+import 'package:snow_app/Data/models/user.dart';
 
 import '../../core/api_client.dart';
 import '../../core/result.dart';
@@ -10,11 +11,12 @@ class CommonRepository {
   CommonRepository();
 
   final ApiClient _api = ApiClient.create();
-  static Uri get _routerBase =>
-      Uri.parse(dotenv.env['BASE_URL'] ?? '');
+  static Uri get _routerBase => Uri.parse(dotenv.env['BASE_URL'] ?? '');
 
   Future<Result<List<BusinessCategory>>> fetchBusinessCategories() async {
-    final uri = _routerBase.replace(queryParameters: {'endpoint': 'business-category/list'});
+    final uri = _routerBase.replace(
+      queryParameters: {'endpoint': 'business-category/list'},
+    );
     final (res, code) = await _api.getUri(uri);
     if (code == 200) {
       final data = res.data;
@@ -25,11 +27,16 @@ class CommonRepository {
         return Ok(list);
       }
     }
-    return Err(_extractMessage(res.data, 'Failed to load categories'), code: code);
+    return Err(
+      _extractMessage(res.data, 'Failed to load categories'),
+      code: code,
+    );
   }
 
   Future<Result<List<CountryOption>>> fetchLocations() async {
-    final uri = _routerBase.replace(queryParameters: {'endpoint': 'location/list'});
+    final uri = _routerBase.replace(
+      queryParameters: {'endpoint': 'location/list'},
+    );
     final (res, code) = await _api.getUri(uri);
     if (code == 200) {
       final data = res.data;
@@ -40,7 +47,10 @@ class CommonRepository {
         return Ok(list);
       }
     }
-    return Err(_extractMessage(res.data, 'Failed to load locations'), code: code);
+    return Err(
+      _extractMessage(res.data, 'Failed to load locations'),
+      code: code,
+    );
   }
 
   Future<Result<List<CustomBusinessItem>>> fetchBusiness() async {
@@ -53,6 +63,31 @@ class CommonRepository {
     }
     return Err('Failed to load categories', code: code);
   }
+
+Future<Result<List<User>>> fetchUsers() async {
+  final uri = _routerBase.replace(
+    queryParameters: {
+      'endpoint': 'admin/users-by-status',
+      'status': 'ACTIVE',
+    },
+  );
+
+  final (res, code) = await _api.getUri(uri);
+
+  if (code == 200) {
+    final data = res.data;
+
+    if (data is Map<String, dynamic>) {
+      final list = (data['entries'] as List<dynamic>? ?? [])
+          .map((e) => User.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      return Ok(list);
+    }
+  }
+
+  return Err(_extractMessage(res.data, 'Failed to load users'), code: code);
+}
 
   String _extractMessage(dynamic data, String fallback) {
     if (data is Map<String, dynamic>) {

@@ -1,5 +1,4 @@
 import 'package:snow_app/core/api_client.dart';
-
 import '../Data/models/New Model/admin_business_category.dart';
 
 class AdminCategoryRepository {
@@ -14,11 +13,24 @@ class AdminCategoryRepository {
       final (res, code) = await _api.get(endpoint, query: query);
 
       if (code == 200) {
-        final list = (res.data['data'] as List)
-            .map((e) => AdminBusinessCategory.fromJson(e))
-            .toList();
+        final data = res.data;
 
-        return list;
+        // 🔥 SAFE CHECK
+        if (data is Map<String, dynamic>) {
+          final rawList = data['data'];
+
+          if (rawList is List) {
+            final list = rawList
+                .map((e) => AdminBusinessCategory.fromJson(
+                    e as Map<String, dynamic>))
+                .toList();
+
+            return list;
+          }
+        }
+
+        // If structure unexpected
+        return [];
       } else {
         throw Exception("Error: ${res.data}");
       }
@@ -44,10 +56,14 @@ class AdminCategoryRepository {
       );
 
       if (code == 201 || code == 200) {
+        final data = res.data;
+
         return AdminBusinessCategory(
-          id: res.data['id'],
+          id: int.tryParse(data['id'].toString()) ?? 0, // 🔥 FIX
           name: name,
           description: description,
+          createdAt: data['created_at']?.toString(),
+          isActive: true, // newly created → active
         );
       } else {
         throw Exception("Error: ${res.data}");

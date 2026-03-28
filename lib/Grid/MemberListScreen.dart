@@ -125,11 +125,17 @@ class _MemberListScreenState extends State<MemberListScreen> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 12,
+                  ),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Color(0xFF014576)),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Color(0xFF014576),
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                       Text(
@@ -144,11 +150,16 @@ class _MemberListScreenState extends State<MemberListScreen> {
                       // Dynamic Member Count Chip
                       if (!loading)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF014576).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF014576).withOpacity(0.2)),
+                            border: Border.all(
+                              color: const Color(0xFF014576).withOpacity(0.2),
+                            ),
                           ),
                           child: Text(
                             "${members.length} Total",
@@ -178,10 +189,19 @@ class _MemberListScreenState extends State<MemberListScreen> {
                         : RefreshIndicator(
                             onRefresh: loadMembers,
                             child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               physics: const BouncingScrollPhysics(),
                               itemCount: members.length,
                               itemBuilder: (context, index) {
+                                final igloos =
+                                    (members[index]["approved_igloos"] as List?)
+                                        ?.map(
+                                          (e) => Map<String, dynamic>.from(e),
+                                        )
+                                        .toList() ??
+                                    [];
                                 final m = members[index];
                                 final data = m["data"] ?? {};
                                 final user = m["user"] ?? {};
@@ -191,22 +211,30 @@ class _MemberListScreenState extends State<MemberListScreen> {
                                 final state = getState(data["state"]);
                                 final city = getCity(data["city"]);
 
-                                List<String> locParts = [city, state, zone, country]
-                                    .where((s) => s.isNotEmpty)
-                                    .toList();
+                                List<String> locParts = [
+                                  city,
+                                  state,
+                                  zone,
+                                  country,
+                                ].where((s) => s.isNotEmpty).toList();
                                 final locationString = locParts.join(", ");
 
                                 return _MemberCard(
-                                  name: data["full_name"] ?? user["display_name"] ?? "",
+                                  name:
+                                      data["full_name"] ??
+                                      user["display_name"] ??
+                                      "",
                                   email: data["email"] ?? user["email"] ?? "",
                                   contact: data["contact"] ?? "",
                                   business: data["business_name"] ?? "",
                                   category: data["business_category"] ?? "",
-                                  description: data["company_description"] ?? "",
+                                  description:
+                                      data["company_description"] ?? "",
                                   linkedin: data["linkedin_id"] ?? "",
                                   facebook: data["facebook_id"] ?? "",
                                   instagram: data["instagram_id"] ?? "",
                                   location: locationString,
+                                  igloos: igloos,
                                 );
                               },
                             ),
@@ -223,7 +251,17 @@ class _MemberListScreenState extends State<MemberListScreen> {
 }
 
 class _MemberCard extends StatelessWidget {
-  final String name, email, contact, business, category, description, linkedin, facebook, instagram, location;
+  final String name,
+      email,
+      contact,
+      business,
+      category,
+      description,
+      linkedin,
+      facebook,
+      instagram,
+      location;
+  final List<Map<String, dynamic>> igloos;
 
   const _MemberCard({
     required this.name,
@@ -236,6 +274,7 @@ class _MemberCard extends StatelessWidget {
     required this.facebook,
     required this.instagram,
     required this.location,
+    this.igloos = const [],
   });
 
   void _copyToClipboard(BuildContext context, String text, String label) {
@@ -266,7 +305,7 @@ class _MemberCard extends StatelessWidget {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -317,7 +356,85 @@ class _MemberCard extends StatelessWidget {
                 _infoRow(Icons.email_outlined, email),
                 _infoRow(Icons.phone_android_rounded, contact),
                 _infoRow(Icons.category_outlined, category),
-                if (location.isNotEmpty) _infoRow(Icons.location_on_outlined, location),
+
+                if (igloos.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+
+                  /// 🏷️ Minimalist Section Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Row(
+                      children: [
+                        // A subtle vertical accent line instead of a bulky icon
+                        Container(
+                          width: 3,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5E9BC8),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          "Active Igloos",
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(
+                              0xFF263238,
+                            ), // Darker for better readability
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  /// 🧊 Soft Floating Chips
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: igloos.map<Widget>((igloo) {
+                      final name = igloo["name"] ?? "";
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          // Subtle border to give it structure without being "loud"
+                          border: Border.all(
+                            color: const Color(0xFFE1E8ED),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF5E9BC8).withOpacity(0.05),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          name,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF014576),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (location.isNotEmpty)
+                  _infoRow(Icons.location_on_outlined, location),
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text(
@@ -338,7 +455,9 @@ class _MemberCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (linkedin.isNotEmpty || facebook.isNotEmpty || instagram.isNotEmpty) ...[
+                if (linkedin.isNotEmpty ||
+                    facebook.isNotEmpty ||
+                    instagram.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 8),
@@ -351,9 +470,17 @@ class _MemberCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (linkedin.isNotEmpty) _linkRow(context, Icons.link, linkedin, "LinkedIn"),
-                  if (facebook.isNotEmpty) _linkRow(context, Icons.facebook, facebook, "Facebook"),
-                  if (instagram.isNotEmpty) _linkRow(context, Icons.camera_alt_outlined, instagram, "Instagram"),
+                  if (linkedin.isNotEmpty)
+                    _linkRow(context, Icons.link, linkedin, "LinkedIn"),
+                  if (facebook.isNotEmpty)
+                    _linkRow(context, Icons.facebook, facebook, "Facebook"),
+                  if (instagram.isNotEmpty)
+                    _linkRow(
+                      context,
+                      Icons.camera_alt_outlined,
+                      instagram,
+                      "Instagram",
+                    ),
                 ],
               ],
             ),
@@ -386,7 +513,12 @@ class _MemberCard extends StatelessWidget {
     );
   }
 
-  Widget _linkRow(BuildContext context, IconData icon, String url, String label) {
+  Widget _linkRow(
+    BuildContext context,
+    IconData icon,
+    String url,
+    String label,
+  ) {
     if (url.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -433,7 +565,11 @@ class _MemberCard extends StatelessWidget {
               ),
               Column(
                 children: [
-                  const Icon(Icons.copy_all_rounded, size: 16, color: Color(0xFF5E9BC8)),
+                  const Icon(
+                    Icons.copy_all_rounded,
+                    size: 16,
+                    color: Color(0xFF5E9BC8),
+                  ),
                   Text(
                     "COPY",
                     style: GoogleFonts.poppins(
