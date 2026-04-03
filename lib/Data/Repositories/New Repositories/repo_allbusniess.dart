@@ -18,7 +18,6 @@ class BusinessRepository {
   }) async {
     print('🏢 BUSINESS REPOSITORY - fetchBusiness called');
     print('📋 Input Parameters:');
-    print('   - industry: "$industry"');
     print('   - page: $page');
     print('   - country: "$country"');
     print('   - zone: "$zone"');
@@ -28,7 +27,6 @@ class BusinessRepository {
     print('   - showAll: $showAll');
 
     final queryParams = <String, String>{
-      'industry': industry,
       'page': page.toString(),
     };
 
@@ -61,9 +59,9 @@ class BusinessRepository {
         .join('&');
 
     print('🔗 Final Query String: $queryString');
-    print('🎯 Making API call to: /business?$queryString');
+    print('🎯 Making API call to: ?endpoint=business&$queryString');
 
-    final (res, code) = await _api.get('/business?$queryString');
+    final (res, code) = await _api.get('?endpoint=business&$queryString');
 
     print('📊 API Response Code: $code');
     print('📦 API Response Data: ${res.data}');
