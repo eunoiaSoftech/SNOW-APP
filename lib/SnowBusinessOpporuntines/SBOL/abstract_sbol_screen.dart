@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Repositories/New Repositories/SBOL REPO/sbol_repo.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/models/New Model/SBOL MODEL/sbol_model.dart';
+import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
+import 'package:snow_app/core/result.dart';
 
 class AbstractSBOLScreen extends StatefulWidget {
   const AbstractSBOLScreen({Key? key}) : super(key: key);
@@ -18,11 +21,20 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
   bool isLoading = false;
   String? error;
   List<SbolItem> records = [];
+  List<BusinessItem> businessList = [];
+
+  Map<int, String> businessMap = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchRecords();
+
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    await fetchBusinessList();
+    await _fetchRecords();
   }
 
   Future<void> _fetchRecords() async {
@@ -39,13 +51,28 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
       setState(() {
         records = response.data;
       });
-
     } catch (e) {
       setState(() {
         error = e.toString();
       });
     } finally {
       setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> fetchBusinessList() async {
+    final repo = BusinessRepository();
+
+    final result = await repo.fetchBusiness(page: 1, showAll: true);
+
+    if (result is Ok<List<BusinessItem>>) {
+      businessList = result.value;
+
+      // ✅ CREATE MAP HERE (CORRECT PLACE)
+      businessMap = {
+        for (var b in businessList) b.id: b.business?.name ?? "No Name",
+      };
+      print("✅ Business Map: $businessMap");
     }
   }
 
@@ -234,8 +261,7 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
     );
   }
 
-  Widget _buildDatePicker(
-      String label, DateTime? value, VoidCallback onTap) {
+  Widget _buildDatePicker(String label, DateTime? value, VoidCallback onTap) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -258,8 +284,11 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today,
-                    size: 16, color: Color(0xFF014576)),
+                const Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: Color(0xFF014576),
+                ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
@@ -317,7 +346,7 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
             for (var record in records)
               _buildRecordItem(
                 // date: record.toBusinessId ?? "",
-                sbolTo: record.toBusinessId.toString(),
+                sbolTo: businessMap[record.toBusinessId] ?? "Unknown",
                 referral: record.referral,
                 phone: record.telephone,
                 email: record.email,
@@ -356,34 +385,42 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
-
-          Text("SBOL TO: $sbolTo",
-              style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87)),
+          Text(
+            "SBOL TO: $sbolTo",
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
           const SizedBox(height: 6),
 
-          Text("Referral: $referral",
-              style: GoogleFonts.poppins(
-                  fontSize: 13, color: Colors.grey[700])),
-          Text("Phone: $phone",
-              style: GoogleFonts.poppins(
-                  fontSize: 13, color: Colors.grey[700])),
-          Text("Email: $email",
-              style: GoogleFonts.poppins(
-                  fontSize: 13, color: Colors.grey[700])),
-          Text("Comments: $comment",
-              style: GoogleFonts.poppins(
-                  fontSize: 13, color: Colors.grey[700])),
+          Text(
+            "Referral: $referral",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
+          Text(
+            "Phone: $phone",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
+          Text(
+            "Email: $email",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
+          Text(
+            "Comments: $comment",
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+          ),
           const SizedBox(height: 4),
 
-          Text("Lead Level: $level ⭐",
-              style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.amber[800])),
+          Text(
+            "Lead Level: $level ⭐",
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.amber[800],
+            ),
+          ),
         ],
       ),
     );
@@ -410,10 +447,7 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
         const SizedBox(width: 8),
         Text(
           title,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
         ),
       ],
     );
