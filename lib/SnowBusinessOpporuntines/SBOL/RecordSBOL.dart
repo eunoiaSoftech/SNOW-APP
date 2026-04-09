@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
+import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
 import 'package:snow_app/common%20api/all_business_directory_model.dart';
+import 'package:snow_app/core/result.dart';
 import '../../Data/Repositories/New Repositories/SBOL REPO/sbol_repo.dart';
 import '../../Data/models/New Model/SBOL MODEL/sbol_model.dart';
 import 'package:snow_app/Data/Models/admin_igloo.dart';
@@ -33,7 +36,7 @@ class _RecordSBOLState extends State<RecordSBOL>
   int _selectedLeadLevel = 0;
   int? _selectedBusinessId;
 
-  List<BusinessDirectoryItem> _businessItems = [];
+  List<BusinessItem> _businessItems = [];
   FilterData? _currentFilters;
   List<Igloo> _igloos = [];
 
@@ -56,30 +59,39 @@ class _RecordSBOLState extends State<RecordSBOL>
       duration: const Duration(seconds: 1),
     )..repeat();
     _dotsAnimation = IntTween(begin: 0, end: 3).animate(_dotsController);
-    _fetchMembers();
+    _fetchMyIglooMembers();
   }
-Future<void> _fetchMembers() async {
+
+
+Future<void> _fetchMyIglooMembers() async {
   setState(() => _isDropdownLoading = true);
 
   try {
-    final repo = DirectoryBusinessRepository();   // <<< CORRECT REPO
-    final response = await repo.fetchAllActiveBusinesses();
+    final repo = BusinessRepository();
 
-    setState(() {
-      _businessItems = response.data;   // THIS IS List<BusinessDirectoryItem>
-      _isDropdownLoading = false;
-    });
+    bool shouldShowAll =
+        _currentFilters == null || !_currentFilters!.hasAnyFilter;
 
+    final result = await repo.fetchBusiness(
+      page: 1,
+      country: _currentFilters?.country ?? '',
+      zone: _currentFilters?.zone ?? '',
+      city: _currentFilters?.city ?? '',
+      search: _currentFilters?.businessName ?? '',
+      showAll: shouldShowAll,
+    );
+
+    if (result is Ok<List<BusinessItem>>) {
+      setState(() {
+        _businessItems = result.value;
+        _isDropdownLoading = false;
+      });
+    }
   } catch (e) {
     setState(() => _isDropdownLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Failed to fetch businesses: $e"),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
   }
 }
+
 
   @override
   void dispose() {
@@ -103,7 +115,7 @@ Future<void> _fetchMembers() async {
               _selectedMyIglooMember = null;
               _selectedBusinessId = null;
               _selectedBusinessId = null;
-              _fetchMembers();
+              _fetchMyIglooMembers();
               _filterIgloosOffline();
             });
           },
@@ -179,7 +191,6 @@ Future<void> _fetchMembers() async {
     setState(() => _isLoading = true);
 
     try {
-
       final request = SbolRequest(
         toBusinessId: _selectedBusinessId!.toString(),
         referral: _referralController.text.trim(),
@@ -462,7 +473,7 @@ Future<void> _fetchMembers() async {
                                 value: _selectedBusinessId,
                                 items: _businessItems.map((item) {
                                   final name =
-                                      item.data.businessName ??
+                                      item.business.name ??
                                       "Unknown Business";
 
                                   return DropdownMenuItem<int>(
@@ -482,7 +493,7 @@ Future<void> _fetchMembers() async {
                                       final selected = _businessItems
                                           .firstWhere((x) => x.id == id);
                                       _selectedMyIglooMember =
-                                          selected.data.businessName;
+                                          selected.business.name;
                                     } else {
                                       _selectedMyIglooMember = null;
                                     }

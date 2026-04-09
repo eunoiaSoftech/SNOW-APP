@@ -1,13 +1,14 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Models/admin_igloo.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/SBOG%20REPO/recordSbog.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
+import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
 
 import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
 import 'package:snow_app/common%20api/all_business_api.dart';
 import 'package:snow_app/common%20api/all_business_directory_model.dart';
+import 'package:snow_app/core/result.dart';
 
 class RecordSBOG extends StatefulWidget {
   const RecordSBOG({Key? key}) : super(key: key);
@@ -29,8 +30,7 @@ class _RecordSBOGState extends State<RecordSBOG>
 
   bool _isLoading = false;
   bool _isDropdownLoading = true;
-  List<BusinessDirectoryItem> _businessItems = [];
-
+  List<BusinessItem> _businessItems = [];
 
   String? _selectedMyIglooMember;
   int? _selectedBusinessId;
@@ -48,30 +48,36 @@ class _RecordSBOGState extends State<RecordSBOG>
       duration: const Duration(seconds: 1),
     )..repeat();
     _dotsAnimation = IntTween(begin: 0, end: 3).animate(_dotsController);
-    _fetchMembers();
+      _fetchMyIglooMembers();
   }
 
-Future<void> _fetchMembers() async {
+
+Future<void> _fetchMyIglooMembers() async {
   setState(() => _isDropdownLoading = true);
 
   try {
-    final repo = DirectoryBusinessRepository();
+    final repo = BusinessRepository();
 
-    final response = await repo.fetchAllActiveBusinesses();
+    bool shouldShowAll =
+        _currentFilters == null || !_currentFilters!.hasAnyFilter;
 
-    setState(() {
-      _businessItems = response.data;
-      _isDropdownLoading = false;
-    });
+    final result = await repo.fetchBusiness(
+      page: 1,
+      country: _currentFilters?.country ?? '',
+      zone: _currentFilters?.zone ?? '',
+      city: _currentFilters?.city ?? '',
+      search: _currentFilters?.businessName ?? '',
+      showAll: shouldShowAll,
+    );
 
+    if (result is Ok<List<BusinessItem>>) {
+      setState(() {
+        _businessItems = result.value;
+        _isDropdownLoading = false;
+      });
+    }
   } catch (e) {
     setState(() => _isDropdownLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Failed to fetch members: $e"),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
   }
 }
 
@@ -102,7 +108,7 @@ Future<void> _fetchMembers() async {
               _selectedMyIglooMember = null;
             });
             // Refresh the members list with new filters
-            _fetchMembers();
+            _fetchMyIglooMembers();
             _filterIgloosOffline();
           },
         );
@@ -169,10 +175,11 @@ Future<void> _fetchMembers() async {
     final isValid = _formKey.currentState!.validate();
 
     // Check dropdown
-  if (_selectedBusinessId == null) {
-
+    if (_selectedBusinessId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a member from My Business')),
+        const SnackBar(
+          content: Text('Please select a member from My Business'),
+        ),
       );
       return;
     }
@@ -182,14 +189,13 @@ Future<void> _fetchMembers() async {
     setState(() => _isLoading = true);
 
     try {
-    final request = {
-  "to_business_id": _selectedBusinessId,
-  "give": _referralController.text.trim(),
-  "telephone": _telephoneController.text.trim(),
-  "email": _emailController.text.trim(),
-  "comment": _commentsController.text.trim(),
-};
-
+      final request = {
+        "to_business_id": _selectedBusinessId,
+        "give": _referralController.text.trim(),
+        "telephone": _telephoneController.text.trim(),
+        "email": _emailController.text.trim(),
+        "comment": _commentsController.text.trim(),
+      };
 
       final response = await repository.recordSbog(request);
 
@@ -408,42 +414,49 @@ Future<void> _fetchMembers() async {
                           : SizedBox(
                               width: double.infinity,
                               child: SizedBox(
-  width: double.infinity,
-  child: DropdownButtonFormField<int>(
-    isExpanded: true,
-    value: _selectedBusinessId,
-    items: _businessItems.map((item) {
-      final name = item.data.businessName ?? "Unknown Business";
+                                width: double.infinity,
+                                child: DropdownButtonFormField<int>(
+                                  isExpanded: true,
+                                  value: _selectedBusinessId,
+                                  items: _businessItems.map((item) {
+                                    final name =
+                                        item.business.name ??
+                                        "Unknown Business";
 
-      return DropdownMenuItem<int>(
-        value: item.id,                     // THIS IS to_business_id 👈
-        child: Text(
-          name,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.poppins(fontSize: 14),
-        ),
-      );
-    }).toList(),
-    onChanged: (int? id) {
-      setState(() {
-        _selectedBusinessId = id;
+                                    return DropdownMenuItem<int>(
+                                      value:
+                                          item.id, // THIS IS to_business_id 👈
+                                      child: Text(
+                                        name,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (int? id) {
+                                    setState(() {
+                                      _selectedBusinessId = id;
 
-        if (id != null) {
-          final selected = _businessItems.firstWhere(
-            (x) => x.id == id,
-          );
-          _selectedMyIglooMember = selected.data.businessName;
-        } else {
-          _selectedMyIglooMember = null;
-        }
-      });
-    },
-    decoration: _inputDecoration('Select a member'),
-    validator: (value) => value == null ? 'Required' : null,
-    menuMaxHeight: 200,
-  ),
-),
-
+                                      if (id != null) {
+                                        final selected = _businessItems
+                                            .firstWhere((x) => x.id == id);
+                                        _selectedMyIglooMember =
+                                            selected.business.name;
+                                      } else {
+                                        _selectedMyIglooMember = null;
+                                      }
+                                    });
+                                  },
+                                  decoration: _inputDecoration(
+                                    'Select a member',
+                                  ),
+                                  validator: (value) =>
+                                      value == null ? 'Required' : null,
+                                  menuMaxHeight: 200,
+                                ),
+                              ),
                             ),
 
                       const SizedBox(height: 16),

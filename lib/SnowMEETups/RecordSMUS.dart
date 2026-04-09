@@ -3,8 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
 import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
-import 'package:snow_app/core/result.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
+import 'package:snow_app/core/result.dart';
+
+import '../Data/Repositories/New Repositories/SMU/smu_repo.dart';
 
 class RecordSMUS extends StatefulWidget {
   const RecordSMUS({Key? key}) : super(key: key);
@@ -31,7 +33,7 @@ class _RecordSMUSState extends State<RecordSMUS>
   String? _selectedMyIglooMember;
   int? _selectedBusinessId;
 
-  List<String> _myIglooMembers = [];
+  // List<BusinessDirectoryItem> _businessItems = [];
   List<BusinessItem> _businessItems = [];
   FilterData? _currentFilters;
   final List<String> _modes = [
@@ -64,64 +66,34 @@ class _RecordSMUSState extends State<RecordSMUS>
     _fetchMyIglooMembers();
   }
 
-  //CALL THIS METHOD IN ALL CREATE FORM
-  Future<void> _fetchMyIglooMembers() async {
-    print('🎯 RECORDSMUS - _fetchMyIglooMembers called');
-    print('📋 Current Filters: ${_currentFilters?.toQueryParams()}');
-    print('🔍 Has Any Filter: ${_currentFilters?.hasAnyFilter}');
+Future<void> _fetchMyIglooMembers() async {
+  setState(() => _isDropdownLoading = true);
 
-    setState(() => _isDropdownLoading = true);
+  try {
+    final repo = BusinessRepository();
 
-    try {
-      final repo = BusinessRepository();
+    bool shouldShowAll =
+        _currentFilters == null || !_currentFilters!.hasAnyFilter;
 
-      // Determine if we should pass showAll based on filters
-      bool shouldShowAll =
-          _currentFilters == null || !_currentFilters!.hasAnyFilter;
+    final result = await repo.fetchBusiness(
+      page: 1,
+      country: _currentFilters?.country ?? '',
+      zone: _currentFilters?.zone ?? '',
+      city: _currentFilters?.city ?? '',
+      search: _currentFilters?.businessName ?? '',
+      showAll: shouldShowAll,
+    );
 
-      print('📊 Should Show All: $shouldShowAll');
-
-      final Result<List<BusinessItem>> result = await repo.fetchBusiness(
-        page: 1,
-        country: _currentFilters?.country ?? '',
-        zone: _currentFilters?.zone ?? '',
-        city: _currentFilters?.city ?? '',
-        search: _currentFilters?.businessName ?? '',
-        showAll: shouldShowAll,
-      );
-
-      if (result is Ok<List<BusinessItem>>) {
-        setState(() {
-          _businessItems = result.value;
-          _myIglooMembers = result.value
-              .map((e) => e.business.name ?? '')
-              .toList();
-
-          _isDropdownLoading = false;
-        });
-        print('✅ Successfully loaded ${_myIglooMembers.length} members');
-        print('📋 Member names: $_myIglooMembers');
-        print('📋 Business items: ${_businessItems.length} items');
-      } else if (result is Err<List<BusinessItem>>) {
-        setState(() => _isDropdownLoading = false);
-        print('❌ Failed to fetch members: ${result.message}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to fetch members: ${result.message}"),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() => _isDropdownLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error fetching members: $e"),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+    if (result is Ok<List<BusinessItem>>) {
+      setState(() {
+        _businessItems = result.value;
+        _isDropdownLoading = false;
+      });
     }
+  } catch (e) {
+    setState(() => _isDropdownLoading = false);
   }
+}
 
   @override
   void dispose() {
@@ -217,20 +189,18 @@ class _RecordSMUSState extends State<RecordSMUS>
       print('   - Mode: $_mode');
 
       final body = {
-        "to_member": memberName,
-        "to_business_id": _selectedBusinessId,
+        "to_name": memberName,
+        "opponent_user_id": _selectedBusinessId,
         "abstract": _abstractController.text.trim(),
         "date":
-        "${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}",
-        "collab_type": _collab,
-        "followup_date": _followupDate != null
-            ? "${_followupDate!.year}-${_followupDate!.month.toString().padLeft(2, '0')}-${_followupDate!.day.toString().padLeft(2, '0')}"
-            : null,
-        "mode": _mode,
+            "${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}",
+        "collaboration_type": _collab == 1 ? "Strategic" : "Opportunity",
+        "followup_date": _followupController.text.trim(),
+        "mode": _mode!.toLowerCase(),
       };
 
-      final repo = ReferralsRepositorysums();
-      final response = await repo.recordSmus(body);
+      final repo = ReferralsRepositorySmu();
+      final response = await repo.createSmu(body);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -250,13 +220,6 @@ class _RecordSMUSState extends State<RecordSMUS>
     } finally {
       setState(() => _isLoading = false);
     }
-    Future.delayed(const Duration(milliseconds: 200), () {
-      Navigator.pop(context);
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (context) => const GradientGridScreen()),
-      // );
-    });
   }
 
   void _resetForm() {
@@ -436,53 +399,29 @@ class _RecordSMUSState extends State<RecordSMUS>
                               child: DropdownButtonFormField<int>(
                                 isExpanded: true,
                                 value: _selectedBusinessId,
-                                items: _businessItems.map((BusinessItem item) {
-                                  final businessName =
-                                      item.business.name ?? 'Unknown Business';
+                                items: _businessItems.map((item) {
+                                  final name =
+                                      item.business.name ??
+                                      "Unknown Business";
+
                                   return DropdownMenuItem<int>(
-                                    value: item.id,
+                                    value: item.id, // THIS IS to_business_id 👈
                                     child: Text(
-                                      businessName,
+                                      name,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.poppins(fontSize: 14),
                                     ),
                                   );
                                 }).toList(),
-                                onChanged: (int? businessId) {
-                                  debugPrint(
-                                    "Selected business ID: $businessId",
-                                  );
+                                onChanged: (int? id) {
                                   setState(() {
-                                    _selectedBusinessId = businessId;
-                                    if (businessId != null) {
-                                      final selectedBusiness = _businessItems
-                                          .firstWhere(
-                                            (item) => item.id == businessId,
-                                            orElse: () => BusinessItem(
-                                              id: 0,
-                                              email: '',
-                                              fullName: '',
-                                              displayName: '',
-                                              registeredDate: DateTime.now(),
-                                              status: '',
-                                              business: BusinessDetails(
-                                                name: '',
-                                                contact: '',
-                                                city: '',
-                                                zone: '',
-                                                country: '',
-                                              ),
-                                            ),
-                                          );
-                                      _selectedMyIglooMember =
-                                          selectedBusiness.business.name;
+                                    _selectedBusinessId = id;
 
-                                      print(
-                                        '🎯 Selected Member: ${selectedBusiness.business.name}',
-                                      );
-                                      print(
-                                        '🎯 Selected Business ID: $businessId',
-                                      );
+                                    if (id != null) {
+                                      final selected = _businessItems
+                                          .firstWhere((x) => x.id == id);
+                                      _selectedMyIglooMember =
+                                          selected.business.name;
                                     } else {
                                       _selectedMyIglooMember = null;
                                     }
@@ -494,6 +433,7 @@ class _RecordSMUSState extends State<RecordSMUS>
                                 menuMaxHeight: 200,
                               ),
                             ),
+
                       const SizedBox(height: 16),
 
                       // ... rest of your UI (Abstract, Date, Collab Type, etc.) remains unchanged
@@ -631,12 +571,9 @@ class _RecordSMUSState extends State<RecordSMUS>
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
-
-                              onPressed: (){},
-
-                              // onPressed: _isLoading
-                              //     ? null
-                              //     : () => _submitForm(resetAfter: true),
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => _submitForm(resetAfter: true),
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 child: Text(

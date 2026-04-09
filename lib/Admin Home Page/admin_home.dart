@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_create_location.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_module_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_igloo_screen.dart';
+import 'package:snow_app/Admin%20Home%20Page/admin_renewal_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/create_business_category.dart';
 import 'package:snow_app/Admin%20Home%20Page/user_list_screen.dart';
 
@@ -16,6 +17,7 @@ class AdminHomeScreen extends StatelessWidget {
     {"title": "Igloo Management", "icon": Icons.ac_unit, "route": "igloos"},
     {"title": "Module Access", "icon": Icons.tune, "route": "modules"},
     {"title": "Locations", "icon": Icons.location_on, "route": "locations"},
+    {"title": "Membership Renewal", "icon": Icons.refresh, "route": "renewal"},
     {"title": "Settings", "icon": Icons.settings, "route": "settings"},
   ];
 
@@ -156,12 +158,22 @@ class AdminHomeScreen extends StatelessWidget {
                                   ),
                                 );
                                 break;
-                           
+
                               case "locations":
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => const AdminCreateLocationScreen(),
+                                    builder: (_) =>
+                                        const AdminCreateLocationScreen(),
+                                  ),
+                                );
+                                break;
+
+                              case "renewal":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const AdminRenewalScreen(),
                                   ),
                                 );
                                 break;

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/sgf/sgf_repo.dart';
+import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
-import 'package:snow_app/common%20api/all_business_api.dart';
-import 'package:snow_app/common%20api/all_business_directory_model.dart';
+import 'package:snow_app/core/result.dart';
 
 class SnowflakesRecordSFG extends StatefulWidget {
   const SnowflakesRecordSFG({Key? key}) : super(key: key);
@@ -23,10 +24,11 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
   int? _selectedBusinessId;
   bool _isLoading = false;
   bool _isDropdownLoading = true;
-  
 
   List<String> _members = [];
-  List<BusinessDirectoryItem> _businessItems = [];
+  // List<BusinessDirectoryItem> _businessItems = [];
+    List<BusinessItem> _businessItems = [];
+
   FilterData? _currentFilters;
 
   late final AnimationController _dotsController;
@@ -40,7 +42,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
       duration: const Duration(seconds: 1),
     )..repeat();
     _dotsAnimation = IntTween(begin: 0, end: 3).animate(_dotsController);
-    _fetchMembers();
+    _fetchMyIglooMembers();
   }
 
   @override
@@ -52,28 +54,34 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
     super.dispose();
   }
 
-  Future<void> _fetchMembers() async {
-    setState(() => _isDropdownLoading = true);
+Future<void> _fetchMyIglooMembers() async {
+  setState(() => _isDropdownLoading = true);
 
-    try {
-      final repo = DirectoryBusinessRepository();
+  try {
+    final repo = BusinessRepository();
 
-      final response = await repo.fetchAllActiveBusinesses();
+    bool shouldShowAll =
+        _currentFilters == null || !_currentFilters!.hasAnyFilter;
 
+    final result = await repo.fetchBusiness(
+      page: 1,
+      country: _currentFilters?.country ?? '',
+      zone: _currentFilters?.zone ?? '',
+      city: _currentFilters?.city ?? '',
+      search: _currentFilters?.businessName ?? '',
+      showAll: shouldShowAll,
+    );
+
+    if (result is Ok<List<BusinessItem>>) {
       setState(() {
-        _businessItems = response.data;
+        _businessItems = result.value;
         _isDropdownLoading = false;
       });
-    } catch (e) {
-      setState(() => _isDropdownLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to fetch members: $e"),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
     }
+  } catch (e) {
+    setState(() => _isDropdownLoading = false);
   }
+}
 
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
@@ -133,7 +141,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
               _selectedBusinessId = null;
             });
             // Refresh the members list with new filters
-            _fetchMembers();
+            _fetchMyIglooMembers();
           },
         );
       },
@@ -319,9 +327,8 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                                 value: _selectedBusinessId,
                                 items: _businessItems.map((item) {
                                   final name =
-                                      item.data.businessName ??
+                                      item.business.name ??
                                       "Unknown Business";
-                                      
 
                                   return DropdownMenuItem<int>(
                                     value: item.id, // THIS IS to_business_id 👈
@@ -340,7 +347,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
                                       final selected = _businessItems
                                           .firstWhere((x) => x.id == id);
                                       _selectedMyIglooMember =
-                                          selected.data.businessName;
+                                          selected.business.name;
                                     } else {
                                       _selectedMyIglooMember = null;
                                     }
