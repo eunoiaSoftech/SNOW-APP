@@ -5,6 +5,7 @@ import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.d
 import 'package:snow_app/Data/models/New Model/SBOL MODEL/sbol_model.dart';
 import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
 import 'package:snow_app/core/result.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AbstractSBOLScreen extends StatefulWidget {
   const AbstractSBOLScreen({Key? key}) : super(key: key);
@@ -24,6 +25,7 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
   List<BusinessItem> businessList = [];
 
   Map<int, String> businessMap = {};
+  int _viewMode = 0; // 0=All, 1=Created for me, 2=Created by me
 
   @override
   void initState() {
@@ -46,7 +48,14 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
     try {
       /// NOTE ✔ Backend does not accept date range yet.
       /// So we fetch all records only.
-      final response = await _repo.fetchSbolRecords(0);
+      final prefs = await SharedPreferences.getInstance();
+      final businessId = prefs.getInt('business_id') ?? 0;
+
+      final response = await _repo.fetchSbolRecords(
+        businessId,
+        filterForMe: _viewMode == 1,
+        showOnlyMy: _viewMode == 2,
+      );
 
       setState(() {
         records = response.data;
@@ -197,6 +206,91 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _cardTitle("Select date range to view slips", Icons.filter_alt),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "All",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 0,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 0);
+                      _fetchRecords();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created for me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 1,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 1);
+                      _fetchRecords();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created by me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 2,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 2);
+                      _fetchRecords();
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
             Row(
               children: [

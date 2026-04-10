@@ -66,34 +66,34 @@ class _RecordSMUSState extends State<RecordSMUS>
     _fetchMyIglooMembers();
   }
 
-Future<void> _fetchMyIglooMembers() async {
-  setState(() => _isDropdownLoading = true);
+  Future<void> _fetchMyIglooMembers() async {
+    setState(() => _isDropdownLoading = true);
 
-  try {
-    final repo = BusinessRepository();
+    try {
+      final repo = BusinessRepository();
 
-    bool shouldShowAll =
-        _currentFilters == null || !_currentFilters!.hasAnyFilter;
+      bool shouldShowAll =
+          _currentFilters == null || !_currentFilters!.hasAnyFilter;
 
-    final result = await repo.fetchBusiness(
-      page: 1,
-      country: _currentFilters?.country ?? '',
-      zone: _currentFilters?.zone ?? '',
-      city: _currentFilters?.city ?? '',
-      search: _currentFilters?.businessName ?? '',
-      showAll: shouldShowAll,
-    );
+      final result = await repo.fetchBusiness(
+        page: 1,
+        country: _currentFilters?.countryId ?? '',
+        zone: _currentFilters?.zoneId ?? '',
+        city: _currentFilters?.cityId ?? '',
+        search: _currentFilters?.businessName ?? '',
+        showAll: shouldShowAll,
+      );
 
-    if (result is Ok<List<BusinessItem>>) {
-      setState(() {
-        _businessItems = result.value;
-        _isDropdownLoading = false;
-      });
+      if (result is Ok<List<BusinessItem>>) {
+        setState(() {
+          _businessItems = result.value;
+          _isDropdownLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isDropdownLoading = false);
     }
-  } catch (e) {
-    setState(() => _isDropdownLoading = false);
   }
-}
 
   @override
   void dispose() {
@@ -401,8 +401,7 @@ Future<void> _fetchMyIglooMembers() async {
                                 value: _selectedBusinessId,
                                 items: _businessItems.map((item) {
                                   final name =
-                                      item.business.name ??
-                                      "Unknown Business";
+                                      "${item.displayName} - ${item.business.name}";
 
                                   return DropdownMenuItem<int>(
                                     value: item.id, // THIS IS to_business_id 👈

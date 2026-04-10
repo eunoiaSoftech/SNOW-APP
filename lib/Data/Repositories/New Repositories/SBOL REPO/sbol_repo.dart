@@ -5,12 +5,18 @@ class ReferralsRepositorySbol {
   final ApiClient _api = ApiClient.create();
 
   /// ✅ LIST SBOL (correct Postman endpoint)
-  Future<SbolListResponse> fetchSbolRecords(int businessId) async {
-    const endpoint = "router.php"; 
+  Future<SbolListResponse> fetchSbolRecords(
+    int businessId, {
+    bool filterForMe = false,
+    bool showOnlyMy = false,
+  }) async {
+    const endpoint = "router.php";
 
     final query = {
       "endpoint": "sbol/list",
-      "business_id": businessId.toString(),
+      "filter_for_me": filterForMe.toString(),
+      "show_only_my": showOnlyMy.toString(),
+      // "business_id": businessId.toString(),
     };
 
     try {
@@ -30,16 +36,10 @@ class ReferralsRepositorySbol {
   Future<Map<String, dynamic>> recordSbol(Map<String, dynamic> body) async {
     const endpoint = "router.php";
 
-    final query = {
-      "endpoint": "sbol/create",
-    };
+    final query = {"endpoint": "sbol/create"};
 
     try {
-      final (res, code) = await _api.post(
-        endpoint,
-        body: body,
-        query: query,
-      );
+      final (res, code) = await _api.post(endpoint, body: body, query: query);
 
       if (code == 200 || code == 201) {
         return res.data;

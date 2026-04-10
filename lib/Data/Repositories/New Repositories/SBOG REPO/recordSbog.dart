@@ -5,10 +5,15 @@ class ReferralsRepositorySbog {
   final ApiClient _api = ApiClient.create();
 
   /// LIST SBOG
-  Future<SbogListResponse> fetchSbogRecords() async {
+  Future<SbogListResponse> fetchSbogRecords({
+    bool filterForMe = false,
+    bool showOnlyMy = false,
+  }) async {
     const endpoint = "router.php";
-    const query = {
+    final query = {
       "endpoint": "sbog/list",
+      "filter_for_me": filterForMe.toString(),
+      "show_only_my": showOnlyMy.toString(),
     };
 
     try {

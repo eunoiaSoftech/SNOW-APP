@@ -20,6 +20,8 @@ class _AbstractSMUSState extends State<AbstractSMUS> {
   String? errorMessage;
   final TextEditingController searchController = TextEditingController();
 
+  int _viewMode = 0; // 0=All, 1=Created for me, 2=Created by me
+
   @override
   void dispose() {
     searchController.dispose();
@@ -39,7 +41,10 @@ Future<void> _fetchSmusData() async {
   });
 
   try {
-    final response = await _repo.fetchSmuRecords();
+    final response = await _repo.fetchSmuRecords(
+      filterForMe: _viewMode == 1,
+      showOnlyMy: _viewMode == 2,
+    );
 
     if (response.success && response.data.isNotEmpty) {
       allRecords = response.data.map((r) {
@@ -202,6 +207,91 @@ Future<void> _fetchSmusData() async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _cardTitle("Date Filters", Icons.filter_alt),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "All",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 0,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 0);
+                      _fetchSmusData();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created for me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 1,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 1);
+                      _fetchSmusData();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created by me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 2,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 2);
+                      _fetchSmusData();
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
             Row(
               children: [

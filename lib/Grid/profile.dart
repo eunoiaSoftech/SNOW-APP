@@ -557,9 +557,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             extendBody: true,
             extendBodyBehindAppBar: true,
             backgroundColor: Colors.transparent,
-
+            resizeToAvoidBottomInset: true,
             appBar: AppBar(
-              backgroundColor: Colors.transparent,
+              backgroundColor: Color(0xAA97DCEB),
               elevation: 0,
               title: Text(
                 "My Profile",

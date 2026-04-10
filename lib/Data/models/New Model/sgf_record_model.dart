@@ -5,6 +5,7 @@ class SfgItem {
   final String amount;
   final String comment;
   final String createdAt;
+  final String userName;
 
   SfgItem({
     required this.id,
@@ -13,6 +14,7 @@ class SfgItem {
     required this.amount,
     required this.comment,
     required this.createdAt,
+    required this.userName,
   });
 
   factory SfgItem.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class SfgItem {
       amount: json['amount']?.toString() ?? "",
       comment: json['comment'] ?? "",
       createdAt: json['created_at'] ?? "",
+      userName: json['opponent_user']['display_name'] ?? "",
     );
   }
 }

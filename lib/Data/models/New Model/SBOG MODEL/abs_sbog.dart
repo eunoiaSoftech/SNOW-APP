@@ -23,6 +23,7 @@ class SbogListResponse {
 class SbogItem {
   final String id;
   final String userId;
+  final String businessName;
   final String toBusinessId;
   final String give;
   final String telephone;
@@ -33,6 +34,7 @@ class SbogItem {
   SbogItem({
     required this.id,
     required this.userId,
+    required this.businessName,
     required this.toBusinessId,
     required this.give,
     required this.telephone,
@@ -45,6 +47,7 @@ class SbogItem {
     return SbogItem(
       id: json['id'].toString(),
       userId: json['user_id'].toString(),
+      businessName: json?['to_business']?['display_name'] ?? "-",
       toBusinessId: json['to_business_id'].toString(),
       give: json['give'] ?? '',
       telephone: json['telephone'] ?? '',

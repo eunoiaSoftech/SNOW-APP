@@ -91,6 +91,11 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "screen": RecordSBOG(),
       },
       {
+        "title": "Abstract of SBOG",
+        "icon": Icons.analytics_rounded,
+        "screen": AbstractSBOGScreen(),
+      },
+      {
         "title": "Record SBOL",
         "icon": Icons.business_center_rounded,
         "screen": RecordSBOL(),
@@ -100,16 +105,11 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "icon": Icons.business_center_rounded,
         "screen": AbstractSBOLScreen(),
       },
-      {
-        "title": "Abstract of SBOG",
-        "icon": Icons.analytics_rounded,
-        "screen": AbstractSBOGScreen(),
-      },
-      {
-        "title": "Abstract of SBOR",
-        "icon": Icons.insert_chart_rounded,
-        "screen": AbstractSBOR(),
-      },
+      // {
+      //   "title": "Abstract of SBOR",
+      //   "icon": Icons.insert_chart_rounded,
+      //   "screen": AbstractSBOR(),
+      // },
       // {
       //   "title": "Record SBOR",
       //   "icon": Icons.insert_chart_rounded,

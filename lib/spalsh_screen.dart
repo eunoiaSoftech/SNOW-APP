@@ -11,6 +11,9 @@ import 'package:snow_fall_animation/snow_fall_animation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snow_app/onboarding_screen.dart';
 import 'package:snow_app/Admin Home Page/homewapper.dart';
+import 'package:snow_app/core/module_access_service.dart';
+import 'package:snow_app/core/result.dart';
+import 'package:snow_app/Data/Repositories/profile_repository.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,6 +24,8 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   final AppSettingsRepository _settingsRepo = AppSettingsRepository();
+  final ProfileRepository _profileRepo = ProfileRepository();
+  final ModuleAccessService _moduleAccessService = ModuleAccessService();
 
   @override
   void initState() {
@@ -65,6 +70,13 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       final platform = Platform.isAndroid ? 'android' : 'ios';
 
+      // 🔥 Prefetch profile on app open (logged-in only).
+      // This warms up module access + profile data before user lands.
+      Future<void> profileWarmup = Future.value();
+      if (isLoggedIn) {
+        profileWarmup = _warmupProfile();
+      }
+
       /// 🔐 Fetch app settings WITH TIMEOUT (CRITICAL FIX)
       final settings = await _settingsRepo
           .fetchAppSettings(platform)
@@ -84,6 +96,15 @@ class _SplashScreenState extends State<SplashScreen> {
       // Keep splash visible for UX
       await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return;
+
+      // Don't block navigation for too long; best-effort warmup.
+      await profileWarmup.timeout(
+        const Duration(seconds: 6),
+        onTimeout: () {
+          debugPrint('⏱️ Profile warmup timeout');
+          return;
+        },
+      );
 
       /// 🛑 SAFETY NET — If settings API FAILED or returned null
       if (settings == null) {
@@ -237,6 +258,24 @@ class _SplashScreenState extends State<SplashScreen> {
         context,
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       );
+    }
+  }
+
+  Future<void> _warmupProfile() async {
+    try {
+      final res = await _profileRepo.fetchProfile();
+
+      switch (res) {
+        case Ok(value: final profile):
+          _moduleAccessService.updateModules(profile.modules);
+          debugPrint('✅ Profile warmed up. Modules: ${profile.modules.length}');
+          break;
+        case Err(message: final msg, code: final code):
+          debugPrint('⚠️ Profile warmup failed ($code): $msg');
+          break;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Profile warmup error: $e');
     }
   }
 

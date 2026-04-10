@@ -8,16 +8,30 @@ import 'package:snow_app/core/result.dart';
 class FilterData {
   final String? businessName;
   final String? country;
+  final String? countryId;
   final String? zone;
+  final String? zoneId;
   final String? city;
+  final String? cityId;
 
-  FilterData({this.businessName, this.country, this.zone, this.city});
+  FilterData({
+    this.businessName,
+    this.country,
+    this.zone,
+    this.city,
+    this.cityId,
+    this.countryId,
+    this.zoneId,
+  });
 
   bool get hasAnyFilter {
     return businessName?.isNotEmpty == true ||
         country?.isNotEmpty == true ||
+        countryId?.isNotEmpty == true ||
         zone?.isNotEmpty == true ||
-        city?.isNotEmpty == true;
+        zoneId?.isNotEmpty == true ||
+        city?.isNotEmpty == true ||
+        cityId?.isNotEmpty == true;
   }
 
   Map<String, String> toQueryParams() {
@@ -26,14 +40,14 @@ class FilterData {
     if (businessName?.isNotEmpty == true) {
       params['search'] = businessName!;
     }
-    if (country?.isNotEmpty == true && country != 'All') {
-      params['country'] = country!;
+    if (countryId?.isNotEmpty == true && countryId != 'All') {
+      params['country'] = countryId!;
     }
-    if (zone?.isNotEmpty == true && zone != 'All') {
-      params['zone'] = zone!;
+    if (zoneId?.isNotEmpty == true && zoneId != 'All') {
+      params['zone'] = zoneId!;
     }
-    if (city?.isNotEmpty == true && city != 'All') {
-      params['city'] = city!;
+    if (cityId?.isNotEmpty == true && cityId != 'All') {
+      params['city'] = cityId!;
     }
 
     return params;
@@ -71,6 +85,140 @@ class _EnhancedSearchIgloosDialogState
   bool _isLoading = true;
   location_models.LocationData? _locationData;
   FilterData? _pendingInitialFilters;
+
+  String? _getCountryIdByName(String? countryName) {
+    if (countryName == null ||
+        countryName.isEmpty ||
+        countryName == 'All' ||
+        _locationData == null) {
+      return null;
+    }
+    final match = _locationData!.countries.where((c) => c.name == countryName);
+    if (match.isEmpty) return null;
+    return match.first.id.toString();
+  }
+
+  String? _getZoneIdByName(String? countryName, String? zoneName) {
+    if (countryName == null ||
+        zoneName == null ||
+        countryName.isEmpty ||
+        zoneName.isEmpty ||
+        countryName == 'All' ||
+        zoneName == 'All' ||
+        _locationData == null) {
+      return null;
+    }
+    final countryMatches =
+        _locationData!.countries.where((c) => c.name == countryName);
+    if (countryMatches.isEmpty) return null;
+    final country = countryMatches.first;
+    final zoneMatches = country.zones.where((z) => z.name == zoneName);
+    if (zoneMatches.isEmpty) return null;
+    return zoneMatches.first.id.toString();
+  }
+
+  String? _getCityIdByName(
+    String? countryName,
+    String? zoneName,
+    String? cityName,
+  ) {
+    if (countryName == null ||
+        zoneName == null ||
+        cityName == null ||
+        countryName.isEmpty ||
+        zoneName.isEmpty ||
+        cityName.isEmpty ||
+        countryName == 'All' ||
+        zoneName == 'All' ||
+        cityName == 'All' ||
+        _locationData == null) {
+      return null;
+    }
+    final countryMatches =
+        _locationData!.countries.where((c) => c.name == countryName);
+    if (countryMatches.isEmpty) return null;
+    final country = countryMatches.first;
+    final zoneMatches = country.zones.where((z) => z.name == zoneName);
+    if (zoneMatches.isEmpty) return null;
+    final zone = zoneMatches.first;
+    for (final st in zone.states) {
+      final cityMatches = st.cities.where((c) => c.name == cityName);
+      if (cityMatches.isNotEmpty) {
+        return cityMatches.first.id.toString();
+      }
+    }
+    return null;
+  }
+
+  String? _getCountryNameById(String? countryId) {
+    if (countryId == null ||
+        countryId.isEmpty ||
+        countryId == 'All' ||
+        _locationData == null) {
+      return null;
+    }
+    final idInt = int.tryParse(countryId);
+    if (idInt == null) return null;
+    final matches = _locationData!.countries.where((c) => c.id == idInt);
+    if (matches.isEmpty) return null;
+    return matches.first.name;
+  }
+
+  String? _getZoneNameById(String? countryName, String? zoneId) {
+    if (countryName == null ||
+        zoneId == null ||
+        countryName.isEmpty ||
+        zoneId.isEmpty ||
+        countryName == 'All' ||
+        zoneId == 'All' ||
+        _locationData == null) {
+      return null;
+    }
+    final idInt = int.tryParse(zoneId);
+    if (idInt == null) return null;
+    final countryMatches =
+        _locationData!.countries.where((c) => c.name == countryName);
+    if (countryMatches.isEmpty) return null;
+    final zones = countryMatches.first.zones;
+    final matches = zones.where((z) => z.id == idInt);
+    if (matches.isEmpty) return null;
+    return matches.first.name;
+  }
+
+  String? _getCityNameById(
+    String? countryName,
+    String? zoneName,
+    String? cityId,
+  ) {
+    if (countryName == null ||
+        zoneName == null ||
+        cityId == null ||
+        countryName.isEmpty ||
+        zoneName.isEmpty ||
+        cityId.isEmpty ||
+        countryName == 'All' ||
+        zoneName == 'All' ||
+        cityId == 'All' ||
+        _locationData == null) {
+      return null;
+    }
+    final idInt = int.tryParse(cityId);
+    if (idInt == null) return null;
+
+    final countryMatches =
+        _locationData!.countries.where((c) => c.name == countryName);
+    if (countryMatches.isEmpty) return null;
+    final country = countryMatches.first;
+    final zoneMatches = country.zones.where((z) => z.name == zoneName);
+    if (zoneMatches.isEmpty) return null;
+    final zone = zoneMatches.first;
+
+    for (final st in zone.states) {
+      final matches = st.cities.where((c) => c.id == idInt);
+      if (matches.isNotEmpty) return matches.first.name;
+    }
+    return null;
+  }
 
   @override
   void initState() {
@@ -140,35 +288,51 @@ class _EnhancedSearchIgloosDialogState
       // Set business name
       _businessNameController.text = filters.businessName ?? '';
 
-      // Validate and set country
-      if (filters.country != null && filters.country != 'All') {
-        if (_countries.contains(filters.country)) {
-          _selectedCountry = filters.country;
+      final resolvedCountryName =
+          _getCountryNameById(filters.countryId) ?? filters.country;
+
+      // Validate and set country (by id preferred, name fallback)
+      if (resolvedCountryName != null && resolvedCountryName != 'All') {
+        if (_countries.contains(resolvedCountryName)) {
+          _selectedCountry = resolvedCountryName;
           _zones = [
             'All',
             ..._locationRepo.getZonesForCountry(
               _locationData!,
-              filters.country!,
+              resolvedCountryName,
             ),
           ];
 
-          // Validate and set zone
-          if (filters.zone != null && filters.zone != 'All') {
-            if (_zones.contains(filters.zone)) {
-              _selectedZone = filters.zone;
+          final resolvedZoneName = _getZoneNameById(
+                resolvedCountryName,
+                filters.zoneId,
+              ) ??
+              filters.zone;
+
+          // Validate and set zone (by id preferred, name fallback)
+          if (resolvedZoneName != null && resolvedZoneName != 'All') {
+            if (_zones.contains(resolvedZoneName)) {
+              _selectedZone = resolvedZoneName;
               _cities = [
                 'All',
                 ..._locationRepo.getCitiesForCountryAndZone(
                   _locationData!,
-                  filters.country!,
-                  filters.zone!,
+                  resolvedCountryName,
+                  resolvedZoneName,
                 ),
               ];
 
-              // Validate and set city
-              if (filters.city != null && filters.city != 'All') {
-                if (_cities.contains(filters.city)) {
-                  _selectedCity = filters.city;
+              final resolvedCityName = _getCityNameById(
+                    resolvedCountryName,
+                    resolvedZoneName,
+                    filters.cityId,
+                  ) ??
+                  filters.city;
+
+              // Validate and set city (by id preferred, name fallback)
+              if (resolvedCityName != null && resolvedCityName != 'All') {
+                if (_cities.contains(resolvedCityName)) {
+                  _selectedCity = resolvedCityName;
                 } else {
                   _selectedCity = 'All';
                 }
@@ -260,13 +424,25 @@ class _EnhancedSearchIgloosDialogState
   }
 
   void _applyFilters() {
+    final selectedCountryName = _selectedCountry == 'All' ? null : _selectedCountry;
+    final selectedZoneName = _selectedZone == 'All' ? null : _selectedZone;
+    final selectedCityName = _selectedCity == 'All' ? null : _selectedCity;
+
+    final resolvedCountryId = _getCountryIdByName(selectedCountryName);
+    final resolvedZoneId = _getZoneIdByName(selectedCountryName, selectedZoneName);
+    final resolvedCityId =
+        _getCityIdByName(selectedCountryName, selectedZoneName, selectedCityName);
+
     final filterData = FilterData(
       businessName: _businessNameController.text.trim().isEmpty
           ? null
           : _businessNameController.text.trim(),
-      country: _selectedCountry == 'All' ? null : _selectedCountry,
-      zone: _selectedZone == 'All' ? null : _selectedZone,
-      city: _selectedCity == 'All' ? null : _selectedCity,
+      country: selectedCountryName,
+      countryId: resolvedCountryId,
+      zone: selectedZoneName,
+      zoneId: resolvedZoneId,
+      city: selectedCityName,
+      cityId: resolvedCityId,
     );
 
     widget.onFiltersApplied(filterData);

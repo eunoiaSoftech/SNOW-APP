@@ -5,11 +5,15 @@ class ReferralsRepositorySmu {
   final ApiClient _api = ApiClient.create();
 
   /// 🔹 LIST SMU  
-  Future<SmuListResponse> fetchSmuRecords({bool showOnlyMy = true}) async {
+  Future<SmuListResponse> fetchSmuRecords({
+    bool filterForMe = false,
+    bool showOnlyMy = false,
+  }) async {
     const endpoint = "router.php";
 
     final query = {
       "endpoint": "smu/list",
+      "filter_for_me": filterForMe.toString(),
       "show_only_my": showOnlyMy.toString(),
     };
 

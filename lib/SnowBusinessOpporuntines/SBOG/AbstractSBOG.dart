@@ -18,6 +18,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
   bool isLoading = false;
   String? error;
   List<SbogItem> records = [];
+  int _viewMode = 0; // 0=All, 1=Created for me, 2=Created by me
 
   @override
   void initState() {
@@ -32,7 +33,10 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
     });
 
     try {
-      final response = await _repo.fetchSbogRecords();
+      final response = await _repo.fetchSbogRecords(
+        filterForMe: _viewMode == 1,
+        showOnlyMy: _viewMode == 2,
+      );
       setState(() {
         records = response.data;
       });
@@ -168,6 +172,91 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _cardTitle("Select date range to view slips", Icons.filter_alt),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "All",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 0,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 0);
+                      _fetchRecords();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created for me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 1,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 1);
+                      _fetchRecords();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created by me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 2,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 2);
+                      _fetchRecords();
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -320,6 +409,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
               _buildRecordItem(
                 date: record.createdAt,
                 sbogTo: record.toBusinessId,
+                businessName: record?.businessName ?? '-',
                 referral: record.give,
                 phone: record.telephone,
                 email: record.email,
@@ -334,6 +424,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
   Widget _buildRecordItem({
     required String date,
     required String sbogTo,
+    required String businessName,
     required String referral,
     required String phone,
     required String email,
@@ -366,7 +457,7 @@ class _AbstractSBOGScreenState extends State<AbstractSBOGScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            "SBOG TO: $sbogTo",
+            "SBOG TO: $businessName",
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w600,

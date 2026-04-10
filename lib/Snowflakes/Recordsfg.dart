@@ -65,9 +65,9 @@ Future<void> _fetchMyIglooMembers() async {
 
     final result = await repo.fetchBusiness(
       page: 1,
-      country: _currentFilters?.country ?? '',
-      zone: _currentFilters?.zone ?? '',
-      city: _currentFilters?.city ?? '',
+      country: _currentFilters?.countryId ?? '',
+      zone: _currentFilters?.zoneId ?? '',
+      city: _currentFilters?.cityId ?? '',
       search: _currentFilters?.businessName ?? '',
       showAll: shouldShowAll,
     );
@@ -326,9 +326,7 @@ Future<void> _fetchMyIglooMembers() async {
                                 isExpanded: true,
                                 value: _selectedBusinessId,
                                 items: _businessItems.map((item) {
-                                  final name =
-                                      item.business.name ??
-                                      "Unknown Business";
+                                  final name = "${item.displayName} - ${item.business.name}";
 
                                   return DropdownMenuItem<int>(
                                     value: item.id, // THIS IS to_business_id 👈

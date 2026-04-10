@@ -26,10 +26,17 @@ class ReferralsRepositorySbor {
   }
 
   /// 🔹 LIST SBOR
-  Future<SborListResponse> fetchSborRecords() async {
+  Future<SborListResponse> fetchSborRecords({
+    bool filterForMe = false,
+    bool showOnlyMy = false,
+  }) async {
     const endpoint = "router.php";
 
-    final query = {"endpoint": "sbor/list", "show_only_my": "true"};
+    final query = {
+      "endpoint": "sbor/list",
+      "filter_for_me": filterForMe.toString(),
+      "show_only_my": showOnlyMy.toString(),
+    };
 
     final (res, code) = await _api.get(endpoint, query: query);
 

@@ -21,6 +21,7 @@ class _AbstractSBORState extends State<AbstractSBOR> {
   String? error;
   List<SborRecord> records = [];
   List<SborRecord> filteredRecords = [];
+  int _viewMode = 0; // 0=All, 1=Created for me, 2=Created by me
 
   @override
   void initState() {
@@ -38,6 +39,8 @@ class _AbstractSBORState extends State<AbstractSBOR> {
       final response = await _repo.fetchSborRecords(
         // startDate: startDate,
         // endDate: endDate,
+        filterForMe: _viewMode == 1,
+        showOnlyMy: _viewMode == 2,
       );
       setState(() {
         records = response.data
@@ -199,6 +202,91 @@ class _AbstractSBORState extends State<AbstractSBOR> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _cardTitle("Date Filters", Icons.filter_alt),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "All",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 0,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 0);
+                      _fetchRecords();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created for me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 1,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 1);
+                      _fetchRecords();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created by me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 2,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 2);
+                      _fetchRecords();
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
             Row(
               children: [

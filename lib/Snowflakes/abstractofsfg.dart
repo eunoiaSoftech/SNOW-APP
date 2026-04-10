@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/sgf/sgf_repo.dart';
 import 'package:snow_app/Data/models/New%20Model/sgf_record_model.dart';
 import 'package:snow_app/common%20api/all_business_api.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AbstractSFG extends StatefulWidget {
   const AbstractSFG({Key? key}) : super(key: key);
@@ -19,6 +20,7 @@ class _AbstractSFGState extends State<AbstractSFG> {
   List<SfgItem> records = [];
   bool isLoading = true;
   Map<int, String> businessNameMap = {};
+  int _viewMode = 0; // 0=All, 1=Created for me, 2=Created by me
 
   @override
   void initState() {
@@ -28,17 +30,12 @@ class _AbstractSFGState extends State<AbstractSFG> {
 
   Future<void> fetchData() async {
     setState(() => isLoading = true);
-
-    
-
     try {
-      /// Get business ID from shared prefs or login response
-      /// (You probably have it already — replace with your actual value)
-      const int myBusinessId = 2;
+      final prefs = await SharedPreferences.getInstance();
 
       final response = await _repo.fetchSfgList(
-        businessId: myBusinessId,
-        showOnlyMy: true, // As per Postman
+        filterForMe: _viewMode == 1,
+        showOnlyMy: _viewMode == 2,
       );
 
       setState(() {
@@ -171,6 +168,91 @@ class _AbstractSFGState extends State<AbstractSFG> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _cardTitle("Date Filters", Icons.filter_alt),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "All",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 0,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 0);
+                      fetchData();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created for me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 1,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 1);
+                      fetchData();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    label: Text(
+                      "Created by me",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: _viewMode == 2,
+                    onSelected: (_) {
+                      setState(() => _viewMode = 2);
+                      fetchData();
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -288,7 +370,7 @@ class _AbstractSFGState extends State<AbstractSFG> {
                   return _buildRecordItem(
                     date: r.createdAt,
                     sogForm:
-                        businessNameMap[r.opponentUserId] ??
+                    r.userName ??
                         "ID: ${r.opponentUserId}",
                     comment: r.comment,
                     amount: r.amount,
