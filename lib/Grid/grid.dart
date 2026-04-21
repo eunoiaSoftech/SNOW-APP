@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Grid/AppreciationListScreen.dart';
 import 'package:snow_app/Grid/MemberListScreen.dart';
+import 'package:snow_app/Grid/TestimonialListScreen.dart';
+import 'package:snow_app/Grid/appreciation_create_screen.dart';
+import 'package:snow_app/Grid/testimonial_create_screen.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/SBOL/abstract_sbol_screen.dart';
 import 'package:snow_app/Grid/AWARD.dart';
 import 'package:snow_app/Grid/UpcomingTrainingsScreen.dart';
@@ -9,7 +13,6 @@ import 'package:snow_app/Snowflakes/Recordsfg.dart';
 import 'package:snow_app/Snowflakes/abstractofsfg.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/SBOG/RecordSBOG.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/SBOG/AbstractSBOG.dart';
-import 'package:snow_app/SnowBusinessOpporuntines/SBOR/AbstractSBOR.dart';
 import 'package:snow_app/SnowMEETups/RecordSMUS.dart';
 import 'package:snow_app/SnowMEETups/AbstractSMUS.dart';
 import 'package:snow_app/core/module_access_service.dart';
@@ -72,12 +75,12 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
     // ---------------- SNOWFLAKES ----------------
     final List<Map<String, dynamic>> snowflakesItems = [
       {
-        "title": "Record SFG",
+        "title": "Record Business Closed",
         "icon": Icons.assignment_turned_in,
         "screen": SnowflakesRecordSFG(),
       },
       {
-        "title": "Abstract of SFG",
+        "title": "Abstract of Business Closed",
         "icon": Icons.description_rounded,
         "screen": AbstractSFG(),
       },
@@ -96,12 +99,12 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "screen": AbstractSBOGScreen(),
       },
       {
-        "title": "Record SBOL",
+        "title": "Record Lead",
         "icon": Icons.business_center_rounded,
         "screen": RecordSBOL(),
       },
       {
-        "title": "Abstract SBOL",
+        "title": "Abstract Lead",
         "icon": Icons.business_center_rounded,
         "screen": AbstractSBOLScreen(),
       },
@@ -149,6 +152,16 @@ class _GradientGridScreenState extends State<GradientGridScreen> {
         "icon": Icons.people,
         "screen": MemberListScreen(),
       },
+      {
+        "title": "Appreciation",
+        "icon": Icons.thumb_up_rounded,
+        "screen": AppreciationListScreen(),
+      },
+      {
+        "title": "Testimonial",
+        "icon": Icons.rate_review_rounded,
+        "screen": TestimonialListScreen(),
+      }
 
       // {
       //   "title": "Received Referrals",

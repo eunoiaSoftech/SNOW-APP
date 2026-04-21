@@ -25,6 +25,66 @@ class ProfileOverview {
           .toList(),
     );
   }
+
+  UserTypeMembership? get activeMembership {
+    if (user.activeUserTypeId == null) return null;
+
+    try {
+      return userTypes.firstWhere((e) => e.id == user.activeUserTypeId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String get renewalMessage {
+    final membership = activeMembership;
+    if (membership == null) return "";
+
+    final days = membership.daysUntilRenewal;
+
+    if (days != null) {
+      if (days > 1) return "Your subscription expires in $days days";
+      if (days == 1) return "Your subscription expires tomorrow";
+      if (days == 0) return "Your subscription expires today";
+      return "Your subscription expired ${days.abs()} days ago";
+    }
+
+    final date = membership.nextRenewalDate;
+    if (date != null) {
+      final diff = date.difference(DateTime.now()).inDays;
+
+      if (diff > 0) return "Expires in $diff days";
+      if (diff == 0) return "Expires today";
+      return "Expired ${diff.abs()} days ago";
+    }
+
+    return "";
+  }
+
+  /// 🔥 SAFE HELPERS (NO BREAKING CHANGE)
+  String get displayName {
+    if (user.fullName.isNotEmpty) return user.fullName;
+
+    if (userTypes.isNotEmpty) {
+      return userTypes.first.fullNameFromData;
+    }
+
+    return "";
+  }
+
+  String get phone {
+    if (userTypes.isNotEmpty) {
+      return userTypes.first.contact;
+    }
+    return "";
+  }
+
+  int? get cityId {
+    if (userTypes.isNotEmpty) {
+      return userTypes.first.cityId;
+    }
+    return null;
+  }
 }
 
 class ProfileUser {
@@ -45,13 +105,13 @@ class ProfileUser {
   });
 
   factory ProfileUser.fromJson(Map<String, dynamic> json) => ProfileUser(
-        id: _parseInt(json['id']),
-        email: json['email']?.toString() ?? '',
-        fullName: json['full_name']?.toString() ?? '',
-        isAdmin: json['is_admin'] == true,
-        activeUserTypeId: _parseNullableInt(json['active_user_type_id']),
-        activeUserType: json['active_user_type']?.toString(),
-      );
+    id: _parseInt(json['id']),
+    email: json['email']?.toString() ?? '',
+    fullName: json['full_name']?.toString() ?? '',
+    isAdmin: json['is_admin'] == true,
+    activeUserTypeId: _parseNullableInt(json['active_user_type_id']),
+    activeUserType: json['active_user_type']?.toString(),
+  );
 }
 
 class UserTypeMembership {
@@ -63,6 +123,10 @@ class UserTypeMembership {
   final DateTime? approvedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? nextRenewalDate;
+  final DateTime? lastRenewalAt;
+  final DateTime? lastReminderAt;
+  final int? daysUntilRenewal;
 
   const UserTypeMembership({
     required this.id,
@@ -73,13 +137,22 @@ class UserTypeMembership {
     this.approvedAt,
     this.createdAt,
     this.updatedAt,
+    this.nextRenewalDate,
+    this.lastRenewalAt,
+    this.lastReminderAt,
+    this.daysUntilRenewal,
   });
 
-  factory UserTypeMembership.fromJson(Map<String, dynamic> json) => UserTypeMembership(
+  factory UserTypeMembership.fromJson(Map<String, dynamic> json) =>
+      UserTypeMembership(
         id: _parseInt(json['id']),
         userType: json['user_type']?.toString() ?? '',
         status: json['status']?.toString() ?? '',
-        data: (json['data'] as Map?)?.map((key, value) => MapEntry(key.toString(), value)) ?? const {},
+        data:
+            (json['data'] as Map?)?.map(
+              (key, value) => MapEntry(key.toString(), value),
+            ) ??
+            const {},
         approvedBy: _parseNullableInt(json['approved_by']),
         approvedAt: json['approved_at'] != null
             ? DateTime.tryParse(json['approved_at'].toString())
@@ -90,7 +163,36 @@ class UserTypeMembership {
         updatedAt: json['updated_at'] != null
             ? DateTime.tryParse(json['updated_at'].toString())
             : null,
+
+        nextRenewalDate: json['next_renewal_date'] != null
+            ? DateTime.tryParse(json['next_renewal_date'].toString())
+            : null,
+
+        lastRenewalAt: json['last_renewal_at'] != null
+            ? DateTime.tryParse(json['last_renewal_at'].toString())
+            : null,
+
+        lastReminderAt: json['last_membership_reminder_at'] != null
+            ? DateTime.tryParse(json['last_membership_reminder_at'].toString())
+            : null,
+
+        daysUntilRenewal: _parseNullableInt(json['days_until_renewal']),
       );
+
+  /// 🔥 SAFE HELPERS (NO BREAKING CHANGE)
+
+  int? get cityId {
+    if (data['city'] == null) return null;
+    return int.tryParse(data['city'].toString());
+  }
+
+  String get contact {
+    return data['contact']?.toString() ?? '';
+  }
+
+  String get fullNameFromData {
+    return data['full_name']?.toString() ?? '';
+  }
 }
 
 class ModuleAccess {
@@ -115,16 +217,18 @@ class ModuleAccess {
   });
 
   factory ModuleAccess.fromJson(Map<String, dynamic> json) => ModuleAccess(
-        id: _parseInt(json['id']),
-        slug: json['slug']?.toString() ?? '',
-        name: json['name']?.toString() ?? '',
-        description: json['description']?.toString() ?? '',
-        isActive: json['is_active'].toString() == '1' || json['is_active'] == true,
-        createdBy: _parseInt(json['created_by']),
-        createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-            DateTime.fromMillisecondsSinceEpoch(0),
-        isEnabled: json['is_enabled'].toString() == '1' || json['is_enabled'] == true,
-      );
+    id: _parseInt(json['id']),
+    slug: json['slug']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+    isActive: json['is_active'].toString() == '1' || json['is_active'] == true,
+    createdBy: _parseInt(json['created_by']),
+    createdAt:
+        DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+        DateTime.fromMillisecondsSinceEpoch(0),
+    isEnabled:
+        json['is_enabled'].toString() == '1' || json['is_enabled'] == true,
+  );
 }
 
 class IglooMembership {
@@ -160,7 +264,8 @@ class IglooMembership {
     this.userTypeId,
   });
 
-  factory IglooMembership.fromJson(Map<String, dynamic> json) => IglooMembership(
+  factory IglooMembership.fromJson(Map<String, dynamic> json) =>
+      IglooMembership(
         id: _parseInt(json['id']),
         name: json['name']?.toString() ?? '',
         countryId: _parseInt(json['country_id']),
@@ -172,13 +277,16 @@ class IglooMembership {
         mode: json['mode']?.toString() ?? '',
         notes: json['notes']?.toString() ?? '',
         createdBy: _parseInt(json['created_by']),
-        isActive: json['is_active'].toString() == '1' || json['is_active'] == true,
-        createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+        isActive:
+            json['is_active'].toString() == '1' || json['is_active'] == true,
+        createdAt:
+            DateTime.tryParse(json['created_at']?.toString() ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0),
         userTypeId: _parseNullableInt(json['user_type_id']),
       );
 }
 
+/// 🔧 HELPERS
 int _parseInt(dynamic value) {
   if (value == null) return 0;
   if (value is int) return value;

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Models/business_category.dart';
+import 'package:snow_app/Data/Models/profile_overview.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
 import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
 import 'package:snow_app/core/result.dart';
+import 'package:snow_app/data/repositories/profile_repository.dart';
 
 import '../Data/Repositories/New Repositories/SMU/smu_repo.dart';
 
@@ -28,10 +31,11 @@ class _RecordSMUSState extends State<RecordSMUS>
   DateTime? _date;
   DateTime? _followupDate;
   String? _mode;
-  int _collab = 0;
-
+  int? myCityId;
+  bool isMyCitySelected = true;
   String? _selectedMyIglooMember;
   int? _selectedBusinessId;
+  List<BusinessCategory> categories = [];
 
   // List<BusinessDirectoryItem> _businessItems = [];
   List<BusinessItem> _businessItems = [];
@@ -52,18 +56,41 @@ class _RecordSMUSState extends State<RecordSMUS>
 
   final BusinessRepository businessRepo = BusinessRepository();
   final commonRepository = CommonRepository();
-
   @override
   void initState() {
     super.initState();
-
     _dotsController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
     )..repeat();
+
     _dotsAnimation = IntTween(begin: 0, end: 3).animate(_dotsController);
 
-    _fetchMyIglooMembers();
+    _initData(); // 🔥 ADD THIS
+  }
+
+  int? getMyCityId(ProfileOverview profile) {
+    try {
+      final active = profile.userTypes.firstWhere((e) => e.status == "ACTIVE");
+
+      return active.data['city'] != null
+          ? int.tryParse(active.data['city'].toString())
+          : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // @override
+  Future<void> _initData() async {
+    final profileRepo = ProfileRepository();
+    final res = await profileRepo.fetchProfile();
+
+    if (res is Ok<ProfileOverview>) {
+      myCityId = getMyCityId(res.value);
+    }
+
+    await _fetchMyIglooMembers();
   }
 
   Future<void> _fetchMyIglooMembers() async {
@@ -71,15 +98,15 @@ class _RecordSMUSState extends State<RecordSMUS>
 
     try {
       final repo = BusinessRepository();
-
-      bool shouldShowAll =
-          _currentFilters == null || !_currentFilters!.hasAnyFilter;
+      bool shouldShowAll = !isMyCitySelected;
 
       final result = await repo.fetchBusiness(
         page: 1,
         country: _currentFilters?.countryId ?? '',
         zone: _currentFilters?.zoneId ?? '',
-        city: _currentFilters?.cityId ?? '',
+        city: isMyCitySelected
+            ? myCityId?.toString() ?? ''
+            : (_currentFilters?.cityId ?? ''),
         search: _currentFilters?.businessName ?? '',
         showAll: shouldShowAll,
       );
@@ -194,7 +221,7 @@ class _RecordSMUSState extends State<RecordSMUS>
         "abstract": _abstractController.text.trim(),
         "date":
             "${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}",
-        "collaboration_type": _collab == 1 ? "Strategic" : "Opportunity",
+        // "collaboration_type": _collab == 1 ? "Strategic" : "Opportunity",
         "followup_date": _followupController.text.trim(),
         "mode": _mode!.toLowerCase(),
       };
@@ -232,7 +259,6 @@ class _RecordSMUSState extends State<RecordSMUS>
       _date = null;
       _followupDate = null;
       _mode = null;
-      _collab = 0;
       _selectedMyIglooMember = null;
       _selectedBusinessId = null;
       _formKey.currentState?.reset();
@@ -373,6 +399,51 @@ class _RecordSMUSState extends State<RecordSMUS>
                         "Select a member from My Igloo",
                         required: false,
                       ),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: [
+                          ChoiceChip(
+                            label: const Text("My Igloo"),
+                            selected: isMyCitySelected,
+                            onSelected: (val) {
+                              setState(() {
+                                isMyCitySelected = true;
+                                _selectedBusinessId = null;
+                                _selectedMyIglooMember = null;
+                              });
+                              _fetchMyIglooMembers(); // 🔥 reload data
+                            },
+                            selectedColor: const Color(0xFF5E9BC8),
+                            labelStyle: TextStyle(
+                              color: isMyCitySelected
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ChoiceChip(
+                            label: const Text("Whole Platform"),
+                            selected: !isMyCitySelected,
+                            onSelected: (val) {
+                              setState(() {
+                                isMyCitySelected = false;
+                                _selectedBusinessId = null;
+                                _selectedMyIglooMember = null;
+                              });
+                              _fetchMyIglooMembers(); // 🔥 reload data
+                            },
+                            selectedColor: const Color(0xFF5E9BC8),
+                            labelStyle: TextStyle(
+                              color: !isMyCitySelected
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
                       _isDropdownLoading
                           ? TextFormField(
                               enabled: false,
@@ -401,7 +472,7 @@ class _RecordSMUSState extends State<RecordSMUS>
                                 value: _selectedBusinessId,
                                 items: _businessItems.map((item) {
                                   final name =
-                                      "${item.displayName} - ${item.business.name}";
+                                      "${item.displayName} - ${item.business.category}";
 
                                   return DropdownMenuItem<int>(
                                     value: item.id, // THIS IS to_business_id 👈
@@ -460,35 +531,34 @@ class _RecordSMUSState extends State<RecordSMUS>
                       ),
                       const SizedBox(height: 20),
 
-                      buildLabel("Collaboration Type", required: false),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          RadioListTile<int>(
-                            value: 1,
-                            groupValue: _collab,
-                            onChanged: (v) => setState(() => _collab = v!),
-                            activeColor: const Color(0xFF014576),
-                            title: Text(
-                              "Business Opportunity Exchanged",
-                              style: GoogleFonts.poppins(fontSize: 12),
-                            ),
-                          ),
-                          RadioListTile<int>(
-                            value: 2,
-                            groupValue: _collab,
-                            onChanged: (v) => setState(() => _collab = v!),
-                            activeColor: const Color(0xFF014576),
-                            title: Text(
-                              "Business Opportunity for Other Member",
-                              style: GoogleFonts.poppins(fontSize: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
+                      // buildLabel("Collaboration Type", required: false),
+                      // Column(
+                      //   crossAxisAlignment: CrossAxisAlignment.start,
+                      //   mainAxisAlignment: MainAxisAlignment.start,
+                      //   children: [
+                      //     RadioListTile<int>(
+                      //       value: 1,
+                      //       groupValue: _collab,
+                      //       onChanged: (v) => setState(() => _collab = v!),
+                      //       activeColor: const Color(0xFF014576),
+                      //       title: Text(
+                      //         "Business Opportunity Exchanged",
+                      //         style: GoogleFonts.poppins(fontSize: 12),
+                      //       ),
+                      //     ),
+                      //     RadioListTile<int>(
+                      //       value: 2,
+                      //       groupValue: _collab,
+                      //       onChanged: (v) => setState(() => _collab = v!),
+                      //       activeColor: const Color(0xFF014576),
+                      //       title: Text(
+                      //         "Business Opportunity for Other Member",
+                      //         style: GoogleFonts.poppins(fontSize: 12),
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
+                      // const SizedBox(height: 16),
                       buildLabel("Next Follow-up SMU Date", required: false),
                       TextFormField(
                         controller: _followupController,

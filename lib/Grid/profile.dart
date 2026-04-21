@@ -282,6 +282,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  UserTypeMembership? get activeMembership {
+    if (_profile == null) return null;
+
+    try {
+      return _profile!.userTypes.firstWhere(
+        (e) => e.id == _profile!.user.activeUserTypeId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String formatDate(DateTime? date) {
+    if (date == null) return "Not available";
+
+    return "${date.day.toString().padLeft(2, '0')}/"
+        "${date.month.toString().padLeft(2, '0')}/"
+        "${date.year}";
+  }
+
   Future<void> _loadProfile() async {
     setState(() => _loading = true);
 
@@ -559,7 +579,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: Colors.transparent,
             resizeToAvoidBottomInset: true,
             appBar: AppBar(
-              backgroundColor: Color(0xAA97DCEB),
+              backgroundColor: Colors.transparent,
               elevation: 0,
               title: Text(
                 "My Profile",
@@ -670,25 +690,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // USER CARD
   // -------------------------------
   Widget _buildUserCard(ProfileUser user) {
+    final membership = activeMembership;
+    final Color primaryColor = const Color(0xFF014576);
+
     return _glassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// 👤 USER INFO
           Row(
             children: [
               CircleAvatar(
                 radius: 34,
                 backgroundColor: const Color(0xFF5E9BC8).withOpacity(0.15),
                 child: Text(
-                  user.fullName[0].toUpperCase(),
-                  style: const TextStyle(
+                  user.fullName.isNotEmpty
+                      ? user.fullName[0].toUpperCase()
+                      : "U",
+                  style: TextStyle(
                     fontSize: 28,
-                    color: Color(0xFF014576),
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
                   ),
                 ),
               ),
               const SizedBox(width: 16),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -698,19 +724,118 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF014576),
+                        color: primaryColor,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(user.email, style: GoogleFonts.poppins(fontSize: 14)),
+                    Text(
+                      user.email,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 18),
+          /// 🔹 IMPROVED RENEWAL SECTION
+          if (membership != null &&
+              (membership.nextRenewalDate != null ||
+                  membership.daysUntilRenewal != null)) ...[
+            const SizedBox(height: 20),
 
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: Colors.white.withOpacity(0.5)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 16,
+                        color: primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Next Renewal",
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: primaryColor.withOpacity(0.7),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        formatDate(membership.nextRenewalDate),
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: Divider(height: 1, thickness: 0.5),
+                  ),
+                  if (membership.daysUntilRenewal != null)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Status",
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                (membership.daysUntilRenewal! > 0
+                                        ? Colors.orange
+                                        : Colors.red)
+                                    .withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            membership.daysUntilRenewal! > 0
+                                ? "${membership.daysUntilRenewal} Days Left"
+                                : "Expired ${membership.daysUntilRenewal!.abs()} Days Ago",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: membership.daysUntilRenewal! > 0
+                                  ? Colors.orange.shade800
+                                  : Colors.red.shade800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
+
+          /// 🔹 CHIPS
           Row(
             children: [
               _buildChip("Active Type", user.activeUserType ?? "N/A"),

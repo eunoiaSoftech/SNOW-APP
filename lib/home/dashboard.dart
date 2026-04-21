@@ -4,11 +4,16 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:snow_app/Data/Models/profile_overview.dart';
 import 'package:snow_app/Grid/grid.dart';
 import 'package:snow_app/Grid/profile.dart';
+import 'package:snow_app/core/api_client.dart';
+import 'package:snow_app/core/result.dart';
+import 'package:snow_app/data/repositories/profile_repository.dart';
 
 class SnowDashboard extends StatefulWidget {
   const SnowDashboard({super.key});
@@ -21,6 +26,43 @@ class _SnowDashboardState extends State<SnowDashboard> {
   int _selectedNavIndex = 0;
   String userName = '';
 
+  final profileRepo = ProfileRepository();
+
+  ProfileOverview? profile;
+  int? userTypeId;
+  bool isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+    loadProfile();
+  }
+
+  int? daysUntilRenewal;
+  DateTime? renewalDate;
+
+  Future<void> loadProfile() async {
+    final res = await profileRepo.fetchProfile();
+
+    if (res is Ok<ProfileOverview>) {
+      final data = res.value;
+
+      final activeType = data.userTypes.firstWhere(
+        (e) => e.id == data.user.activeUserTypeId,
+      );
+
+      setState(() {
+        profile = data;
+        userTypeId = data.user.activeUserTypeId;
+        isAdmin = data.user.isAdmin;
+
+        daysUntilRenewal = activeType.daysUntilRenewal;
+        renewalDate = activeType.nextRenewalDate;
+      });
+    }
+  }
+
   Future<void> _loadUserName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -31,12 +73,6 @@ class _SnowDashboardState extends State<SnowDashboard> {
   String capitalize(String s) {
     if (s.isEmpty) return s;
     return s[0].toUpperCase() + s.substring(1);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserName();
   }
 
   Widget _highlightBox(String title, String value, IconData icon) {
@@ -130,6 +166,7 @@ class _SnowDashboardState extends State<SnowDashboard> {
               ],
             ),
           ),
+
           // Main UI content
           SafeArea(
             child: _selectedNavIndex == 0
@@ -167,6 +204,8 @@ class _SnowDashboardState extends State<SnowDashboard> {
   }
 
   Widget _buildDashboardContent() {
+    final message = profile?.renewalMessage ?? "";
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: SingleChildScrollView(
@@ -208,6 +247,31 @@ class _SnowDashboardState extends State<SnowDashboard> {
             ),
 
             const SizedBox(height: 25),
+
+            if (message.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 15),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.orange),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        message,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            SizedBox(height: 10),
 
             CarouselSlider(
               options: CarouselOptions(
@@ -452,4 +516,3 @@ class DashboardCard extends StatelessWidget {
     );
   }
 }
-

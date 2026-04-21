@@ -131,7 +131,7 @@ class _AbstractSFGState extends State<AbstractSFG> {
             elevation: 0,
             centerTitle: true,
             title: Text(
-              "Abstract SFGS",
+              "Abstract Business Closed",
               style: GoogleFonts.poppins(
                 color: const Color(0xFF014576),
                 fontWeight: FontWeight.w600,

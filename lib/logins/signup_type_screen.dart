@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snow_app/logins/sign_up.dart';
+import 'package:snow_app/logins/signup_froms.dart/SignupFormPage.dart';
 import 'package:snow_app/logins/signup_froms.dart/SnowRealEstateForm.dart';
 import 'package:snow_app/logins/signup_froms.dart/VisitorForm.dart';
 
@@ -12,11 +13,32 @@ class SelectTypePage extends StatelessWidget {
     const double cardRadius = 20;
 
     final List<Map<String, dynamic>> options = [
-      {'title': 'Elite Member', 'icon': Icons.star, 'page': const SignUpPage()},
-      {'title': 'Visitor', 'icon': Icons.person_outline, 'page': const VisitorFormPage()},
-      {'title': 'Snow Real Estate', 'icon': Icons.business, 'page': const SnowRealEstateFormPage()},
-    ];
+      {'title': 'Snow City', 'icon': Icons.location_city, 'type': 'snow_city'},
+      {
+        'title': 'Snow PAN India',
+        'icon': Icons.public,
+        'type': 'snow_pan_india',
+      },
+      {
+        'title': 'Snow Global',
+        'icon': Icons.travel_explore,
+        'type': 'snow_global',
+      },
+      {'title': 'Snow Youth', 'icon': Icons.groups, 'type': 'snow_youth'},
 
+      // keep old ones if needed
+      {'title': 'Elite Member', 'icon': Icons.star, 'page': const SignUpPage()},
+      {
+        'title': 'Visitor',
+        'icon': Icons.person_outline,
+        'page': const VisitorFormPage(),
+      },
+      {
+        'title': 'Snow Real Estate',
+        'icon': Icons.business,
+        'page': const SnowRealEstateFormPage(),
+      },
+    ];
     return Scaffold(
       body: Stack(
         children: [
@@ -43,21 +65,28 @@ class SelectTypePage extends StatelessWidget {
                     const Text(
                       'Choose the sign-up flow that matches your role.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white70,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.white70),
                     ),
                     const SizedBox(height: 30),
                     ...options.map((option) {
                       return GestureDetector(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => option['page'] as Widget,
-                            ),
-                          );
+                          if (option.containsKey('type')) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    SignupFormPage(userType: option['type']),
+                              ),
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => option['page'] as Widget,
+                              ),
+                            );
+                          }
                         },
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 10),
@@ -98,7 +127,7 @@ class SelectTypePage extends StatelessWidget {
                                 Icons.arrow_forward_ios,
                                 size: 18,
                                 color: Colors.grey,
-                              )
+                              ),
                             ],
                           ),
                         ),

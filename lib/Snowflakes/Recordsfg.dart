@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Data/Models/profile_overview.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/sgf/sgf_repo.dart';
 import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
 import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dart';
 import 'package:snow_app/core/result.dart';
+import 'package:snow_app/data/repositories/profile_repository.dart';
 
 class SnowflakesRecordSFG extends StatefulWidget {
   const SnowflakesRecordSFG({Key? key}) : super(key: key);
@@ -24,15 +26,22 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
   int? _selectedBusinessId;
   bool _isLoading = false;
   bool _isDropdownLoading = true;
+  int? myCityId;
+  bool isMyCitySelected = true;
 
   List<String> _members = [];
   // List<BusinessDirectoryItem> _businessItems = [];
-    List<BusinessItem> _businessItems = [];
+  List<BusinessItem> _businessItems = [];
+  String? _selectedBusinessType; // new or repeat
 
   FilterData? _currentFilters;
 
   late final AnimationController _dotsController;
   late final Animation<int> _dotsAnimation;
+  static const _businessTypeOptions = [
+    {'label': 'New Business', 'value': 'new business'},
+    {'label': 'Repeat Business', 'value': 'repeat'},
+  ];
 
   @override
   void initState() {
@@ -42,7 +51,7 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
       duration: const Duration(seconds: 1),
     )..repeat();
     _dotsAnimation = IntTween(begin: 0, end: 3).animate(_dotsController);
-    _fetchMyIglooMembers();
+    _initData(); // 🔥 ADD THIS
   }
 
   @override
@@ -54,34 +63,59 @@ class _SnowflakesRecordSFGState extends State<SnowflakesRecordSFG>
     super.dispose();
   }
 
-Future<void> _fetchMyIglooMembers() async {
-  setState(() => _isDropdownLoading = true);
+  int? getMyCityId(ProfileOverview profile) {
+    try {
+      final active = profile.userTypes.firstWhere((e) => e.status == "ACTIVE");
 
-  try {
-    final repo = BusinessRepository();
-
-    bool shouldShowAll =
-        _currentFilters == null || !_currentFilters!.hasAnyFilter;
-
-    final result = await repo.fetchBusiness(
-      page: 1,
-      country: _currentFilters?.countryId ?? '',
-      zone: _currentFilters?.zoneId ?? '',
-      city: _currentFilters?.cityId ?? '',
-      search: _currentFilters?.businessName ?? '',
-      showAll: shouldShowAll,
-    );
-
-    if (result is Ok<List<BusinessItem>>) {
-      setState(() {
-        _businessItems = result.value;
-        _isDropdownLoading = false;
-      });
+      return active.data['city'] != null
+          ? int.tryParse(active.data['city'].toString())
+          : null;
+    } catch (e) {
+      return null;
     }
-  } catch (e) {
-    setState(() => _isDropdownLoading = false);
   }
-}
+
+  // @override
+  Future<void> _initData() async {
+    final profileRepo = ProfileRepository();
+    final res = await profileRepo.fetchProfile();
+
+    if (res is Ok<ProfileOverview>) {
+      myCityId = getMyCityId(res.value);
+    }
+
+    await _fetchMyIglooMembers();
+  }
+
+  Future<void> _fetchMyIglooMembers() async {
+    setState(() => _isDropdownLoading = true);
+
+    try {
+      final repo = BusinessRepository();
+
+      bool shouldShowAll = !isMyCitySelected;
+
+      final result = await repo.fetchBusiness(
+        page: 1,
+        country: _currentFilters?.countryId ?? '',
+        zone: _currentFilters?.zoneId ?? '',
+        city: isMyCitySelected
+            ? myCityId?.toString() ?? ''
+            : (_currentFilters?.cityId ?? ''),
+        search: _currentFilters?.businessName ?? '',
+        showAll: shouldShowAll,
+      );
+
+      if (result is Ok<List<BusinessItem>>) {
+        setState(() {
+          _businessItems = result.value;
+          _isDropdownLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isDropdownLoading = false);
+    }
+  }
 
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
@@ -180,6 +214,7 @@ Future<void> _fetchMyIglooMembers() async {
         opponentUserId: _selectedBusinessId!,
         amount: _amountController.text.trim(),
         comment: _commentsController.text.trim(),
+        type: _selectedBusinessType!, // 👈 ADD THIS
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -241,7 +276,7 @@ Future<void> _fetchMyIglooMembers() async {
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(
-              "Record SFG",
+              "Record Business Closed",
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
                 fontSize: 20,
@@ -296,6 +331,50 @@ Future<void> _fetchMyIglooMembers() async {
                       // ),
                       // const SizedBox(height: 16),
                       buildLabel("Select a member from My Igloo"),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: [
+                          ChoiceChip(
+                            label: const Text("My Igloo"),
+                            selected: isMyCitySelected,
+                            onSelected: (val) {
+                              setState(() {
+                                isMyCitySelected = true;
+                                _selectedBusinessId = null;
+                                _selectedMyIglooMember = null;
+                              });
+                              _fetchMyIglooMembers(); // 🔥 reload data
+                            },
+                            selectedColor: const Color(0xFF5E9BC8),
+                            labelStyle: TextStyle(
+                              color: isMyCitySelected
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ChoiceChip(
+                            label: const Text("Whole Platform"),
+                            selected: !isMyCitySelected,
+                            onSelected: (val) {
+                              setState(() {
+                                isMyCitySelected = false;
+                                _selectedBusinessId = null;
+                                _selectedMyIglooMember = null;
+                              });
+                              _fetchMyIglooMembers(); // 🔥 reload data
+                            },
+                            selectedColor: const Color(0xFF5E9BC8),
+                            labelStyle: TextStyle(
+                              color: !isMyCitySelected
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                       _isDropdownLoading
                           ? Container(
                               padding: const EdgeInsets.symmetric(
@@ -326,7 +405,8 @@ Future<void> _fetchMyIglooMembers() async {
                                 isExpanded: true,
                                 value: _selectedBusinessId,
                                 items: _businessItems.map((item) {
-                                  final name = "${item.displayName} - ${item.business.name}";
+                                  final name =
+                                      "${item.displayName} - ${item.business.category}";
 
                                   return DropdownMenuItem<int>(
                                     value: item.id, // THIS IS to_business_id 👈
@@ -360,12 +440,35 @@ Future<void> _fetchMyIglooMembers() async {
 
                       const SizedBox(height: 16),
                       buildLabel("Snowflakes Amount"),
+
                       TextFormField(
                         controller: _amountController,
                         keyboardType: TextInputType.number,
                         decoration: _inputDecoration("Enter local currency"),
                         validator: (v) => v!.isEmpty ? "Required" : null,
                       ),
+                      const SizedBox(height: 16),
+
+                      buildLabel("Business Type"),
+                      const SizedBox(height: 8),
+
+                      DropdownButtonFormField<String>(
+                        value: _selectedBusinessType,
+                        items: _businessTypeOptions.map((item) {
+                          return DropdownMenuItem<String>(
+                            value: item['value'],
+                            child: Text(item['label']!),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedBusinessType = val;
+                          });
+                        },
+                        decoration: _inputDecoration("Select business type"),
+                        validator: (val) => val == null ? "Required" : null,
+                      ),
+
                       const SizedBox(height: 16),
                       buildLabel("Comments"),
                       TextFormField(

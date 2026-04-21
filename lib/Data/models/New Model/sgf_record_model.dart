@@ -25,7 +25,10 @@ class SfgItem {
       amount: json['amount']?.toString() ?? "",
       comment: json['comment'] ?? "",
       createdAt: json['created_at'] ?? "",
-      userName: json['opponent_user']['display_name'] ?? "",
+      userName:
+          json['opponent_user']?['display_name'] ??
+          json['user']?['display_name'] ??
+          "Unknown",
     );
   }
 }

@@ -6,6 +6,12 @@ class TrainingRecord {
   final String locationDetail;
   final DateTime? trainingDate;
 
+  final String trainingOf;
+  final String trainingBy;
+  final String trainerName;
+  final String city;
+  final String paymentAmount;
+
   TrainingRecord({
     required this.id,
     required this.title,
@@ -13,6 +19,11 @@ class TrainingRecord {
     required this.mode,
     required this.locationDetail,
     required this.trainingDate,
+    required this.trainingOf,
+    required this.trainingBy,
+    required this.trainerName,
+    required this.city,
+    required this.paymentAmount,
   });
 
   factory TrainingRecord.fromJson(Map<String, dynamic> json) {
@@ -20,11 +31,23 @@ class TrainingRecord {
       id: int.tryParse(json["id"].toString()) ?? 0,
       title: json["title"] ?? "",
       description: json["description"] ?? "",
-      mode: json["mode"] ?? "",
+
+      // normalize mode
+      mode: (json["mode"] ?? "").toString().toLowerCase(),
+
       locationDetail: json["location_detail"] ?? "",
+
+      // 🔥 FIX DATE FORMAT (NOT ISO)
       trainingDate: json["training_date"] != null
-          ? DateTime.tryParse(json["training_date"])
+          ? DateTime.tryParse(
+              json["training_date"].toString().replaceAll(" ", "T"))
           : null,
+
+      trainingOf: json["training_of"] ?? "",
+      trainingBy: json["training_by"] ?? "",
+      trainerName: json["trainer_name"] ?? "",
+      city: json["city"] ?? "",
+      paymentAmount: json["payment_amount"]?.toString() ?? "0",
     );
   }
 }

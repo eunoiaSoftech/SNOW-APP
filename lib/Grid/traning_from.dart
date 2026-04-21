@@ -1,204 +1,260 @@
-// import 'dart:ui';
-// import 'package:flutter/material.dart';
-// import 'package:google_fonts/google_fonts.dart';
-// import 'package:snow_app/Data/Repositories/New%20Repositories/EXTRA%20FEATURE/traning_reg.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:ui';
+import 'package:snow_app/Data/models/New Model/extra feature/traning_reg.dart';
+import 'package:snow_app/Grid/training_register_form.dart';
 
-// class TrainingRegisterForm extends StatefulWidget {
-//   final int trainingId;
-//   final String title;
-//   final String date;
+class TrainingDetailsScreen extends StatelessWidget {
+  final TrainingRecord training;
 
-//   const TrainingRegisterForm({
-//     super.key,
-//     required this.trainingId,
-//     required this.title,
-//     required this.date,
-//   });
+  const TrainingDetailsScreen({super.key, required this.training});
 
-//   @override
-//   State<TrainingRegisterForm> createState() => _TrainingRegisterFormState();
-// }
+  // Formatting Helper
+  String formatDate(DateTime? date) {
+    if (date == null) return "N/A";
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return "${date.day} ${months[date.month - 1]} ${date.year}";
+  }
 
-// class _TrainingRegisterFormState extends State<TrainingRegisterForm> {
-//   final repo = TrainingRepositoryNew();
-//   bool isLoading = false;
+  String safe(String? value) => (value == null || value.isEmpty) ? "N/A" : value;
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Stack(
-//       children: [
-//         Positioned.fill(
-//           child: Stack(
-//             fit: StackFit.expand,
-//             children: [
-//               Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
-//               Container(
-//                 decoration: const BoxDecoration(
-//                   gradient: LinearGradient(
-//                     colors: [
-//                       Color(0xAA97DCEB),
-//                       Color(0xAA5E9BC8),
-//                       Color(0xAA97DCEB),
-//                       Color(0xAA70A9EE),
-//                     ],
-//                     begin: Alignment.topLeft,
-//                     end: Alignment.bottomRight,
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
+  @override
+  Widget build(BuildContext context) {
+    final Color primaryColor = const Color(0xFF014576);
 
-//         Scaffold(
-//           backgroundColor: Colors.transparent,
-//           appBar: AppBar(
-//             elevation: 0,
-//             backgroundColor: Colors.transparent,
-//             iconTheme: const IconThemeData(color: Color(0xFF014576)),
-//             title: Text(
-//               "REGISTER",
-//               style: GoogleFonts.poppins(
-//                 fontWeight: FontWeight.w600,
-//                 color: Color(0xFF014576),
-//               ),
-//             ),
-//           ),
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        leading: const BackButton(color: Colors.white),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          "Training Details",
+          style: GoogleFonts.poppins(
+            color: Colors.white, 
+            fontWeight: FontWeight.w500
+          ),
+        ),
+      ),
+      body: Stack(
+        children: [
+          // --- Background Layer ---
+          Positioned.fill(
+            child: Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
+          ),
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xCC014576), // Darker top for AppBar visibility
+                    Color(0xAA97DCEB),
+                    Color(0xAA70A9EE),
+                  ],
+                ),
+              ),
+            ),
+          ),
 
-//           body: Center(
-//             child: ClipRRect(
-//               borderRadius: BorderRadius.circular(25),
-//               child: BackdropFilter(
-//                 filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-//                 child: Container(
-//                   margin:
-//                       const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-//                   padding: const EdgeInsets.all(24),
-//                   decoration: BoxDecoration(
-//                     borderRadius: BorderRadius.circular(25),
-//                     gradient: LinearGradient(
-//                       colors: [
-//                         Color.fromARGB(255, 204, 234, 249),
-//                         Color(0xFF70a1ff),
-//                         Color.fromARGB(255, 82, 190, 237),
-//                       ],
-//                       begin: Alignment.topLeft,
-//                       end: Alignment.bottomRight,
-//                     ),
-//                     boxShadow: [
-//                       BoxShadow(
-//                         // ignore: deprecated_member_use
-//                         color: Colors.blue.shade200.withOpacity(0.4),
-//                         blurRadius: 20,
-//                         offset: const Offset(0, 8),
-//                       )
-//                     ],
-//                   ),
+          // --- Content Layer ---
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              training.mode.toUpperCase(),
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: primaryColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
 
-//                   child: Column(
-//                     mainAxisSize: MainAxisSize.min,
-//                     children: [
-//                       Text(
-//                         "Confirm Your Registration",
-//                         style: GoogleFonts.poppins(
-//                           color: Colors.white,
-//                           fontSize: 22,
-//                           fontWeight: FontWeight.w700,
-//                         ),
-//                         textAlign: TextAlign.center,
-//                       ),
+                          // Title
+                          Text(
+                            training.title,
+                            style: GoogleFonts.poppins(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                            ),
+                          ),
+                          
+                          const Divider(height: 32, thickness: 1),
 
-//                       const SizedBox(height: 20),
+                          // Details Grid/List
+                          _buildDetailRow(Icons.book_outlined, "Topic", training.trainingOf),
+                          _buildDetailRow(Icons.business_center_outlined, "By", training.trainingBy),
+                          _buildDetailRow(Icons.person_outline, "Trainer", training.trainerName),
+                          _buildDetailRow(Icons.calendar_today_outlined, "Date", formatDate(training.trainingDate)),
+                          _buildDetailRow(Icons.location_on_outlined, "Location", "${safe(training.city)}, ${training.locationDetail}"),
 
-//                       _infoTile("Training", widget.title),
-//                       _infoTile("Date", widget.date),
-//                       _infoTile("Training ID", widget.trainingId.toString()),
+                          const SizedBox(height: 20),
+                          
+                          Text(
+                            "About this training",
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            training.description,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.black54,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
-//                       const SizedBox(height: 25),
+                // Bottom Action Bar
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      )
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Registration Fee",
+                              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                            ),
+                            Text(
+                              "₹${training.paymentAmount}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TrainingRegisterForm(
+                                    trainingId: training.id),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            "Register Now",
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-//                       isLoading
-//                           ? const CircularProgressIndicator(color: Colors.white)
-//                           : ElevatedButton(
-//                               onPressed: _registerTraining,
-//                               style: ElevatedButton.styleFrom(
-//                                 backgroundColor: Colors.white,
-//                                 minimumSize: const Size(double.infinity, 55),
-//                                 elevation: 6,
-//                                 shape: RoundedRectangleBorder(
-//                                   borderRadius: BorderRadius.circular(15),
-//                                 ),
-//                               ),
-//                               child: Text(
-//                                 "Register Now",
-//                                 style: TextStyle(
-//                                   color: Color(0xFF014576),
-//                                   fontSize: 16,
-//                                   fontWeight: FontWeight.bold,
-//                                 ),
-//                               ),
-//                             ),
-//                     ],
-//                   ),
-//                 ),
-//               ),
-//             ),
-//           ),
-//         )
-//       ],
-//     );
-//   }
-
-//   Widget _infoTile(String label, String value) {
-//     return Container(
-//       width: double.infinity,
-//       margin: const EdgeInsets.symmetric(vertical: 6),
-//       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-//       decoration: BoxDecoration(
-//         color: Colors.white24,
-//         borderRadius: BorderRadius.circular(15),
-//         border: Border.all(color: Colors.white54),
-//       ),
-//       child: Row(
-//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//         children: [
-//           Text(label,
-//               style: GoogleFonts.poppins(
-//                 fontSize: 14,
-//                 color: Colors.white70,
-//               )),
-//           Text(value,
-//               style: GoogleFonts.poppins(
-//                 fontSize: 15,
-//                 color: Colors.white,
-//                 fontWeight: FontWeight.w600,
-//               )),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Future<void> _registerTraining() async {
-//     setState(() => isLoading = true);
-
-//     final res = await repo.registerForTraining(widget.trainingId);
-
-//     setState(() => isLoading = false);
-
-//     if (res["success"] == true) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(
-//           content: Text("Registered successfully!"),
-//           backgroundColor: Colors.green,
-//         ),
-//       );
-//       Navigator.pop(context);
-//     } else {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text("Failed: ${res['message'] ?? 'Unknown error'}"),
-//           backgroundColor: Colors.red,
-//         ),
-//       );
-//     }
-//   }
-// }
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF014576).withOpacity(0.7)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  safe(value),
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

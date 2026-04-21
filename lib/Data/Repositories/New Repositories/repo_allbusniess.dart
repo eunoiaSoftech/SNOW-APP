@@ -30,8 +30,8 @@ class BusinessRepository {
     final queryParams = <String, String>{
       'industry': industry,
       'page': page.toString(),
+      'is_active': '1',
     };
-
     // Only add showAll if it's true, otherwise omit it to avoid passing false
     if (showAll) {
       queryParams['showAll'] = 'true';

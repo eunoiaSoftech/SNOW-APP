@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:snow_app/Data/Models/business_category.dart';
 import 'package:snow_app/Data/Repositories/auth_repository.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
+import 'package:snow_app/Data/models/New%20Model/DirectoryUsermodel.dart';
+import 'package:snow_app/common%20api/all_business_directory_model.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/result.dart';
 import 'package:snow_app/core/validators.dart';
+import 'package:snow_app/home/showSearchablePicker.dart';
 import 'package:snow_app/logins/login.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -38,7 +41,9 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
   String? _selectedBusinessType;
   String? _selectedJoinPreference;
   bool _paymentDone = false;
-
+  List<DirectoryUservisitor> _members = [];
+  int? _selectedReferrerId;
+  bool _isMembersLoading = false;
   bool _isLoadingCategories = false;
   bool _isSubmitting = false;
   Future<void> _pickAadhar() async {
@@ -78,6 +83,7 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
   void initState() {
     super.initState();
     _loadCategories();
+    _loadMembers();
   }
 
   @override
@@ -91,6 +97,29 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
     _passwordController.dispose();
     _contactController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMembers() async {
+    setState(() => _isMembersLoading = true);
+
+    try {
+      final list = await _common.fetchDirectoryUsers();
+
+      // ✅ REMOVE DUPLICATES
+      final uniqueMap = <int, DirectoryUservisitor>{};
+
+      for (var m in list) {
+        uniqueMap[m.id] = m;
+      }
+
+      setState(() {
+        _members = uniqueMap.values.toList();
+        _selectedReferrerId = null; // ✅ RESET SELECTION
+        _isMembersLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isMembersLoading = false);
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -139,6 +168,10 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
       context.showToast('Please choose a joining preference');
       return;
     }
+    if (_selectedReferrerId == null) {
+      context.showToast("Please select who invited you");
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
@@ -156,6 +189,7 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
       'website': _websiteController.text.trim(),
       'payment_done': _paymentDone ? 1 : 0,
       'want_to_join': _selectedJoinPreference,
+      'user_id': _selectedReferrerId,
     };
 
     final res = await _auth.signup(body: body, aadharFile: _aadharFile);
@@ -276,8 +310,63 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                               Validators.required(v, label: 'Business Name'),
                         ),
                         const SizedBox(height: 16),
+
+                        GestureDetector(
+                          onTap: () async {
+                            final selected = await showSearchablePicker(
+                              context: context,
+                              items: _members,
+                              title: "Select Member",
+                              label: (m) => "${m.fullName} - ${m.businessName}",
+                            );
+
+                            if (selected != null) {
+                              setState(() {
+                                _selectedReferrerId = selected.id;
+                              });
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.grey.shade600.withOpacity(0.01),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _selectedReferrerId == null
+                                        ? "Invited by Member"
+                                        : (() {
+                                            final m = _members.firstWhere(
+                                              (e) =>
+                                                  e.id == _selectedReferrerId,
+                                              orElse: () => _members
+                                                  .first, // safety fallback
+                                            );
+                                            return "${m.fullName} - ${m.businessName}";
+                                          })(),
+                                    style: TextStyle(
+                                      color: _selectedReferrerId == null
+                                          ? Colors.grey
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_drop_down),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
                         DropdownButtonFormField<BusinessCategory>(
-                            isExpanded: true, 
+                          isExpanded: true,
 
                           value: _selectedCategory,
                           items: _categories

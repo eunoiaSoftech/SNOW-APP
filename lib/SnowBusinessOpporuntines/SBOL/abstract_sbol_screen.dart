@@ -164,7 +164,7 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
             elevation: 0,
             centerTitle: true,
             title: Text(
-              "Abstract SBOL",
+              "Abstract Lead",
               style: GoogleFonts.poppins(
                 color: const Color(0xFF014576),
                 fontWeight: FontWeight.w600,
@@ -434,7 +434,7 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            _cardTitle("SBOL Records", Icons.receipt_long),
+            _cardTitle("Lead Records", Icons.receipt_long),
             const SizedBox(height: 14),
 
             for (var record in records)
@@ -490,17 +490,18 @@ class _AbstractSBOLScreenState extends State<AbstractSBOLScreen> {
           const SizedBox(height: 6),
 
           Text(
-            "Referral: $referral",
+            "Lead: $referral",
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
           ),
           Text(
             "Phone: $phone",
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
           ),
-          Text(
-            "Email: $email",
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
-          ),
+          if (email.isNotEmpty)
+            Text(
+              "Email: $email",
+              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+            ),
           Text(
             "Comments: $comment",
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),

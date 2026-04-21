@@ -3,6 +3,7 @@ import 'package:snow_app/Data/Models/business_category.dart';
 import 'package:snow_app/Data/Models/location_option.dart';
 import 'package:snow_app/Data/Repositories/auth_repository.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
+import 'package:snow_app/Data/models/New%20Model/newloginmodel/IglooOption.dart';
 import 'package:snow_app/core/app_toast.dart';
 import 'package:snow_app/core/result.dart';
 import 'package:snow_app/core/validators.dart';
@@ -36,6 +37,8 @@ class _SignUpPageState extends State<SignUpPage> {
 
   List<BusinessCategory> _categories = [];
   List<CountryOption> _countries = [];
+  List<IglooOption> _igloos = [];
+  int? _selectedIglooId;
 
   BusinessCategory? _selectedCategory;
   CountryOption? _selectedCountry;
@@ -67,6 +70,23 @@ class _SignUpPageState extends State<SignUpPage> {
     _facebookController.dispose();
     _instagramController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchIgloos(int cityId) async {
+    final res = await _common.fetchIgloosByCity(cityId);
+
+    switch (res) {
+      case Ok(value: final list):
+        setState(() {
+          _igloos = list;
+          _selectedIglooId = null; // reset
+        });
+        break;
+
+      case Err(message: final msg, code: _):
+        context.showToast(msg, bg: Colors.red);
+        break;
+    }
   }
 
   Future<void> _pickAadhar() async {
@@ -148,6 +168,10 @@ class _SignUpPageState extends State<SignUpPage> {
       context.showToast('Please complete your location details');
       return;
     }
+    if (_selectedIglooId == null) {
+      context.showToast('Please select igloo', bg: Colors.red);
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
@@ -163,6 +187,7 @@ class _SignUpPageState extends State<SignUpPage> {
       'zone': _selectedZone!.id,
       'state': _selectedState!.id,
       'city': _selectedCity!.id,
+      'igloo_id': _selectedIglooId,
       'company_description': _companyDescriptionController.text.trim(),
       if (_linkedinController.text.trim().isNotEmpty)
         'linkedin_id': _linkedinController.text.trim(),
@@ -475,8 +500,14 @@ class _SignUpPageState extends State<SignUpPage> {
                                 value: _selectedCity,
                                 display: (c) => c.name,
                                 enabled: _selectedState != null,
-                                onChanged: (city) =>
-                                    setState(() => _selectedCity = city),
+                                onChanged: (city) {
+                                  setState(() {
+                                    _selectedCity = city;
+                                  });
+                                  if (city != null) {
+                                    _fetchIgloos(city.id);
+                                  }
+                                },
                                 validator: (value) {
                                   if ((_selectedState?.cities ?? []).isEmpty) {
                                     return 'Cities unavailable';
@@ -487,6 +518,34 @@ class _SignUpPageState extends State<SignUpPage> {
                                   return null;
                                 },
                               ),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<int>(
+                                value:
+                                    _igloos.any((e) => e.id == _selectedIglooId)
+                                    ? _selectedIglooId
+                                    : null,
+
+                                items: _igloos.map((e) {
+                                  return DropdownMenuItem(
+                                    value: e.id,
+                                    child: Text(e.name),
+                                  );
+                                }).toList(),
+
+                                onChanged: (v) {
+                                  setState(() => _selectedIglooId = v);
+                                },
+
+                                decoration: _fieldDecoration('Select Igloo *'),
+
+                                validator: (v) {
+                                  if (_igloos.isEmpty) return null;
+                                  if (v == null) return "Select Igloo";
+                                  return null;
+                                },
+                              ),
+                              if (_igloos.isEmpty && _selectedCity != null)
+                                const Text("No igloos available for this city"),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _companyDescriptionController,

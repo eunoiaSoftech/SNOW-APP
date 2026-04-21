@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:snow_app/Data/Repositories/New%20Repositories/EXTRA%20FEATURE/traning_reg.dart';
 import 'dart:ui';
-
+import 'package:snow_app/Data/Repositories/New%20Repositories/EXTRA%20FEATURE/traning_reg.dart';
 import 'package:snow_app/Data/models/New Model/extra feature/traning_reg.dart';
+import 'package:snow_app/Grid/traning_from.dart';
 
 class UpcomingTrainingsScreen extends StatefulWidget {
   const UpcomingTrainingsScreen({super.key});
@@ -15,9 +15,11 @@ class UpcomingTrainingsScreen extends StatefulWidget {
 
 class _UpcomingTrainingsScreenState extends State<UpcomingTrainingsScreen> {
   final repo = TrainingRepositoryNew();
-
   List<TrainingRecord> trainings = [];
   bool isLoading = true;
+
+  // Primary branding color
+  final Color primaryDark = const Color(0xFF014576);
 
   @override
   void initState() {
@@ -26,249 +28,296 @@ class _UpcomingTrainingsScreenState extends State<UpcomingTrainingsScreen> {
   }
 
   Future<void> loadTrainings() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
-
     try {
       final response = await repo.fetchTrainings();
-      trainings = response.data;
+      if (mounted) {
+        setState(() {
+          trainings = response.data;
+          isLoading = false;
+        });
+      }
     } catch (e) {
+      if (mounted) setState(() => isLoading = false);
       debugPrint("❌ TRAININGS FETCH ERROR: $e");
     }
-
-    setState(() => isLoading = false);
   }
 
-  /// Format date
-  String _formatDate(DateTime? date) {
+  String _getMonth(DateTime? date) {
     if (date == null) return "N/A";
-    return "${date.day}-${date.month}-${date.year}";
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    return months[date.month - 1];
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Background + gradient
-        Positioned.fill(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xAA97DCEB),
-                      Color(0xAA5E9BC8),
-                      Color(0xAA97DCEB),
-                      Color(0xAA70A9EE),
-                      Color(0xAA97DCEB),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'TRAINING PROGRAMS',
+          style: GoogleFonts.poppins(
+            color: Color(0xFF014576),
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            shadows: [
+              Shadow(
+                blurRadius: 4,
+                color: Color.fromARGB(150, 200, 240, 255),
+                offset: Offset(1, 2),
               ),
             ],
           ),
         ),
-
-        // Main UI
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(
-              'TRAININGS',
-              style: GoogleFonts.poppins(
-                color: Color(0xFF014576),
-                fontWeight: FontWeight.w600,
-                fontSize: 20,
-                shadows: [
-                  Shadow(
-                    blurRadius: 4,
-                    color: Color.fromARGB(150, 200, 240, 255),
-                    offset: Offset(1, 2),
-                  ),
-                ],
-              ),
-            ),
-            iconTheme: const IconThemeData(color: Color(0xFF014576)),
+        iconTheme: IconThemeData(color: primaryDark),
+        actions: [
+          IconButton(
+            onPressed: loadTrainings,
+            icon: Icon(Icons.refresh_rounded, color: primaryDark),
           ),
-
-          body: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF014576)),
-                )
-              : trainings.isEmpty
-              ? Center(
-                  child: Text(
-                    "No Trainings Found",
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Colors.white,
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Keep your original BG image and gradient container as is
+          Positioned.fill(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset('assets/bghome.jpg', fit: BoxFit.cover),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xAA97DCEB),
+                        Color(0xAA5E9BC8),
+                        Color(0xAA97DCEB),
+                        Color(0xAA70A9EE),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                )
-              : ListView.builder(
-                  itemCount: trainings.length,
-                  itemBuilder: (context, index) {
-                    final training = trainings[index];
+                ),
+              ],
+            ),
+          ),
 
-                    return Container(
-                      margin: const EdgeInsets.symmetric(
+          // Main Content
+          isLoading
+              ? Center(child: CircularProgressIndicator(color: primaryDark))
+              : trainings.isEmpty
+              ? _buildEmptyState()
+              : RefreshIndicator(
+                  onRefresh: loadTrainings,
+                  color: primaryDark,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 110, 16, 100),
+                    itemCount: trainings.length,
+                    itemBuilder: (context, index) {
+                      return _buildTrainingCard(trainings[index]);
+                    },
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrainingCard(TrainingRecord training) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.5)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Date Badge (Proper UI Element)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: 12,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color.fromARGB(255, 197, 219, 248),
-                            Color(0xFFEAF5FC),
-                            Color.fromARGB(255, 197, 219, 248),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 10,
-                            offset: Offset(2, 4),
+                        color: primaryDark,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            training.trainingDate?.day.toString() ?? "??",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            _getMonth(training.trainingDate),
+                            style: GoogleFonts.poppins(
+                              color: Colors.white70,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 28,
-                              backgroundColor: const Color(0xFF014576),
-                              child: Text(
-                                training.title.isNotEmpty
-                                    ? training.title[0].toUpperCase()
-                                    : "T",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 24,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Title & Description
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            training.title,
+                            style: GoogleFonts.poppins(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: primaryDark,
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    training.title,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF014576),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-
-                                  // topic
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.topic,
-                                        size: 16,
-                                        color: Colors.black54,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          training.description,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 14,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  const SizedBox(height: 4),
-
-                                  // date
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.calendar_today,
-                                        size: 14,
-                                        color: Colors.black45,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        _formatDate(training.trainingDate),
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 13,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            training.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: Colors.black87,
                             ),
-
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                elevation: 1,
-                                backgroundColor: Color(0xFF014576),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-
-
-                              onPressed: () async {
-                                final res = await repo.registerForTraining(
-                                  training.id,
-                                );
-
-                                if (res["success"] == true) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "Registered successfully",
-                                      ),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                }
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 10,
-                                ),
-                                child: Text(
-                                  'Register',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(height: 1, color: Colors.black12),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Mode Tag
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.video_camera_front_outlined,
+                          size: 16,
+                          color: primaryDark,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          training.mode.toUpperCase(),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: primaryDark.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Action Button
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryDark,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
                         ),
                       ),
-                    );
-                  },
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                TrainingDetailsScreen(training: training),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Register Now',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+              ],
+            ),
+          ),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_note_outlined,
+            size: 80,
+            color: primaryDark.withOpacity(0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "No Upcoming Trainings",
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: primaryDark,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -4,7 +4,9 @@ import 'package:flutter/services.dart'; // Required for Clipboard
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Repositories/DirectoryMemberRepository.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/location_repo.dart';
+import 'package:snow_app/Data/Repositories/common_repository.dart';
 import 'package:snow_app/Data/models/New%20Model/location_data123.dart';
+import 'package:snow_app/Data/models/New%20Model/newloginmodel/IglooOption.dart';
 import 'package:snow_app/core/result.dart';
 
 class MemberListScreen extends StatefulWidget {
@@ -17,15 +19,315 @@ class MemberListScreen extends StatefulWidget {
 class _MemberListScreenState extends State<MemberListScreen> {
   final DirectoryMemberRepository repo = DirectoryMemberRepository();
   final LocationRepository locationRepo = LocationRepository();
+  final CommonRepository commonRepo = CommonRepository();
+
+  int? selectedCityId;
+  int? selectedIglooId;
 
   bool loading = true;
   List members = [];
   LocationData? locationData;
+  List<IglooOption> igloos = []; // ✅ NOT dynamic
 
   @override
   void initState() {
     super.initState();
-    loadMembers();
+    loadFilters();
+  }
+
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  child: Material(
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 26,
+                      ),
+                      decoration: BoxDecoration(
+                        // ✅ MATCH YOUR SCREEN GRADIENT
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xCC97DCEB),
+                            Color(0xCC5E9BC8),
+                            Color(0xCC97DCEB),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// 🔹 HEADER
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Filter Members",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF014576),
+                                ),
+                              ),
+
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Color(0xFF014576),
+                                ),
+                                onPressed: () {
+                                  if (selectedCityId == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "⚠ Please select a city first",
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).pop();
+                                },
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          /// 🔹 CITY DROPDOWN
+                          Text(
+                            "Select City *",
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.85),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                isExpanded: true,
+                                hint: const Text("Choose city"),
+                                value: selectedCityId,
+                                items:
+                                    locationData?.countries
+                                        .expand((c) => c.zones)
+                                        .expand((z) => z.states)
+                                        .expand((s) => s.cities)
+                                        .map(
+                                          (city) => DropdownMenuItem<int>(
+                                            value: city.id,
+                                            child: Text(city.name),
+                                          ),
+                                        )
+                                        .toList() ??
+                                    [],
+                                onChanged: (val) async {
+                                  if (val == null) return;
+
+                                  setDialogState(() {
+                                    selectedCityId = val;
+                                    selectedIglooId = null;
+                                    igloos = [];
+                                  });
+
+                                  final res = await commonRepo
+                                      .fetchIgloosByCity(val);
+
+                                  if (res is Ok<List<IglooOption>>) {
+                                    setDialogState(() {
+                                      igloos = res.value;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          /// 🔹 IGLOO DROPDOWN
+                          Text(
+                            "Select Igloo (Optional)",
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.85),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                isExpanded: true,
+                                value: selectedIglooId,
+                                hint: const Text("Choose igloo"),
+                                items: igloos
+                                    .map<DropdownMenuItem<int>>(
+                                      (igloo) => DropdownMenuItem<int>(
+                                        value: igloo.id,
+                                        child: Text(igloo.name),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (val) {
+                                  setDialogState(() {
+                                    selectedIglooId = val;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 25),
+
+                          /// 🔹 APPLY BUTTON (STRICT VALIDATION)
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF014576),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              onPressed: () async {
+                                if (selectedCityId == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "⚠ Please select a city first",
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                // ✅ CLOSE POPUP PROPERLY
+                                Navigator.of(
+                                  context,
+                                  rootNavigator: true,
+                                ).pop();
+
+                                // ✅ THEN LOAD DATA
+                                setState(() => loading = true);
+
+                                final data = await repo.fetchMembers(
+                                  cityId: selectedCityId,
+                                  iglooId: selectedIglooId,
+                                );
+
+                                setState(() {
+                                  members = data;
+                                  loading = false;
+                                });
+                              },
+                              child: const Text(
+                                "Apply Filters",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  } // --- HELPER STYLING METHODS ---
+
+  Widget _buildFieldLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.black87,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownContainer({required Widget child, bool enabled = true}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: enabled ? Colors.white : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: enabled ? Colors.black12 : Colors.black.withOpacity(0.05),
+          width: 1,
+        ),
+        boxShadow: [
+          if (enabled)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Future<void> loadFilters() async {
+    final locationResult = await locationRepo.fetchLocationData();
+
+    if (locationResult is Ok<LocationData>) {
+      setState(() {
+        locationData = locationResult.value; // ✅ FIXED
+        loading = false;
+      });
+
+      // ✅ SHOW POPUP ONLY AFTER DATA READY
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showFilterDialog();
+      });
+    }
   }
 
   Future<void> loadMembers() async {
@@ -124,6 +426,115 @@ class _MemberListScreenState extends State<MemberListScreen> {
           SafeArea(
             child: Column(
               children: [
+                // Padding(
+                //   padding: const EdgeInsets.symmetric(horizontal: 16),
+                //   child:
+
+                //   Column(
+                //     children: [
+                //       DropdownButtonFormField<int>(
+                //         hint: const Text("Select City"),
+                //         value: selectedCityId,
+                //         items:
+                //             locationData?.countries
+                //                 .expand((c) => c.zones)
+                //                 .expand((z) => z.states)
+                //                 .expand((s) => s.cities)
+                //                 .map(
+                //                   (city) => DropdownMenuItem(
+                //                     value: city.id,
+                //                     child: Text(city.name),
+                //                   ),
+                //                 )
+                //                 .toList() ??
+                //             [],
+                //         onChanged: (val) async {
+                //           setState(() {
+                //             selectedCityId = val;
+                //             selectedIglooId =
+                //                 null; // reset igloo when city changes
+                //           });
+
+                //           if (val == null) return;
+
+                //           final res = await commonRepo.fetchIgloosByCity(val);
+
+                //           if (res is Ok<List<IglooOption>>) {
+                //             setState(() {
+                //               igloos = res.value;
+                //             });
+                //           } else {
+                //             setState(() {
+                //               igloos = [];
+                //             });
+                //           }
+                //         },
+                //       ),
+
+                //       const SizedBox(height: 10),
+
+                //       DropdownButtonFormField<int>(
+                //         hint: const Text("Select Igloo (Optional)"),
+                //         value: selectedIglooId,
+                //         items: igloos
+                //             .map<DropdownMenuItem<int>>(
+                //               (igloo) => DropdownMenuItem<int>(
+                //                 value: igloo.id,
+                //                 child: Text(igloo.name),
+                //               ),
+                //             )
+                //             .toList(),
+                //         onChanged: (int? val) {
+                //           setState(() {
+                //             selectedIglooId = val;
+                //           });
+                //         },
+                //       ),
+                //       const SizedBox(height: 10),
+
+                //       ElevatedButton(
+                //         onPressed: () async {
+                //           if (selectedCityId == null) {
+                //             ScaffoldMessenger.of(context).showSnackBar(
+                //               const SnackBar(
+                //                 content: Text("Please select city"),
+                //               ),
+                //             );
+                //             return;
+                //           }
+
+                //           setState(() => loading = true);
+
+                //           final data = await repo.fetchMembers(
+                //             cityId: selectedCityId,
+                //             iglooId: selectedIglooId,
+                //           );
+
+                //           setState(() {
+                //             members = data;
+                //             loading = false;
+                //           });
+                //         },
+                //         // onPressed: () async {
+                //         //   setState(() => loading = true);
+
+                //         //   final data = await repo.fetchMembers(
+                //         //     cityId: selectedCityId,
+                //         //     iglooId: selectedIglooId,
+                //         //   );
+
+                //         //   setState(() {
+                //         //     members = data;
+                //         //     loading = false;
+                //         //   });
+                //         // },
+                //         child: const Text("Apply Filter"),
+                //       ),
+
+                //     ],
+                //   ),
+
+                // ),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 16,
@@ -170,6 +581,16 @@ class _MemberListScreenState extends State<MemberListScreen> {
                             ),
                           ),
                         ),
+
+                      Spacer(),
+
+                      IconButton(
+                        icon: const Icon(
+                          Icons.filter_alt_rounded,
+                          color: Color(0xFF014576),
+                        ),
+                        onPressed: _showFilterDialog,
+                      ),
                     ],
                   ),
                 ),
@@ -187,7 +608,19 @@ class _MemberListScreenState extends State<MemberListScreen> {
                     child: loading
                         ? const Center(child: CircularProgressIndicator())
                         : RefreshIndicator(
-                            onRefresh: loadMembers,
+                            // onRefresh: loadMembers,
+                            onRefresh: () async {
+                              if (selectedCityId != null) {
+                                final data = await repo.fetchMembers(
+                                  cityId: selectedCityId,
+                                  iglooId: selectedIglooId,
+                                );
+
+                                setState(() {
+                                  members = data;
+                                });
+                              }
+                            },
                             child: ListView.builder(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,

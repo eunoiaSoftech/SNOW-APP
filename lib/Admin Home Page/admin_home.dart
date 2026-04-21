@@ -1,12 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:snow_app/Admin%20Home%20Page/AdminTrainingListScreen.dart';
+import 'package:snow_app/Admin%20Home%20Page/AdminTrainingUsersScreen.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_create_location.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_module_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_igloo_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_renewal_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/create_business_category.dart';
 import 'package:snow_app/Admin%20Home%20Page/user_list_screen.dart';
+import 'package:snow_app/Grid/AppreciationListScreen.dart';
+import 'package:snow_app/Grid/TestimonialListScreen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -17,8 +21,13 @@ class AdminHomeScreen extends StatelessWidget {
     {"title": "Igloo Management", "icon": Icons.ac_unit, "route": "igloos"},
     {"title": "Module Access", "icon": Icons.tune, "route": "modules"},
     {"title": "Locations", "icon": Icons.location_on, "route": "locations"},
-    {"title": "Membership Renewal", "icon": Icons.refresh, "route": "renewal"},
+    // {"title": "Membership Renewal", "icon": Icons.refresh, "route": "renewal"},
     {"title": "Settings", "icon": Icons.settings, "route": "settings"},
+    {
+      "title": "Training Users",
+      "icon": Icons.people,
+      "route": "training_users",
+    },
   ];
 
   @override
@@ -96,7 +105,12 @@ class AdminHomeScreen extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      20,
+                      20,
+                      MediaQuery.of(context).padding.bottom + 80,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.3),
                       borderRadius: const BorderRadius.only(
@@ -169,14 +183,44 @@ class AdminHomeScreen extends StatelessWidget {
                                 );
                                 break;
 
-                              case "renewal":
+                              case "training_users":
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => const AdminRenewalScreen(),
+                                    builder: (_) =>
+                                        const AdminTrainingListScreen(),
                                   ),
                                 );
                                 break;
+
+                              case "appreciation":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const AppreciationListScreen(),
+                                  ),
+                                );
+                                break;
+
+                              case "testimonial":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const TestimonialListScreen(),
+                                  ),
+                                );
+                                break;
+
+                              // case "renewal":
+                              //   Navigator.push(
+                              //     context,
+                              //     MaterialPageRoute(
+                              //       builder: (_) => const AdminRenewalScreen(),
+                              //     ),
+                              //   );
+                              //   break;
 
                               default:
                                 ScaffoldMessenger.of(context).showSnackBar(

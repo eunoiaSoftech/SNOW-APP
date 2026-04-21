@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Models/admin_igloo.dart';
+import 'package:snow_app/Data/Models/profile_overview.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/SBOG%20REPO/recordSbog.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/repo_allbusniess.dart';
 import 'package:snow_app/Data/models/New%20Model/allfetchbusiness.dart';
@@ -9,6 +10,7 @@ import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dar
 import 'package:snow_app/common%20api/all_business_api.dart';
 import 'package:snow_app/common%20api/all_business_directory_model.dart';
 import 'package:snow_app/core/result.dart';
+import 'package:snow_app/data/repositories/profile_repository.dart';
 
 class RecordSBOG extends StatefulWidget {
   const RecordSBOG({Key? key}) : super(key: key);
@@ -36,6 +38,8 @@ class _RecordSBOGState extends State<RecordSBOG>
   int? _selectedBusinessId;
   List<Igloo> _igloos = [];
   FilterData? _currentFilters;
+  int? myCityId;
+  bool isMyCitySelected = true;
 
   late final AnimationController _dotsController;
   late final Animation<int> _dotsAnimation;
@@ -48,39 +52,38 @@ class _RecordSBOGState extends State<RecordSBOG>
       duration: const Duration(seconds: 1),
     )..repeat();
     _dotsAnimation = IntTween(begin: 0, end: 3).animate(_dotsController);
-      _fetchMyIglooMembers();
+    _initData(); // 🔥 ADD THIS
   }
 
+  Future<void> _fetchMyIglooMembers() async {
+    setState(() => _isDropdownLoading = true);
 
-Future<void> _fetchMyIglooMembers() async {
-  setState(() => _isDropdownLoading = true);
+    try {
+      final repo = BusinessRepository();
 
-  try {
-    final repo = BusinessRepository();
+     bool shouldShowAll = !isMyCitySelected;
 
-    bool shouldShowAll =
-        _currentFilters == null || !_currentFilters!.hasAnyFilter;
+final result = await repo.fetchBusiness(
+  page: 1,
+  country: _currentFilters?.countryId ?? '',
+  zone: _currentFilters?.zoneId ?? '',
+  city: isMyCitySelected
+      ? myCityId?.toString() ?? ''
+      : (_currentFilters?.cityId ?? ''),
+  search: _currentFilters?.businessName ?? '',
+  showAll: shouldShowAll,
+);
 
-    final result = await repo.fetchBusiness(
-      page: 1,
-      country: _currentFilters?.countryId ?? '',
-      zone: _currentFilters?.zoneId ?? '',
-      city: _currentFilters?.cityId ?? '',
-      search: _currentFilters?.businessName ?? '',
-      showAll: shouldShowAll,
-    );
-
-    if (result is Ok<List<BusinessItem>>) {
-      setState(() {
-        _businessItems = result.value;
-        _isDropdownLoading = false;
-      });
+      if (result is Ok<List<BusinessItem>>) {
+        setState(() {
+          _businessItems = result.value;
+          _isDropdownLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isDropdownLoading = false);
     }
-  } catch (e) {
-    setState(() => _isDropdownLoading = false);
   }
-}
-
 
   @override
   void dispose() {
@@ -92,6 +95,29 @@ Future<void> _fetchMyIglooMembers() async {
     super.dispose();
   }
 
+int? getMyCityId(ProfileOverview profile) {
+  try {
+    final active = profile.userTypes.firstWhere((e) => e.status == "ACTIVE");
+
+    return active.data['city'] != null
+        ? int.tryParse(active.data['city'].toString())
+        : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+  // @override
+  Future<void> _initData() async {
+    final profileRepo = ProfileRepository();
+    final res = await profileRepo.fetchProfile();
+
+    if (res is Ok<ProfileOverview>) {
+      myCityId = getMyCityId(res.value);
+    }
+
+    await _fetchMyIglooMembers();
+  }
   void _showIgloosSearchDialog() {
     showDialog(
       context: context,
@@ -390,6 +416,50 @@ Future<void> _fetchMyIglooMembers() async {
                       ),
 
                       buildLabel('Select a member from My Business'),
+                         const SizedBox(height: 8),
+
+                      Row(
+                        children: [
+                          ChoiceChip(
+                            label: const Text("My Igloo"),
+                            selected: isMyCitySelected,
+                            onSelected: (val) {
+                              setState(() {
+                                isMyCitySelected = true;
+                                _selectedBusinessId = null;
+                                _selectedMyIglooMember = null;
+                              });
+                              _fetchMyIglooMembers(); // 🔥 reload data
+                            },
+                            selectedColor: const Color(0xFF5E9BC8),
+                            labelStyle: TextStyle(
+                              color: isMyCitySelected
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ChoiceChip(
+                            label: const Text("Whole Platform"),
+                            selected: !isMyCitySelected,
+                            onSelected: (val) {
+                              setState(() {
+                                isMyCitySelected = false;
+                                _selectedBusinessId = null;
+                                _selectedMyIglooMember = null;
+                              });
+                              _fetchMyIglooMembers(); // 🔥 reload data
+                            },
+                            selectedColor: const Color(0xFF5E9BC8),
+                            labelStyle: TextStyle(
+                              color: !isMyCitySelected
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                       _isDropdownLoading
                           ? TextFormField(
                               enabled: false,
@@ -419,7 +489,8 @@ Future<void> _fetchMyIglooMembers() async {
                                   isExpanded: true,
                                   value: _selectedBusinessId,
                                   items: _businessItems.map((item) {
-                                    final name = "${item.displayName} - ${item.business.name}";
+                                    final name =
+                                        "${item.displayName} - ${item.business.category}";
 
                                     return DropdownMenuItem<int>(
                                       value:

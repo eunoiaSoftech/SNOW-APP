@@ -4,7 +4,6 @@ import 'package:snow_app/core/api_client.dart';
 class SfgRepository {
   final ApiClient _api = ApiClient.create();
 
-
   Future<SfgListResponse> fetchSfgList({
     bool filterForMe = false,
     bool showOnlyMy = false,
@@ -34,24 +33,20 @@ class SfgRepository {
     required int opponentUserId,
     required String amount,
     required String comment,
+    required String type, // 👈 NEW PARAMETER
   }) async {
     const endpoint = "router.php";
 
-    final query = {
-      "endpoint": "sfg/create",
-    };
+    final query = {"endpoint": "sfg/create"};
 
     final body = {
       "opponent_user_id": opponentUserId,
       "amount": amount,
+      "type": type,
       "comment": comment,
     };
 
-    final (res, code) = await _api.post(
-      endpoint,
-      query: query,
-      body: body,
-    );
+    final (res, code) = await _api.post(endpoint, query: query, body: body);
 
     if (code == 200 || code == 201) {
       return res.data;
