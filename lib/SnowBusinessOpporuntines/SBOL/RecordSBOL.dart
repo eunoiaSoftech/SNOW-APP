@@ -7,6 +7,7 @@ import 'package:snow_app/SnowBusinessOpporuntines/EnhancedSearchIgloosDialog.dar
 import 'package:snow_app/common%20api/all_business_directory_model.dart';
 import 'package:snow_app/core/result.dart';
 import 'package:snow_app/data/repositories/profile_repository.dart';
+import 'package:snow_app/home/MemberDropdown.dart';
 import '../../Data/Repositories/New Repositories/SBOL REPO/sbol_repo.dart';
 import '../../Data/models/New Model/SBOL MODEL/sbol_model.dart';
 import 'package:snow_app/Data/Models/admin_igloo.dart';
@@ -428,16 +429,76 @@ class _RecordSBOLState extends State<RecordSBOL>
             ),
             iconTheme: const IconThemeData(color: Color(0xFF014576)),
             actions: [
-              IconButton(
-                icon: Icon(
-                  _currentFilters?.hasAnyFilter == true
-                      ? Icons.filter_alt
-                      : Icons.filter_alt_outlined,
-                  color: _currentFilters?.hasAnyFilter == true
-                      ? Colors.orange
-                      : const Color(0xFF014576),
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: InkWell(
+                  onTap: _showIgloosSearchDialog,
+                  borderRadius: BorderRadius.circular(25),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _currentFilters?.hasAnyFilter == true
+                          ? const Color(0xFF014576).withOpacity(0.12)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: _currentFilters?.hasAnyFilter == true
+                            ? const Color(0xFF014576)
+                            : const Color(0xFF014576).withOpacity(0.4),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Stack(
+                          children: [
+                            Icon(
+                              Icons.filter_alt,
+                              size: 20,
+                              color: const Color(0xFF014576),
+                            ),
+
+                            /// 🔵 Active dot
+                            if (_currentFilters?.hasAnyFilter == true)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF014576),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(width: 6),
+
+                        /// 🔥 CLEAR LABEL
+                        Text(
+                          "Igloo Filter",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF014576),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                onPressed: _showIgloosSearchDialog,
               ),
             ],
           ),
@@ -472,7 +533,7 @@ class _RecordSBOLState extends State<RecordSBOL>
                         'Enter recipient name',
                       ),
                       buildLabel('Select a member from My Igloo'),
-                         const SizedBox(height: 8),
+                      const SizedBox(height: 8),
 
                       Row(
                         children: [
@@ -537,44 +598,55 @@ class _RecordSBOLState extends State<RecordSBOL>
                                     ),
                                   ),
                             )
-                          : SizedBox(
-                              width: double.infinity,
-                              child: DropdownButtonFormField<int>(
-                                isExpanded: true,
-                                value: _selectedBusinessId,
-                                items: _businessItems.map((item) {
-                                  final name =
-                                      "${item.displayName} - ${item.business.category}";
-
-                                  return DropdownMenuItem<int>(
-                                    value: item.id, // THIS IS to_business_id 👈
-                                    child: Text(
-                                      name,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.poppins(fontSize: 14),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (int? id) {
-                                  setState(() {
-                                    _selectedBusinessId = id;
-
-                                    if (id != null) {
-                                      final selected = _businessItems
-                                          .firstWhere((x) => x.id == id);
-                                      _selectedMyIglooMember =
-                                          selected.business.name;
-                                    } else {
-                                      _selectedMyIglooMember = null;
-                                    }
-                                  });
-                                },
-                                decoration: _inputDecoration('Select a member'),
-                                validator: (value) =>
-                                    value == null ? 'Required' : null,
-                                menuMaxHeight: 200,
-                              ),
+                          : MemberDropdown(
+                              items: _businessItems,
+                              selectedId: _selectedBusinessId,
+                              onSelected: (item) {
+                                setState(() {
+                                  _selectedBusinessId = item.id;
+                                  _selectedMyIglooMember = item.business.name;
+                                });
+                              },
                             ),
+
+                      // : SizedBox(
+                      //     width: double.infinity,
+                      //     child: DropdownButtonFormField<int>(
+                      //       isExpanded: true,
+                      //       value: _selectedBusinessId,
+                      //       items: _businessItems.map((item) {
+                      //         final name =
+                      //             "${item.displayName} - ${item.business.category}";
+
+                      //         return DropdownMenuItem<int>(
+                      //           value: item.id, // THIS IS to_business_id 👈
+                      //           child: Text(
+                      //             name,
+                      //             overflow: TextOverflow.ellipsis,
+                      //             style: GoogleFonts.poppins(fontSize: 14),
+                      //           ),
+                      //         );
+                      //       }).toList(),
+                      //       onChanged: (int? id) {
+                      //         setState(() {
+                      //           _selectedBusinessId = id;
+
+                      //           if (id != null) {
+                      //             final selected = _businessItems
+                      //                 .firstWhere((x) => x.id == id);
+                      //             _selectedMyIglooMember =
+                      //                 selected.business.name;
+                      //           } else {
+                      //             _selectedMyIglooMember = null;
+                      //           }
+                      //         });
+                      //       },
+                      //       decoration: _inputDecoration('Select a member'),
+                      //       validator: (value) =>
+                      //           value == null ? 'Required' : null,
+                      //       menuMaxHeight: 200,
+                      //     ),
+                      //   ),
                       const SizedBox(height: 16),
                       _buildTextField('Referral', _referralController, ''),
                       _buildTextField(
