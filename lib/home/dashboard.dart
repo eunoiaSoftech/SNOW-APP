@@ -9,6 +9,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snow_app/Data/Models/profile_overview.dart';
+import 'package:snow_app/Data/Repositories/New%20Repositories/dashboard_repository.dart';
+import 'package:snow_app/Data/models/New%20Model/dashboard_model.dart';
 import 'package:snow_app/Grid/grid.dart';
 import 'package:snow_app/Grid/profile.dart';
 import 'package:snow_app/core/api_client.dart';
@@ -27,20 +29,34 @@ class _SnowDashboardState extends State<SnowDashboard> {
   String userName = '';
 
   final profileRepo = ProfileRepository();
+  final dashboardRepo = DashboardRepository();
+  DashboardModel? dashboard;
+
+  String selectedPeriod = "yearly"; // 🔥 default
 
   ProfileOverview? profile;
   int? userTypeId;
   bool isAdmin = false;
+  int? daysUntilRenewal;
+  DateTime? renewalDate;
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
     loadProfile();
+    loadDashboard();
   }
 
-  int? daysUntilRenewal;
-  DateTime? renewalDate;
+  Future<void> loadDashboard() async {
+    final res = await dashboardRepo.fetchDashboard(selectedPeriod);
+
+    if (res is Ok<DashboardModel>) {
+      setState(() {
+        dashboard = res.value;
+      });
+    }
+  }
 
   Future<void> loadProfile() async {
     final res = await profileRepo.fetchProfile();
@@ -75,56 +91,56 @@ class _SnowDashboardState extends State<SnowDashboard> {
     return s[0].toUpperCase() + s.substring(1);
   }
 
-  Widget _highlightBox(String title, String value, IconData icon) {
+  Widget _highlightBox(String title, int value, IconData icon) {
     return Expanded(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2), // brighter glass
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3), // strong glass reflection
-                width: 1.4,
+      child: TweenAnimationBuilder<int>(
+        tween: IntTween(begin: 0, end: value),
+        duration: const Duration(milliseconds: 800),
+        builder: (context, val, child) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1.4,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(icon, size: 28, color: Color(0xFF014576)),
+                    const SizedBox(height: 8),
+                    Text(
+                      "$val", // 🔥 animated value
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF014576),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Color(0xFF014576),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.25),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 28, color: Color(0xFF014576)),
-                const SizedBox(height: 8),
-                Text(
-                  value,
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF014576),
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Color(0xFF014576),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -225,7 +241,9 @@ class _SnowDashboardState extends State<SnowDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "  Hello, ${capitalize(userName)}",
+                      profile == null
+                          ? "  Hello..."
+                          : "  Hello, ${capitalize(profile!.user.fullName)}",
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         color: const Color(0xFF014576),
@@ -302,8 +320,43 @@ class _SnowDashboardState extends State<SnowDashboard> {
             // // <-- QUICK ACTIONS GRID INSERTED HERE -->
             // _buildQuickActions(),
             const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: ["weekly", "monthly", "yearly", "lifetime"].map((
+                period,
+              ) {
+                final isSelected = selectedPeriod == period;
 
-            // ⭐ TODAY'S HIGHLIGHTS STATIC CARDS ⭐
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      selectedPeriod = period;
+                    });
+                    loadDashboard(); // 🔥 refetch
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected ? Color(0xFF014576) : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      period.toUpperCase(),
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Color(0xFF014576),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+
+            SizedBox(height: 12),
+
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
@@ -335,32 +388,45 @@ class _SnowDashboardState extends State<SnowDashboard> {
                   ),
                   const SizedBox(height: 16),
 
-                  // ROW 1
-                  Row(
-                    children: [
-                      _highlightBox("SMU Completed", "5", Icons.handshake),
-                      const SizedBox(width: 12),
-                      _highlightBox(
-                        "Opportunities",
-                        "3",
-                        Icons.lightbulb_outline,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // ROW 2
-                  Row(
-                    children: [
-                      _highlightBox("Trainings", "1", Icons.school),
-                      const SizedBox(width: 12),
-                      _highlightBox("Snow Points", "128", Icons.ac_unit),
-                    ],
-                  ),
+                  // 🔥 LOADER OR DATA
+                  if (dashboard == null)
+                    const Center(child: CircularProgressIndicator())
+                  else ...[
+                    Row(
+                      children: [
+                        _highlightBox(
+                          "SMU Completed",
+                          dashboard!.smu,
+                          Icons.handshake,
+                        ),
+                        const SizedBox(width: 12),
+                        _highlightBox(
+                          "Opportunities",
+                          dashboard!.opportunities,
+                          Icons.lightbulb_outline,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _highlightBox(
+                          "Trainings",
+                          dashboard!.trainings,
+                          Icons.school,
+                        ),
+                        const SizedBox(width: 12),
+                        _highlightBox(
+                          "Snow Points",
+                          dashboard!.snowPoints,
+                          Icons.ac_unit,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
 
             // this the api fetch of top givers and top receivers

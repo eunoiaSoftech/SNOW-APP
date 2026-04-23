@@ -8,6 +8,7 @@ import 'package:snow_app/Admin%20Home%20Page/admin_module_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_igloo_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/admin_renewal_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/create_business_category.dart';
+import 'package:snow_app/Admin%20Home%20Page/member_dashboard_screen.dart';
 import 'package:snow_app/Admin%20Home%20Page/user_list_screen.dart';
 import 'package:snow_app/Grid/AppreciationListScreen.dart';
 import 'package:snow_app/Grid/TestimonialListScreen.dart';
@@ -27,6 +28,11 @@ class AdminHomeScreen extends StatelessWidget {
       "title": "Training Users",
       "icon": Icons.people,
       "route": "training_users",
+    },
+    {
+      "title": "Member Dashboard",
+      "icon": Icons.dashboard,
+      "route": "MemberDashboard",
     },
   ];
 
@@ -209,6 +215,16 @@ class AdminHomeScreen extends StatelessWidget {
                                   MaterialPageRoute(
                                     builder: (_) =>
                                         const TestimonialListScreen(),
+                                  ),
+                                );
+                                break;
+
+                              case "MemberDashboard":
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const MemberDashboardScreen(),
                                   ),
                                 );
                                 break;

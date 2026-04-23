@@ -65,21 +65,217 @@ class _UserListScreenState extends State<UserListScreen>
     }
   }
 
-//   Future<void> sendReminder() async {
-//   final (res, code) = await ApiClient.create().post(
-//     "/",
-//     query: {"endpoint": "admin/renewal-reminder"},
-//     body: {
-//       "user_type_id": userTypeId, // 🔥 THIS IS CRITICAL
-//     },
-//   );
+  Future<void> _renewUser(AdminUserEntry entry, int durationYears) async {
+    final (res, code) = await ApiClient.create().post(
+      "/",
+      query: {"endpoint": "admin/user-renewal"},
+      body: {
+        "user_type_id": entry.userTypeId,
+        "renewal_duration_years": durationYears,
+      },
+    );
 
-//   if (code == 200) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(content: Text(res.data["message"])),
-//     );
-//   }
-// }
+    if (!mounted) return;
+
+    if (code == 200) {
+      context.showToast(res.data["message"]);
+      await _loadUsers(); // refresh list
+    } else {
+      context.showToast("Renewal failed", bg: Colors.red);
+    }
+  }
+
+  Future<void> _showRenewDialog(AdminUserEntry entry) async {
+  int duration = 1;
+  final TextEditingController durationCtrl = TextEditingController(text: "1");
+
+  await showDialog(
+    context: context,
+    builder: (_) {
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.transparent, // Background handled by container
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                // Matching your app's glass/gradient aesthetic
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFEAF5FC), Colors.white],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon Header
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF014576).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.autorenew_rounded, 
+                      color: Color(0xFF014576), size: 32),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  Text(
+                    "Renew Membership",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      color: const Color(0xFF014576),
+                    ),
+                  ),
+                  Text(
+                    "Extending access for ${entry.displayName}",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Modernized Text Field
+                  TextFormField(
+                    controller: durationCtrl,
+                    keyboardType: TextInputType.number,
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    decoration: InputDecoration(
+                      labelText: "Duration (Years)",
+                      labelStyle: GoogleFonts.poppins(color: Colors.grey[600]),
+                      prefixIcon: const Icon(Icons.timer_outlined, color: Color(0xFF014576)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(color: Colors.blue.shade100),
+                      ),
+                    ),
+                    onChanged: (val) {
+                      final parsed = int.tryParse(val);
+                      if (parsed != null && parsed > 0) {
+                        setModalState(() => duration = parsed);
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Modern Choice Chips
+                  Wrap(
+                    spacing: 10,
+                    children: [1, 3, 5, 10].map((e) {
+                      bool isSelected = duration == e;
+                      return ChoiceChip(
+                        label: Text("$e Yr"),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFF014576),
+                        backgroundColor: Colors.white,
+                        labelStyle: GoogleFonts.poppins(
+                          color: isSelected ? Colors.white : const Color(0xFF014576),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(
+                            color: isSelected ? Colors.transparent : Colors.blue.shade100,
+                          ),
+                        ),
+                        onSelected: (_) {
+                          setModalState(() {
+                            duration = e;
+                            durationCtrl.text = e.toString();
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            "Cancel",
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            await _renewUser(entry, duration);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF014576),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            "Renew Now",
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}  //   Future<void> sendReminder() async {
+  //   final (res, code) = await ApiClient.create().post(
+  //     "/",
+  //     query: {"endpoint": "admin/renewal-reminder"},
+  //     body: {
+  //       "user_type_id": userTypeId, // 🔥 THIS IS CRITICAL
+  //     },
+  //   );
+
+  //   if (code == 200) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(res.data["message"])),
+  //     );
+  //   }
+  // }
 
   Future<void> _loadIgloos() async {
     final res = await _adminRepo.fetchIgloos();
@@ -165,264 +361,265 @@ class _UserListScreenState extends State<UserListScreen>
         .join(', ');
   }
 
-Future<void> _showApproveDialog(AdminUserEntry entry) async {
-  DateTime joiningDate = DateTime.now();
-  int duration = 1;
+  Future<void> _showApproveDialog(AdminUserEntry entry) async {
+    DateTime joiningDate = DateTime.now();
+    int duration = 1;
 
-  final TextEditingController durationCtrl =
-      TextEditingController(text: "1");
+    final TextEditingController durationCtrl = TextEditingController(text: "1");
 
-  DateTime getExpiry() {
-    return DateTime(
-      joiningDate.year + duration,
-      joiningDate.month,
-      joiningDate.day,
-    );
-  }
+    DateTime getExpiry() {
+      return DateTime(
+        joiningDate.year + duration,
+        joiningDate.month,
+        joiningDate.day,
+      );
+    }
 
-  await showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (_) {
-      return StatefulBuilder(
-        builder: (context, setModalState) {
-          final expiryDate = getExpiry();
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final expiryDate = getExpiry();
 
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFFF8FBFF),
-                      const Color(0xFFE8F3FA).withOpacity(0.95),
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF5E9BC8).withOpacity(0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: const Color(0xFF5E9BC8).withOpacity(0.3),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-              
-                    /// 🔹 TITLE
-                    Text(
-                      "Approve ${entry.displayName}",
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: const Color(0xFF014576),
-                      ),
-                    ),
-              
-                    const SizedBox(height: 20),
-              
-                    /// 📅 JOINING DATE
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Joining Date",
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-              
-                    GestureDetector(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: joiningDate,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                          builder: (context, child) {
-                            return Theme(
-                              data: Theme.of(context).copyWith(
-                                colorScheme: const ColorScheme.light(
-                                  primary: Color(0xFF5E9BC8), // header
-                                  onPrimary: Colors.white,
-                                  onSurface: Color(0xFF014576),
-                                ),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-              
-                        if (picked != null) {
-                          setModalState(() {
-                            joiningDate = picked;
-                          });
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFF5E9BC8).withOpacity(0.4),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "${joiningDate.day}/${joiningDate.month}/${joiningDate.year}",
-                              style: GoogleFonts.poppins(fontSize: 14),
-                            ),
-                            const Icon(Icons.calendar_today, size: 18),
-                          ],
-                        ),
-                      ),
-                    ),
-              
-                    const SizedBox(height: 16),
-              
-                    /// ⏳ DURATION INPUT
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Membership Duration (Years)",
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-              
-                    TextFormField(
-                      controller: durationCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: "Enter years (e.g. 1, 5, 10)",
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.8),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onChanged: (val) {
-                        final parsed = int.tryParse(val);
-                        if (parsed != null && parsed > 0) {
-                          setModalState(() {
-                            duration = parsed;
-                          });
-                        }
-                      },
-                    ),
-              
-                    const SizedBox(height: 12),
-              
-                    /// 🔹 QUICK CHIPS (UX BOOST)
-                    Wrap(
-                      spacing: 8,
-                      children: [1, 3, 5, 10].map((e) {
-                        return ChoiceChip(
-                          label: Text("$e Yr"),
-                          selected: duration == e,
-                          onSelected: (_) {
-                            setModalState(() {
-                              duration = e;
-                              durationCtrl.text = e.toString();
-                            });
-                          },
-                          selectedColor: const Color(0xFF5E9BC8),
-                          labelStyle: TextStyle(
-                            color:
-                                duration == e ? Colors.white : Colors.black87,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-              
-                    const SizedBox(height: 18),
-              
-                    /// 📅 EXPIRY PREVIEW
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        "Expiry Date: ${expiryDate.day}/${expiryDate.month}/${expiryDate.year}",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-              
-                    const SizedBox(height: 22),
-              
-                    /// 🔘 BUTTONS
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(
-                              "Cancel",
-                              style: GoogleFonts.poppins(
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              Navigator.pop(context);
-              
-                              await _approveUser(
-                                entry,
-                                joiningDate,
-                                duration,
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5E9BC8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text("Approve",style: TextStyle(color: Colors.white),),
-                          ),
-                        ),
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFF8FBFF),
+                        const Color(0xFFE8F3FA).withOpacity(0.95),
                       ],
                     ),
-                  ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF5E9BC8).withOpacity(0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: const Color(0xFF5E9BC8).withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      /// 🔹 TITLE
+                      Text(
+                        "Approve ${entry.displayName}",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: const Color(0xFF014576),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// 📅 JOINING DATE
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "Joining Date",
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+
+                      GestureDetector(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: joiningDate,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2100),
+                            builder: (context, child) {
+                              return Theme(
+                                data: Theme.of(context).copyWith(
+                                  colorScheme: const ColorScheme.light(
+                                    primary: Color(0xFF5E9BC8), // header
+                                    onPrimary: Colors.white,
+                                    onSurface: Color(0xFF014576),
+                                  ),
+                                ),
+                                child: child!,
+                              );
+                            },
+                          );
+
+                          if (picked != null) {
+                            setModalState(() {
+                              joiningDate = picked;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFF5E9BC8).withOpacity(0.4),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "${joiningDate.day}/${joiningDate.month}/${joiningDate.year}",
+                                style: GoogleFonts.poppins(fontSize: 14),
+                              ),
+                              const Icon(Icons.calendar_today, size: 18),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      /// ⏳ DURATION INPUT
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "Membership Duration (Years)",
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+
+                      TextFormField(
+                        controller: durationCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: "Enter years (e.g. 1, 5, 10)",
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onChanged: (val) {
+                          final parsed = int.tryParse(val);
+                          if (parsed != null && parsed > 0) {
+                            setModalState(() {
+                              duration = parsed;
+                            });
+                          }
+                        },
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      /// 🔹 QUICK CHIPS (UX BOOST)
+                      Wrap(
+                        spacing: 8,
+                        children: [1, 3, 5, 10].map((e) {
+                          return ChoiceChip(
+                            label: Text("$e Yr"),
+                            selected: duration == e,
+                            onSelected: (_) {
+                              setModalState(() {
+                                duration = e;
+                                durationCtrl.text = e.toString();
+                              });
+                            },
+                            selectedColor: const Color(0xFF5E9BC8),
+                            labelStyle: TextStyle(
+                              color: duration == e
+                                  ? Colors.white
+                                  : Colors.black87,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      /// 📅 EXPIRY PREVIEW
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          "Expiry Date: ${expiryDate.day}/${expiryDate.month}/${expiryDate.year}",
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      /// 🔘 BUTTONS
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(
+                                "Cancel",
+                                style: GoogleFonts.poppins(
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                Navigator.pop(context);
+
+                                await _approveUser(
+                                  entry,
+                                  joiningDate,
+                                  duration,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF5E9BC8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                "Approve",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
-}
-
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -591,11 +788,12 @@ Future<void> _showApproveDialog(AdminUserEntry entry) async {
       ),
     );
   }
-// if (isAdmin && userTypeId != null)
-//   ElevatedButton(
-//     onPressed: sendReminder,
-//     child: Text("Send Reminder"),
-//   ),
+
+  // if (isAdmin && userTypeId != null)
+  //   ElevatedButton(
+  //     onPressed: sendReminder,
+  //     child: Text("Send Reminder"),
+  //   ),
   Widget _buildActiveTab() {
     return RefreshIndicator(
       onRefresh: _loadUsers,
@@ -620,10 +818,15 @@ Future<void> _showApproveDialog(AdminUserEntry entry) async {
                   final entry = _activeUsers[index];
                   return _SoftUserCard(
                     entry: entry,
-                    onApprove: null,
-                    onReject: null,
                     isActive: true,
+                    onRenew: (entry) => _showRenewDialog(entry),
                   );
+                  // return _SoftUserCard(
+                  //   entry: entry,
+                  //   onApprove: null,
+                  //   onReject: null,
+                  //   isActive: true,
+                  // );
                 },
               ),
       ),
@@ -636,11 +839,14 @@ class _SoftUserCard extends StatelessWidget {
   final VoidCallback? onApprove;
   final VoidCallback? onReject;
   final bool isActive;
+  final Function(AdminUserEntry)? onRenew;
 
   const _SoftUserCard({
     required this.entry,
     this.onApprove,
     this.onReject,
+    this.onRenew, // 👈 ADD THIS
+
     this.isActive = false,
   });
 
@@ -654,6 +860,17 @@ class _SoftUserCard extends StatelessWidget {
         .map((e) => e['name']?.toString() ?? '')
         .where((name) => name.isNotEmpty)
         .join(', ');
+
+    final nextRenewalDate = entry.data['next_renewal_date']?.toString();
+
+    int? daysLeft;
+
+    if (nextRenewalDate != null) {
+      final expiry = DateTime.tryParse(nextRenewalDate);
+      if (expiry != null) {
+        daysLeft = expiry.difference(DateTime.now()).inDays;
+      }
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -720,11 +937,14 @@ class _SoftUserCard extends StatelessWidget {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 12),
+
                 Text(
                   'Business: $business',
                   style: GoogleFonts.poppins(fontSize: 13.5, color: textColor),
                 ),
+
                 if (category != null)
                   Text(
                     'Category: $category',
@@ -733,18 +953,72 @@ class _SoftUserCard extends StatelessWidget {
                       color: textColor,
                     ),
                   ),
+
                 const SizedBox(height: 14),
 
-                // const SizedBox(height: 6),
+                // ✅ EXPIRY INFO (ONLY FOR ACTIVE)
+                if (isActive && daysLeft != null)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: daysLeft < 10 ? Colors.red : Colors.green,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        daysLeft < 0
+                            ? "Membership expired"
+                            : daysLeft == 0
+                            ? "Expires today"
+                            : "Expires in $daysLeft days",
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: daysLeft < 10 ? Colors.red : Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+
                 if (isActive && iglooNames.isNotEmpty)
-                  Text(
-                    'Igloos: $iglooNames',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13.5,
-                      color: const Color(0xFF2E4A64),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Igloos: $iglooNames',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.5,
+                        color: const Color(0xFF2E4A64),
+                      ),
                     ),
                   ),
 
+                // ✅ RENEW BUTTON (ONLY ACTIVE USERS)
+                if (isActive)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => onRenew?.call(entry),
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text("Renew"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5E9BC8),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // ✅ APPROVE / REJECT (ONLY PENDING)
                 if (!isActive)
                   Row(
                     children: [

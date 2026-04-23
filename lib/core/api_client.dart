@@ -98,11 +98,13 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:snow_app/core/global_navigator.dart';
 import 'secure_storage.dart';
 
 class ApiClient {
   final Dio dio;
   final SecureStorageService storage;
+  static bool isLoggingOut = false;
 
   ApiClient._(this.dio, this.storage);
 
@@ -119,7 +121,6 @@ class ApiClient {
     );
 
     final storage = SecureStorageService();
-
     // 🔸 Ignore SSL errors (DEV ONLY)
     (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
         (HttpClient client) {
@@ -159,18 +160,42 @@ class ApiClient {
 
           handler.next(options);
         },
+
         onResponse: (response, handler) async {
           print(
             '✅ RESPONSE [${response.statusCode}] ${response.requestOptions.uri}',
           );
 
-          if (response.statusCode == 401) {
-            print('🚪 Token expired or invalid. Clearing session.');
+          if (response.statusCode == 401 && !isLoggingOut) {
+            isLoggingOut = true;
+
+            print('🚨 401 DETECTED → AUTO LOGOUT');
+
             await storage.clearToken();
+
+            GlobalNavigator.logoutUser(
+              message: "Session expired. Please login again.",
+            );
+
+            Future.delayed(const Duration(seconds: 2), () {
+              isLoggingOut = false;
+            });
           }
 
           handler.next(response);
         },
+        // onResponse: (response, handler) async {
+        //   print(
+        //     '✅ RESPONSE [${response.statusCode}] ${response.requestOptions.uri}',
+        //   );
+
+        //   if (response.statusCode == 401) {
+        //     print('🚪 Token expired or invalid. Clearing session.');
+        //     await storage.clearToken();
+        //   }
+
+        //   handler.next(response);
+        // },
         onError: (error, handler) {
           print('❌ ERROR: ${error.message}');
           handler.next(error);
