@@ -41,7 +41,7 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
   String? _selectedBusinessType;
   String? _selectedJoinPreference;
   bool _paymentDone = false;
-  List<DirectoryUservisitor> _members = [];
+  List<DirectoryUserPublic> _members = [];
   int? _selectedReferrerId;
   bool _isMembersLoading = false;
   bool _isLoadingCategories = false;
@@ -103,10 +103,10 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
     setState(() => _isMembersLoading = true);
 
     try {
-      final list = await _common.fetchDirectoryUsers();
+      final list = await _common.fetchDirectoryUsersPublic();
 
       // ✅ REMOVE DUPLICATES
-      final uniqueMap = <int, DirectoryUservisitor>{};
+      final uniqueMap = <int, DirectoryUserPublic>{};
 
       for (var m in list) {
         uniqueMap[m.id] = m;
@@ -114,10 +114,11 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
 
       setState(() {
         _members = uniqueMap.values.toList();
-        _selectedReferrerId = null; // ✅ RESET SELECTION
+        _selectedReferrerId = null;
         _isMembersLoading = false;
       });
     } catch (e) {
+      print("💥 LOAD MEMBERS ERROR: $e");
       setState(() => _isMembersLoading = false);
     }
   }
@@ -261,41 +262,42 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
           Container(color: Colors.black.withOpacity(0.3)),
           Center(
             child: Padding(
-              padding: const EdgeInsets.only(
-                top: 55,
-                left: 25,
-                right: 25,
-                bottom: 45,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 25),
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.94),
-                  borderRadius: BorderRadius.circular(24),
+                  color: Colors.white.withOpacity(0.96),
+                  borderRadius: BorderRadius.circular(28),
                   boxShadow: const [
                     BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 15,
-                      offset: Offset(0, 5),
+                      color: Colors.black26,
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
                     ),
                   ],
                 ),
-                width: 400,
+                width: 500, // Increased slightly for better layout
                 child: SingleChildScrollView(
                   child: Form(
                     key: _formKey,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Visitor Registration',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF5E9BC8),
+                        const Center(
+                          child: Text(
+                            'Visitor Registration',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5E9BC8),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 32),
+
+                        // --- SECTION 1: PERSONAL DETAILS ---
+                        _buildSectionHeader(Icons.person, "Personal Details"),
                         TextFormField(
                           controller: _fullNameController,
                           decoration: _fieldDecoration('Full Name *'),
@@ -304,70 +306,49 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
+                          controller: _emailController,
+                          decoration: _fieldDecoration('Email *'),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: Validators.email,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _contactController,
+                          decoration: _fieldDecoration('Contact Number *'),
+                          keyboardType: TextInputType.phone,
+                          maxLength: 10,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty)
+                              return 'Contact Number is required';
+                            if (!RegExp(r'^\d{10}$').hasMatch(v.trim()))
+                              return 'Must be 10 digits';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: _fieldDecoration('Create Password *'),
+                          validator: (v) =>
+                              Validators.required(v, label: 'Password'),
+                        ),
+
+                        const SizedBox(height: 32),
+                        // --- SECTION 2: BUSINESS INFORMATION ---
+                        _buildSectionHeader(
+                          Icons.business,
+                          "Business Information",
+                        ),
+                        TextFormField(
                           controller: _businessNameController,
                           decoration: _fieldDecoration('Business Name *'),
                           validator: (v) =>
                               Validators.required(v, label: 'Business Name'),
                         ),
                         const SizedBox(height: 16),
-
-                        GestureDetector(
-                          onTap: () async {
-                            final selected = await showSearchablePicker(
-                              context: context,
-                              items: _members,
-                              title: "Select Member",
-                              label: (m) => "${m.fullName} - ${m.businessName}",
-                            );
-
-                            if (selected != null) {
-                              setState(() {
-                                _selectedReferrerId = selected.id;
-                              });
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.grey.shade600.withOpacity(0.01),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _selectedReferrerId == null
-                                        ? "Invited by Member"
-                                        : (() {
-                                            final m = _members.firstWhere(
-                                              (e) =>
-                                                  e.id == _selectedReferrerId,
-                                              orElse: () => _members
-                                                  .first, // safety fallback
-                                            );
-                                            return "${m.fullName} - ${m.businessName}";
-                                          })(),
-                                    style: TextStyle(
-                                      color: _selectedReferrerId == null
-                                          ? Colors.grey
-                                          : Colors.black,
-                                    ),
-                                  ),
-                                ),
-                                const Icon(Icons.arrow_drop_down),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
                         DropdownButtonFormField<BusinessCategory>(
                           isExpanded: true,
-
                           value: _selectedCategory,
                           items: _categories
                               .map(
@@ -380,96 +361,87 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                           onChanged: (value) =>
                               setState(() => _selectedCategory = value),
                           decoration: _fieldDecoration('Business Category *'),
-                          validator: (value) {
-                            if (_categories.isEmpty) {
-                              return 'Business categories unavailable';
-                            }
-                            if (value == null) {
-                              return 'Select business category';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _selectedBusinessType,
-                          items: _businessTypeOptions
-                              .map(
-                                (item) => DropdownMenuItem<String>(
-                                  value: item['value'],
-                                  child: Text(item['label'] ?? ''),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment
+                              .start, // Align for validation errors
+                          children: [
+                            Expanded(
+                              flex: 3, // Gives more space to the dropdown
+                              child: DropdownButtonFormField<String>(
+                                isExpanded:
+                                    true, // Prevents text from pushing outside
+                                value: _selectedBusinessType,
+                                items: _businessTypeOptions
+                                    .map(
+                                      (item) => DropdownMenuItem<String>(
+                                        value: item['value'],
+                                        child: Text(
+                                          item['label'] ?? '',
+                                          overflow: TextOverflow
+                                              .ellipsis, // Clips long text
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (value) => setState(
+                                  () => _selectedBusinessType = value,
                                 ),
-                              )
-                              .toList(),
-                          onChanged: (value) =>
-                              setState(() => _selectedBusinessType = value),
-                          decoration: _fieldDecoration('Business Type *'),
-                          validator: (value) =>
-                              value == null ? 'Select business type' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _yearsInBusinessController,
-                          decoration: _fieldDecoration('Years in Business *'),
-                          keyboardType: TextInputType.number,
-                          validator: (v) => Validators.required(
-                            v,
-                            label: 'Years in Business',
-                          ),
+                                decoration: _fieldDecoration('Type *').copyWith(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                validator: (value) =>
+                                    value == null ? 'Required' : null,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              flex: 2, // Slightly smaller for the number field
+                              child: TextFormField(
+                                controller: _yearsInBusinessController,
+                                decoration: _fieldDecoration('Years *')
+                                    .copyWith(
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 12,
+                                          ),
+                                    ),
+                                keyboardType: TextInputType.number,
+                                validator: (v) =>
+                                    Validators.required(v, label: 'Years'),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _gstController,
-                          decoration: _fieldDecoration('GST Number'),
+                          decoration: _fieldDecoration('GST Number (Optional)'),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _websiteController,
-                          decoration: _fieldDecoration('Website'),
-                          keyboardType: TextInputType.url,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: _fieldDecoration('Email *'),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: Validators.email,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          decoration: _fieldDecoration('Password *'),
-                          validator: (v) =>
-                              Validators.minLen(v, 6, label: 'Password'),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _contactController,
-                          decoration: _fieldDecoration('Contact Number *'),
-                          keyboardType: TextInputType.phone,
-                          maxLength: 10,
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Contact Number is required';
-                            }
-
-                            final value = v.trim();
-
-                            if (!RegExp(r'^\d{10}$').hasMatch(value)) {
-                              return 'Contact Number must be exactly 10 digits';
-                            }
-
-                            return null;
-                          },
+                          decoration: _fieldDecoration('Website (Optional)'),
                         ),
 
+                        const SizedBox(height: 32),
+                        // --- SECTION 3: VERIFICATION & REFERRAL ---
+                        _buildSectionHeader(
+                          Icons.verified_user,
+                          "Verification",
+                        ),
+                        _buildReferralPicker(context),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
                           value: _selectedJoinPreference,
                           items: _joinOptions
                               .map(
-                                (item) => DropdownMenuItem<String>(
+                                (item) => DropdownMenuItem(
                                   value: item['value'],
                                   child: Text(item['label'] ?? ''),
                                 ),
@@ -480,113 +452,43 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                           decoration: _fieldDecoration(
                             'Preferred SNOW Igloo *',
                           ),
-                          validator: (value) => value == null
-                              ? 'Select joining preference'
-                              : null,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Aadhaar Upload
+                        const Text(
+                          "Proof of Identity",
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-                        const SizedBox(height: 16),
+                        _buildFileUploadTile(),
 
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Aadhaar Card *',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        InkWell(
-                          onTap: _pickAadhar,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.grey.shade50,
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.upload_file,
-                                  color: Color(0xFF5E9BC8),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    _aadharFile == null
-                                        ? 'Upload Aadhaar image (jpg/png, max 2MB)'
-                                        : 'Aadhaar selected ✔',
-                                    style: TextStyle(
-                                      color: _aadharFile == null
-                                          ? Colors.grey
-                                          : Colors.green,
-                                    ),
-                                  ),
-                                ),
-                                if (_aadharFile != null)
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 16),
                         SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
                           value: _paymentDone,
                           activeColor: const Color(0xFF5E9BC8),
                           onChanged: (value) =>
                               setState(() => _paymentDone = value),
                           title: const Text('Payment Completed'),
-                          subtitle: const Text('Toggle on if payment is done'),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isSubmitting ? null : _submit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5E9BC8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              minimumSize: const Size(double.infinity, 50),
-                            ),
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text(
-                                    'Submit',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                    ),
-                                  ),
+                          subtitle: const Text(
+                            'Confirm if registration fee is paid',
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: _isLoadingCategories
-                              ? null
-                              : _loadCategories,
-                          child: const Text(
-                            'Refresh categories',
-                            style: TextStyle(color: Color(0xFF5E9BC8)),
+
+                        const SizedBox(height: 32),
+                        // --- SUBMIT BUTTON ---
+                        _buildSubmitButton(),
+
+                        Center(
+                          child: TextButton(
+                            onPressed: _isLoadingCategories
+                                ? null
+                                : _loadCategories,
+                            child: const Text(
+                              'Refresh categories',
+                              style: TextStyle(color: Color(0xFF5E9BC8)),
+                            ),
                           ),
                         ),
                       ],
@@ -598,6 +500,138 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
           ),
         ],
       ),
+    );
+  }
+
+  // --- HELPER UI METHODS ---
+
+  Widget _buildSectionHeader(IconData icon, String title) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: const Color(0xFF5E9BC8)),
+            const SizedBox(width: 8),
+            Text(
+              title.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF5E9BC8),
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+        const Divider(thickness: 1, height: 20),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _buildReferralPicker(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () async {
+            final selected = await showSearchablePicker(
+              context: context,
+              items: _members,
+              title: "Select Member",
+              label: (m) => "${m.fullName} - ${m.businessName}",
+            );
+            if (selected != null) {
+              setState(() => _selectedReferrerId = selected.id);
+            }
+          },
+          child: InputDecorator(
+            // This makes the picker look exactly like your TextFormFields
+            decoration: _fieldDecoration(
+              'Invited by Member *',
+            ).copyWith(suffixIcon: const Icon(Icons.arrow_drop_down)),
+            child: Text(
+              _selectedReferrerId == null
+                  ? "Select a member"
+                  : _members
+                        .firstWhere((e) => e.id == _selectedReferrerId)
+                        .fullName,
+              style: TextStyle(
+                color: _selectedReferrerId == null
+                    ? Colors.grey[600]
+                    : Colors.black,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFileUploadTile() {
+    return InkWell(
+      onTap: _pickAadhar,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _aadharFile == null ? Colors.grey.shade400 : Colors.green,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: _aadharFile == null
+              ? Colors.grey.shade50
+              : Colors.green.withOpacity(0.05),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.upload_file,
+              color: _aadharFile == null
+                  ? const Color(0xFF5E9BC8)
+                  : Colors.green,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _aadharFile == null
+                    ? 'Upload Aadhaar image'
+                    : 'Aadhaar selected ✔',
+                style: TextStyle(
+                  color: _aadharFile == null ? Colors.grey[700] : Colors.green,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return ElevatedButton(
+      onPressed: _isSubmitting ? null : _submit,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF5E9BC8),
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        minimumSize: const Size(double.infinity, 54),
+        elevation: 2,
+      ),
+      child: _isSubmitting
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : const Text(
+              'Complete Registration',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
     );
   }
 }

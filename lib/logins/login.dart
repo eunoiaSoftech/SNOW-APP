@@ -292,6 +292,7 @@ class _LoginScreenState extends State<LoginPage> {
         await prefs.setBool('isAdmin', v.user.isAdmin);
         await prefs.setString('userRole', v.user.isAdmin ? 'admin' : 'user');
         await prefs.setString('userFullName', v.user.fullName);
+        // prefs.setString('userFullName', data.user.fullName);
 
         // save user_id
         await prefs.setInt('user_id', v.user.id);

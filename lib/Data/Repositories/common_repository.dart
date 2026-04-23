@@ -124,19 +124,50 @@ class CommonRepository {
     return Err("Failed to fetch igloos", code: code);
   }
 
-  Future<List<DirectoryUservisitor>> fetchDirectoryUsers() async {
-    final (res, code) = await _api.get(
-      '?endpoint=user/directory&status=ACTIVE',
-    );
+  // Future<List<DirectoryUservisitor>> fetchDirectoryUsers() async {
+  //   final (res, code) = await _api.get(
+  //     '?endpoint=user/directory&status=ACTIVE',
+  //   );
 
-    if (code == 200) {
-      final list = (res.data['data'] as List)
-          .map((e) => DirectoryUservisitor.fromJson(e))
-          .toList();
+  //   if (code == 200) {
+  //     final list = (res.data['data'] as List)
+  //         .map((e) => DirectoryUservisitor.fromJson(e))
+  //         .toList();
 
-      return list;
+  //     return list;
+  //   }
+
+  //   return [];
+  // }
+
+  // 🔓 PUBLIC (no token)
+  Future<List<DirectoryUserPublic>> fetchDirectoryUsersPublic() async {
+    try {
+      final uri = _routerBase.replace(
+        queryParameters: {'endpoint': 'user/directory', 'status': 'ACTIVE'},
+      );
+
+      print("📡 PUBLIC DIRECTORY API: $uri");
+
+      final (res, code) = await _api.getUri(uri);
+
+      print("✅ STATUS: $code");
+      print("📦 RESPONSE: ${res.data}");
+
+      if (code == 200) {
+        final list = (res.data['data'] as List<dynamic>? ?? [])
+            .map((e) => DirectoryUserPublic.fromJson(e))
+            .toList();
+
+        print("👥 PUBLIC MEMBERS: ${list.length}");
+
+        return list;
+      }
+
+      return [];
+    } catch (e) {
+      print("💥 PUBLIC ERROR: $e");
+      return [];
     }
-
-    return [];
   }
 }

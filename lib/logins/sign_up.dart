@@ -316,6 +316,12 @@ class _SignUpPageState extends State<SignUpPage> {
                                 ),
                               ),
                               const SizedBox(height: 24),
+
+                              // --- SECTION 1: PERSONAL DETAILS ---
+                              _buildSectionHeader(
+                                Icons.person,
+                                "Personal Details",
+                              ),
                               TextFormField(
                                 controller: _fullNameController,
                                 decoration: _fieldDecoration('Full Name *'),
@@ -358,6 +364,35 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
 
                               const SizedBox(height: 16),
+
+                              TextFormField(
+                                controller: _contactController,
+                                decoration: _fieldDecoration(
+                                  'Contact Number *',
+                                ),
+                                keyboardType: TextInputType.phone,
+                                maxLength: 10,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Contact Number is required';
+                                  }
+
+                                  final value = v.trim();
+
+                                  if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                                    return 'Contact Number must be exactly 10 digits';
+                                  }
+
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // --- SECTION 2: BUSINESS INFORMATION ---
+                              _buildSectionHeader(
+                                Icons.business,
+                                "Business Information",
+                              ),
                               TextFormField(
                                 controller: _businessNameController,
                                 decoration: _fieldDecoration('Business Name *'),
@@ -395,28 +430,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                 },
                               ),
                               const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _contactController,
-                                decoration: _fieldDecoration(
-                                  'Contact Number *',
-                                ),
-                                keyboardType: TextInputType.phone,
-                                maxLength: 10,
-                                validator: (v) {
-                                  if (v == null || v.trim().isEmpty) {
-                                    return 'Contact Number is required';
-                                  }
 
-                                  final value = v.trim();
-
-                                  if (!RegExp(r'^\d{10}$').hasMatch(value)) {
-                                    return 'Contact Number must be exactly 10 digits';
-                                  }
-
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
                               _LocationDropdown<CountryOption>(
                                 items: _countries,
                                 label: 'Country *',
@@ -559,6 +573,11 @@ class _SignUpPageState extends State<SignUpPage> {
                                 ),
                               ),
                               const SizedBox(height: 16),
+                              // --- SECTION 3: VERIFICATION & REFERRAL ---
+                              _buildSectionHeader(
+                                Icons.verified_user,
+                                "Verification",
+                              ),
                               TextFormField(
                                 controller: _linkedinController,
                                 decoration: _fieldDecoration('LinkedIn URL'),
@@ -685,6 +704,32 @@ class _SignUpPageState extends State<SignUpPage> {
       ),
     );
   }
+}
+
+// --- HELPER UI METHODS ---
+
+Widget _buildSectionHeader(IconData icon, String title) {
+  return Column(
+    children: [
+      Row(
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF5E9BC8)),
+          const SizedBox(width: 8),
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF5E9BC8),
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+      const Divider(thickness: 1, height: 20),
+      const SizedBox(height: 12),
+    ],
+  );
 }
 
 class _LocationDropdown<T> extends StatelessWidget {

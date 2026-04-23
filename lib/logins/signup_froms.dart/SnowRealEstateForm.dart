@@ -268,13 +268,18 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
                             children: [
                               const Text(
                                 'SnowRealEstate Registration',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF5E9BC8),
-                                ),
+                               style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5E9BC8),
+                            ),
                               ),
                               const SizedBox(height: 24),
+                              // --- SECTION 1: PERSONAL DETAILS ---
+                              _buildSectionHeader(
+                                Icons.person,
+                                "Personal Details",
+                              ),
 
                               // Full Name
                               TextFormField(
@@ -282,56 +287,6 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
                                 decoration: _fieldDecoration('Full Name *'),
                                 validator: (v) =>
                                     Validators.required(v, label: 'Full Name'),
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Business Name
-                              TextFormField(
-                                controller: _businessNameController,
-                                decoration: _fieldDecoration('Business Name *'),
-                                validator: (v) => Validators.required(
-                                  v,
-                                  label: 'Business Name',
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Business Category - dropdown (mirrors SignUpPage)
-                              DropdownButtonFormField<BusinessCategory>(
-                                isExpanded: true,
-
-                                value: _selectedCategory,
-                                items: _categories
-                                    .map(
-                                      (c) => DropdownMenuItem(
-                                        value: c,
-                                        child: Text(c.name),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (value) =>
-                                    setState(() => _selectedCategory = value),
-                                decoration: _fieldDecoration(
-                                  'Business Category *',
-                                ),
-                                validator: (value) {
-                                  if (_categories.isEmpty)
-                                    return 'Business categories unavailable';
-                                  if (value == null)
-                                    return 'Please select business category';
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Cities you operate in (free text)
-                              TextFormField(
-                                controller: _citiesController,
-                                decoration: _fieldDecoration(
-                                  'Cities you operate in *',
-                                ),
-                                validator: (v) =>
-                                    Validators.required(v, label: 'Cities'),
                               ),
                               const SizedBox(height: 16),
 
@@ -390,6 +345,61 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
                                 ),
                                 validator: (v) =>
                                     Validators.minLen(v, 6, label: 'Password'),
+                              ),
+                              const SizedBox(height: 16),
+                              // --- SECTION 2: BUSINESS INFORMATION ---
+                              _buildSectionHeader(
+                                Icons.business,
+                                "Business Information",
+                              ),
+
+                              // Business Name
+                              TextFormField(
+                                controller: _businessNameController,
+                                decoration: _fieldDecoration('Business Name *'),
+                                validator: (v) => Validators.required(
+                                  v,
+                                  label: 'Business Name',
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Business Category - dropdown (mirrors SignUpPage)
+                              DropdownButtonFormField<BusinessCategory>(
+                                isExpanded: true,
+
+                                value: _selectedCategory,
+                                items: _categories
+                                    .map(
+                                      (c) => DropdownMenuItem(
+                                        value: c,
+                                        child: Text(c.name),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (value) =>
+                                    setState(() => _selectedCategory = value),
+                                decoration: _fieldDecoration(
+                                  'Business Category *',
+                                ),
+                                validator: (value) {
+                                  if (_categories.isEmpty)
+                                    return 'Business categories unavailable';
+                                  if (value == null)
+                                    return 'Please select business category';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Cities you operate in (free text)
+                              TextFormField(
+                                controller: _citiesController,
+                                decoration: _fieldDecoration(
+                                  'Cities you operate in *',
+                                ),
+                                validator: (v) =>
+                                    Validators.required(v, label: 'Cities'),
                               ),
                               const SizedBox(height: 16),
 
@@ -587,6 +597,31 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
       ),
     );
   }
+}
+// --- HELPER UI METHODS ---
+
+Widget _buildSectionHeader(IconData icon, String title) {
+  return Column(
+    children: [
+      Row(
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF5E9BC8)),
+          const SizedBox(width: 8),
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF5E9BC8),
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+      const Divider(thickness: 1, height: 20),
+      const SizedBox(height: 12),
+    ],
+  );
 }
 
 /// Generic location dropdown (same pattern used in SignUpPage)

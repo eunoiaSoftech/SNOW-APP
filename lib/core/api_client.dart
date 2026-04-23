@@ -121,6 +121,8 @@ class ApiClient {
     );
 
     final storage = SecureStorageService();
+
+    
     // 🔸 Ignore SSL errors (DEV ONLY)
     (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
         (HttpClient client) {

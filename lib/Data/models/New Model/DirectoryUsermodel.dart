@@ -1,20 +1,39 @@
-class DirectoryUservisitor {
+class DirectoryUserPublic {
   final int id;
-  
   final String fullName;
   final String businessName;
 
-  DirectoryUservisitor({
+  DirectoryUserPublic({
     required this.id,
     required this.fullName,
     required this.businessName,
   });
 
-  factory DirectoryUservisitor.fromJson(Map<String, dynamic> json) {
-    return DirectoryUservisitor(
-      id: json['user_id'], // 🔥 IMPORTANT
-      fullName: json['data']['full_name'] ?? '',
-      businessName: json['data']['business_name'] ?? '',
+  factory DirectoryUserPublic.fromJson(Map<String, dynamic> json) {
+    return DirectoryUserPublic(
+      id: json['id'] ?? 0,
+      fullName: json['username'] ?? '',
+      businessName: json['business_name'] ?? '',
+    );
+  }
+}
+
+class DirectoryUserPrivate {
+  final int id;
+  final String fullName;
+  final String businessName;
+
+  DirectoryUserPrivate({
+    required this.id,
+    required this.fullName,
+    required this.businessName,
+  });
+
+  factory DirectoryUserPrivate.fromJson(Map<String, dynamic> json) {
+    return DirectoryUserPrivate(
+      id: json['id'] ?? 0,
+      fullName: json['user']?['full_name'] ?? '',
+      businessName: json['business']?['name'] ?? '',
     );
   }
 }

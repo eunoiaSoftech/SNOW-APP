@@ -304,6 +304,12 @@ class _SignupFormPageState extends State<SignupFormPage> {
 
                               const SizedBox(height: 16),
 
+                              // --- SECTION 1: PERSONAL DETAILS ---
+                              _buildSectionHeader(
+                                Icons.person,
+                                "Personal Details",
+                              ),
+
                               TextFormField(
                                 decoration: deco("Full Name"),
                                 onChanged: (v) => _module.fullName = v,
@@ -317,6 +323,30 @@ class _SignupFormPageState extends State<SignupFormPage> {
                                 decoration: deco("Email"),
                                 onChanged: (v) => _module.email = v,
                                 validator: Validators.email,
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              TextFormField(
+                                controller: _contactController,
+                                decoration: _fieldDecoration(
+                                  'Contact Number *',
+                                ),
+                                keyboardType: TextInputType.phone,
+                                maxLength: 10,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Contact Number is required';
+                                  }
+
+                                  final value = v.trim();
+
+                                  if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                                    return 'Contact Number must be exactly 10 digits';
+                                  }
+
+                                  return null;
+                                },
                               ),
 
                               const SizedBox(height: 16),
@@ -351,6 +381,12 @@ class _SignupFormPageState extends State<SignupFormPage> {
                                     Validators.minLen(v, 6, label: 'Password'),
                               ),
                               const SizedBox(height: 16),
+
+                              // --- SECTION 2: BUSINESS INFORMATION ---
+                              _buildSectionHeader(
+                                Icons.business,
+                                "Business Information",
+                              ),
                               TextFormField(
                                 controller: _businessNameController,
                                 decoration: _fieldDecoration('Business Name *'),
@@ -387,29 +423,6 @@ class _SignupFormPageState extends State<SignupFormPage> {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _contactController,
-                                decoration: _fieldDecoration(
-                                  'Contact Number *',
-                                ),
-                                keyboardType: TextInputType.phone,
-                                maxLength: 10,
-                                validator: (v) {
-                                  if (v == null || v.trim().isEmpty) {
-                                    return 'Contact Number is required';
-                                  }
-
-                                  final value = v.trim();
-
-                                  if (!RegExp(r'^\d{10}$').hasMatch(value)) {
-                                    return 'Contact Number must be exactly 10 digits';
-                                  }
-
-                                  return null;
-                                },
-                              ),
-
                               const SizedBox(height: 16),
 
                               // 🌍 COUNTRY
@@ -565,6 +578,12 @@ class _SignupFormPageState extends State<SignupFormPage> {
                                 ),
                               ),
                               const SizedBox(height: 16),
+
+                              // --- SECTION 3: VERIFICATION & REFERRAL ---
+                              _buildSectionHeader(
+                                Icons.verified_user,
+                                "Verification",
+                              ),
                               TextFormField(
                                 controller: _linkedinController,
                                 decoration: _fieldDecoration('LinkedIn URL'),
@@ -709,6 +728,31 @@ class _SignupFormPageState extends State<SignupFormPage> {
           ),
         ],
       ),
+    );
+  }
+  // --- HELPER UI METHODS ---
+
+  Widget _buildSectionHeader(IconData icon, String title) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: const Color(0xFF5E9BC8)),
+            const SizedBox(width: 8),
+            Text(
+              title.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF5E9BC8),
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+        const Divider(thickness: 1, height: 20),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
