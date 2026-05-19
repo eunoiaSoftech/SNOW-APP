@@ -295,11 +295,11 @@ class _SignupFormPageState extends State<SignupFormPage> {
                               Text(
                                 "${widget.userType.replaceAll("_", " ").toUpperCase()} Registration",
 
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF5E9BC8),
-                                ),
+                              style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5E9BC8),
+                            ),
                               ),
 
                               const SizedBox(height: 16),
