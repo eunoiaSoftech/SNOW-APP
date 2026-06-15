@@ -39,30 +39,89 @@ class _UserListScreenState extends State<UserListScreen>
     super.dispose();
   }
 
+  // Future<void> _init() async {
+  //   setState(() => _loading = true);
+  //   await Future.wait([_loadUsers(), _loadIgloos()]);
+  //   if (mounted) setState(() => _loading = false);
+  // }
+
   Future<void> _init() async {
+    debugPrint("🚀 _init START");
+
     setState(() => _loading = true);
-    await Future.wait([_loadUsers(), _loadIgloos()]);
-    if (mounted) setState(() => _loading = false);
+
+    try {
+      debugPrint("📌 Calling APIs...");
+
+      await Future.wait([_loadUsers(), _loadIgloos()]);
+
+      debugPrint("✅ ALL APIs COMPLETED");
+    } catch (e, s) {
+      debugPrint("❌ INIT ERROR: $e");
+      debugPrint("$s");
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+      debugPrint("🏁 _init END");
+    }
   }
 
+  // Future<void> _loadUsers() async {
+  //   final pendingRes = await _adminRepo.fetchPendingUsers();
+  //   final activeRes = await _adminRepo.fetchUsersByStatus('ACTIVE');
+  //   if (!mounted) return;
+
+  //   switch (pendingRes) {
+  //     case Ok(value: final list):
+  //       setState(() => _pendingUsers = list);
+  //     case Err(message: final msg, code: _):
+  //       context.showToast('Pending users load failed: $msg', bg: Colors.red);
+  //   }
+
+  //   switch (activeRes) {
+  //     case Ok(value: final list):
+  //       setState(() => _activeUsers = list);
+  //     case Err(message: final msg, code: _):
+  //       context.showToast('Active users load failed: $msg', bg: Colors.red);
+  //   }
+  // }
+
   Future<void> _loadUsers() async {
-    final pendingRes = await _adminRepo.fetchPendingUsers();
-    final activeRes = await _adminRepo.fetchUsersByStatus('ACTIVE');
-    if (!mounted) return;
+    debugPrint("👤 START _loadUsers");
 
-    switch (pendingRes) {
-      case Ok(value: final list):
-        setState(() => _pendingUsers = list);
-      case Err(message: final msg, code: _):
-        context.showToast('Pending users load failed: $msg', bg: Colors.red);
+    try {
+      final pendingRes = await _adminRepo.fetchPendingUsers();
+      debugPrint("✅ Pending API completed");
+
+      final activeRes = await _adminRepo.fetchUsersByStatus('ACTIVE');
+      debugPrint("✅ Active API completed");
+
+      if (!mounted) return;
+
+      switch (pendingRes) {
+        case Ok(value: final list):
+          debugPrint("📌 Pending Count: ${list.length}");
+          setState(() => _pendingUsers = list);
+
+        case Err(message: final msg, code: _):
+          debugPrint("❌ Pending Error: $msg");
+      }
+
+      switch (activeRes) {
+        case Ok(value: final list):
+          debugPrint("📌 Active Count: ${list.length}");
+          setState(() => _activeUsers = list);
+
+        case Err(message: final msg, code: _):
+          debugPrint("❌ Active Error: $msg");
+      }
+    } catch (e, s) {
+      debugPrint("❌ _loadUsers Exception: $e");
+      debugPrint("$s");
     }
 
-    switch (activeRes) {
-      case Ok(value: final list):
-        setState(() => _activeUsers = list);
-      case Err(message: final msg, code: _):
-        context.showToast('Active users load failed: $msg', bg: Colors.red);
-    }
+    debugPrint("🏁 END _loadUsers");
   }
 
   Future<void> _renewUser(AdminUserEntry entry, int durationYears) async {
@@ -86,182 +145,195 @@ class _UserListScreenState extends State<UserListScreen>
   }
 
   Future<void> _showRenewDialog(AdminUserEntry entry) async {
-  int duration = 1;
-  final TextEditingController durationCtrl = TextEditingController(text: "1");
+    int duration = 1;
+    final TextEditingController durationCtrl = TextEditingController(text: "1");
 
-  await showDialog(
-    context: context,
-    builder: (_) {
-      return StatefulBuilder(
-        builder: (context, setModalState) {
-          return Dialog(
-            backgroundColor: Colors.transparent, // Background handled by container
-            insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                // Matching your app's glass/gradient aesthetic
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFEAF5FC), Colors.white],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+    await showDialog(
+      context: context,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Dialog(
+              backgroundColor:
+                  Colors.transparent, // Background handled by container
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  // Matching your app's glass/gradient aesthetic
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEAF5FC), Colors.white],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Icon Header
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF014576).withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.autorenew_rounded, 
-                      color: Color(0xFF014576), size: 32),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  Text(
-                    "Renew Membership",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 20,
-                      color: const Color(0xFF014576),
-                    ),
-                  ),
-                  Text(
-                    "Extending access for ${entry.displayName}",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Modernized Text Field
-                  TextFormField(
-                    controller: durationCtrl,
-                    keyboardType: TextInputType.number,
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                    decoration: InputDecoration(
-                      labelText: "Duration (Years)",
-                      labelStyle: GoogleFonts.poppins(color: Colors.grey[600]),
-                      prefixIcon: const Icon(Icons.timer_outlined, color: Color(0xFF014576)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Icon Header
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF014576).withOpacity(0.1),
+                        shape: BoxShape.circle,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.blue.shade100),
+                      child: const Icon(
+                        Icons.autorenew_rounded,
+                        color: Color(0xFF014576),
+                        size: 32,
                       ),
                     ),
-                    onChanged: (val) {
-                      final parsed = int.tryParse(val);
-                      if (parsed != null && parsed > 0) {
-                        setModalState(() => duration = parsed);
-                      }
-                    },
-                  ),
+                    const SizedBox(height: 16),
 
-                  const SizedBox(height: 16),
+                    Text(
+                      "Renew Membership",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        color: const Color(0xFF014576),
+                      ),
+                    ),
+                    Text(
+                      "Extending access for ${entry.displayName}",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
 
-                  // Modern Choice Chips
-                  Wrap(
-                    spacing: 10,
-                    children: [1, 3, 5, 10].map((e) {
-                      bool isSelected = duration == e;
-                      return ChoiceChip(
-                        label: Text("$e Yr"),
-                        selected: isSelected,
-                        selectedColor: const Color(0xFF014576),
-                        backgroundColor: Colors.white,
+                    const SizedBox(height: 24),
+
+                    // Modernized Text Field
+                    TextFormField(
+                      controller: durationCtrl,
+                      keyboardType: TextInputType.number,
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                        labelText: "Duration (Years)",
                         labelStyle: GoogleFonts.poppins(
-                          color: isSelected ? Colors.white : const Color(0xFF014576),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          color: Colors.grey[600],
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          side: BorderSide(
-                            color: isSelected ? Colors.transparent : Colors.blue.shade100,
-                          ),
+                        prefixIcon: const Icon(
+                          Icons.timer_outlined,
+                          color: Color(0xFF014576),
                         ),
-                        onSelected: (_) {
-                          setModalState(() {
-                            duration = e;
-                            durationCtrl.text = e.toString();
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  // Actions
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(
-                            "Cancel",
-                            style: GoogleFonts.poppins(
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.blue.shade100),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            Navigator.pop(context);
-                            await _renewUser(entry, duration);
+                      onChanged: (val) {
+                        final parsed = int.tryParse(val);
+                        if (parsed != null && parsed > 0) {
+                          setModalState(() => duration = parsed);
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Modern Choice Chips
+                    Wrap(
+                      spacing: 10,
+                      children: [1, 3, 5, 10].map((e) {
+                        bool isSelected = duration == e;
+                        return ChoiceChip(
+                          label: Text("$e Yr"),
+                          selected: isSelected,
+                          selectedColor: const Color(0xFF014576),
+                          backgroundColor: Colors.white,
+                          labelStyle: GoogleFonts.poppins(
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF014576),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? Colors.transparent
+                                  : Colors.blue.shade100,
+                            ),
+                          ),
+                          onSelected: (_) {
+                            setModalState(() {
+                              duration = e;
+                              durationCtrl.text = e.toString();
+                            });
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF014576),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            "Renew Now",
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    // Actions
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              "Cancel",
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              await _renewUser(entry, duration);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF014576),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              "Renew Now",
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
-}  //   Future<void> sendReminder() async {
+            );
+          },
+        );
+      },
+    );
+  } //   Future<void> sendReminder() async {
   //   final (res, code) = await ApiClient.create().post(
   //     "/",
   //     query: {"endpoint": "admin/renewal-reminder"},
@@ -276,17 +348,42 @@ class _UserListScreenState extends State<UserListScreen>
   //     );
   //   }
   // }
-
   Future<void> _loadIgloos() async {
-    final res = await _adminRepo.fetchIgloos();
-    if (!mounted) return;
-    switch (res) {
-      case Ok(value: final list):
-        setState(() => _igloos = list);
-      case Err(message: final msg, code: _):
-        context.showToast('Igloo list load failed: $msg', bg: Colors.red);
+    debugPrint("🏔️ START _loadIgloos");
+
+    try {
+      final res = await _adminRepo.fetchIgloos();
+
+      debugPrint("🏔️ Igloo API returned");
+
+      if (!mounted) return;
+
+      switch (res) {
+        case Ok(value: final list):
+          debugPrint("🏔️ Igloo Count: ${list.length}");
+          setState(() => _igloos = list);
+
+        case Err(message: final msg, code: _):
+          debugPrint("❌ Igloo Error: $msg");
+      }
+    } catch (e, s) {
+      debugPrint("❌ _loadIgloos Exception: $e");
+      debugPrint("$s");
     }
+
+    debugPrint("🏁 END _loadIgloos");
   }
+
+  // Future<void> _loadIgloos() async {
+  //   final res = await _adminRepo.fetchIgloos();
+  //   if (!mounted) return;
+  //   switch (res) {
+  //     case Ok(value: final list):
+  //       setState(() => _igloos = list);
+  //     case Err(message: final msg, code: _):
+  //       context.showToast('Igloo list load failed: $msg', bg: Colors.red);
+  //   }
+  // }
 
   Future<void> _approveUser(
     AdminUserEntry entry,
@@ -625,6 +722,9 @@ class _UserListScreenState extends State<UserListScreen>
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF5E9BC8);
     const Color textColor = Color(0xFF2E4A64);
+    debugPrint(
+      "SCREEN BUILD => loading=$_loading pending=${_pendingUsers.length} active=${_activeUsers.length}",
+    );
 
     return Scaffold(
       backgroundColor: Colors.transparent,
