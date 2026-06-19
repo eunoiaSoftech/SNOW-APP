@@ -316,32 +316,6 @@ class AdminRepository {
     return Err(_errorMessage(res), code: code);
   }
 
-  // Future<Result<void>> approveUser({
-  //   required int userTypeId,
-  //   required String action,
-  //   List<int>? iglooIds,
-  // }) async {
-  //   final uri = _routerBase.replace(queryParameters: {'endpoint': 'admin/approve-user'});
-
-  //   final body = {
-  //     'user_type_id': userTypeId,
-  //     'action': action,
-  //     // if (iglooIds != null) 'igloo_ids': iglooIds,
-  //   };
-
-  //   print('\n➡️ [POST] admin/approve-user');
-  //   print('➡️ BODY: $body');
-
-  //   final (res, code) = await _api.postUri(uri, body: body);
-
-  //   print('⬅️ RESPONSE CODE: $code');
-  //   print('⬅️ RESPONSE DATA: ${res.data}\n');
-
-  //   if (code == 200) {
-  //     return const Ok(null);
-  //   }
-  //   return Err(_errorMessage(res), code: code);
-  // }
 
 Future<Result<void>> approveUser({
   required int userTypeId,

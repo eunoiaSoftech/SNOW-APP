@@ -182,61 +182,72 @@ class AuthRepository {
   // ==============================
 
   Future<Result<RegisterResponse>> signup({
-  required Map<String, dynamic> body,
-  File? aadharFile,
-  File? userPhoto,
-}) async {
-  try {
-    final uri = _routerBase.replace(
-      queryParameters: {'endpoint': 'user/register'},
-    );
-
-    final formData = FormData();
-
-    print("📦 BODY: $body");
-
-    // TEXT FIELDS
-    body.forEach((key, value) {
-      formData.fields.add(MapEntry(key, value.toString()));
-    });
-
-    // PHOTO
-    if (userPhoto != null) {
-      print("📸 Uploading Photo: ${userPhoto.path}");
-      formData.files.add(
-        MapEntry(
-          'user_photo',
-          await MultipartFile.fromFile(userPhoto.path),
-        ),
+    required Map<String, dynamic> body,
+    File? aadharFile,
+    File? userPhoto,
+  }) async {
+    try {
+      final uri = _routerBase.replace(
+        queryParameters: {'endpoint': 'user/register'},
       );
+
+      final formData = FormData();
+
+      print("📦 BODY: $body");
+
+      // TEXT FIELDS
+      body.forEach((key, value) {
+        formData.fields.add(MapEntry(key, value.toString()));
+      });
+
+      // PHOTO
+      if (userPhoto != null) {
+        print("📸 Uploading Photo: ${userPhoto.path}");
+
+        formData.files.add(
+          MapEntry('user_photo', await MultipartFile.fromFile(userPhoto.path)),
+        );
+      }
+
+      // AADHAR
+      if (aadharFile != null) {
+        print("📄 Uploading Aadhaar: ${aadharFile.path}");
+
+        formData.files.add(
+          MapEntry(
+            'aadhar_file',
+            await MultipartFile.fromFile(aadharFile.path),
+          ),
+        );
+      }
+
+      // ===== DEBUG PRINTS =====
+      print("📦 FIELDS:");
+      for (final field in formData.fields) {
+        print("${field.key} : ${field.value}");
+      }
+
+      print("📂 FILES:");
+      for (final file in formData.files) {
+        print(file.key);
+      }
+      // ========================
+
+      final (res, code) = await _api.postUri(uri, body: formData);
+
+      print("📡 RESPONSE CODE: $code");
+      print("📡 RESPONSE DATA: ${res.data}");
+
+      if (code == 200 || code == 201 || code == 202) {
+        return Ok(RegisterResponse.fromJson(res.data));
+      }
+
+      return Err(_extractError(res), code: code);
+    } catch (e) {
+      print("❌ ERROR: $e");
+      return Err(e.toString());
     }
-
-    // AADHAR
-    if (aadharFile != null) {
-      print("📄 Uploading Aadhaar: ${aadharFile.path}");
-      formData.files.add(
-        MapEntry(
-          'aadhar_file',
-          await MultipartFile.fromFile(aadharFile.path),
-        ),
-      );
-    }
-
-    final (res, code) = await _api.postUri(uri, body: formData);
-
-    print("📡 RESPONSE CODE: $code");
-    print("📡 RESPONSE DATA: ${res.data}");
-
-    if (code == 200 || code == 201 || code == 202) {
-      return Ok(RegisterResponse.fromJson(res.data));
-    }
-
-    return Err(_extractError(res), code: code);
-  } catch (e) {
-    print("❌ ERROR: $e");
-    return Err(e.toString());
   }
-}
   // Future<Result<RegisterResponse>> signup({
   //   required Map<String, dynamic> body,
   //   File? aadharFile,
@@ -287,8 +298,6 @@ class AuthRepository {
   //     return Err(e.toString());
   //   }
   // }
-
-  
 
   // ==============================
   // LOGIN
