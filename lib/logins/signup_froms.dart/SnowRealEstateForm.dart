@@ -47,6 +47,7 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
   StateOption? _selectedState;
   CityOption? _selectedCity;
   File? _aadharFile;
+  File? _userPhoto;
   final ImagePicker _picker = ImagePicker();
   bool _obscurePassword = true;
 
@@ -91,6 +92,19 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
     setState(() => _aadharFile = file);
   }
 
+  Future<void> _pickUserPhoto() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _userPhoto = File(picked.path);
+    });
+  }
+
   Future<void> _loadLookups() async {
     setState(() => _isLoadingLookups = true);
 
@@ -127,6 +141,10 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
   }
 
   Future<void> _submit() async {
+    if (_userPhoto == null) {
+      context.showToast('Please upload user photo', bg: Colors.red);
+      return;
+    }
     if (_aadharFile == null) {
       context.showToast('Please upload Aadhaar card', bg: Colors.red);
       return;
@@ -183,6 +201,7 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
         contact: contact,
         website: website.isEmpty ? null : website,
         aadharFile: _aadharFile!, // IMPORTANT
+        userPhoto: _userPhoto!, // IMPORTANT
       );
 
       if (!mounted) return;
@@ -268,11 +287,11 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
                             children: [
                               const Text(
                                 'SnowRealEstate Registration',
-                               style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF5E9BC8),
-                            ),
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF5E9BC8),
+                                ),
                               ),
                               const SizedBox(height: 24),
                               // --- SECTION 1: PERSONAL DETAILS ---
@@ -496,6 +515,63 @@ class _SnowRealEstateFormPageState extends State<SnowRealEstateFormPage> {
                                   return null;
                                 },
                               ),
+                              const SizedBox(height: 16),
+
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  "User Photo",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              InkWell(
+                                onTap: _pickUserPhoto,
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: _userPhoto == null
+                                          ? Colors.grey.shade400
+                                          : Colors.green,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: _userPhoto == null
+                                        ? Colors.grey.shade50
+                                        : Colors.green.withOpacity(0.05),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.person,
+                                        color: _userPhoto == null
+                                            ? const Color(0xFF5E9BC8)
+                                            : Colors.green,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _userPhoto == null
+                                              ? 'Upload User Photo'
+                                              : 'Photo selected ✔',
+                                          style: TextStyle(
+                                            color: _userPhoto == null
+                                                ? Colors.grey[700]
+                                                : Colors.green,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
                               const SizedBox(height: 16),
 
                               Align(
