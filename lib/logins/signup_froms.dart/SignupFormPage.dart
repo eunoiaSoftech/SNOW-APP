@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 // ✅ SAME AS SIGNUP (IMPORTANT FIX)
-import 'package:snow_app/Data/Models/location_option.dart';
+import 'package:snow_app/Data/models/location_option.dart';
 
 // ✅ KEEP THESE
 import 'package:snow_app/Data/Repositories/common_repository.dart';

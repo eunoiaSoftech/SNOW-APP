@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snow_app/Data/Models/admin_igloo.dart';
-import 'package:snow_app/Data/Models/location_option.dart';
+import 'package:snow_app/Data/models/location_option.dart';
 import 'package:snow_app/Data/Repositories/admin_repository.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
 import 'package:snow_app/Data/models/user.dart';

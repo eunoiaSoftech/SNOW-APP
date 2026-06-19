@@ -6,7 +6,7 @@ import 'package:snow_app/Data/models/user.dart';
 import '../../core/api_client.dart';
 import '../../core/result.dart';
 import '../models/business_item.dart';
-import '../Models/location_option.dart';
+import 'package:snow_app/Data/models/location_option.dart';
 
 class CommonRepository {
   CommonRepository();

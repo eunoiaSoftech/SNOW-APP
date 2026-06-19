@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui';
-import 'package:snow_app/Data/Models/location_option.dart';
+import 'package:snow_app/Data/models/location_option.dart';
 import 'package:snow_app/Data/Repositories/New%20Repositories/EXTRA%20FEATURE/traning_reg.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
 import 'package:snow_app/core/result.dart';

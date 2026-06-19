@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:snow_app/Data/Models/business_category.dart';
-import 'package:snow_app/Data/Models/location_option.dart';
+import 'package:snow_app/Data/models/location_option.dart';
 import 'package:snow_app/Data/Repositories/SnowRealEstateRepository.dart';
 import 'package:snow_app/Data/Repositories/common_repository.dart';
 import 'package:snow_app/core/app_toast.dart';

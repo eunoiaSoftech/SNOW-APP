@@ -1,7 +1,5 @@
 import 'package:snow_app/Data/models/New Model/admin_loactions_model.dart';
-import 'package:snow_app/Data/models/location_option.dart';
 import 'package:snow_app/core/api_client.dart';
-import 'package:snow_app/core/result.dart';
 
 class AdminLocationRepository {
   final ApiClient _api = ApiClient.create();
@@ -11,23 +9,59 @@ class AdminLocationRepository {
     "endpoint": "admin/location-create",
   };
 
+  static int _parseNewId(dynamic responseBody) {
+    if (responseBody is! Map) return 0;
+    final m = Map<String, dynamic>.from(responseBody);
+    final nested = m['data'];
+    final raw = m['id'] ?? (nested is Map ? nested['id'] : null);
+    if (raw is int) return raw;
+    if (raw is String) return int.tryParse(raw) ?? 0;
+    return 0;
+  }
+
+  static String _countryCode(String name, String? explicit) {
+    final e = explicit?.trim();
+    if (e != null && e.isNotEmpty) return e.toUpperCase();
+    final n = name.trim();
+    if (n.length >= 2) return n.substring(0, 2).toUpperCase();
+    return n.isEmpty ? 'XX' : '${n[0].toUpperCase()}X';
+  }
+
+  static String _zoneOrStateCode(String name, String? explicit) {
+    final e = explicit?.trim();
+    if (e != null && e.isNotEmpty) return e.toUpperCase();
+    final n = name.trim();
+    if (n.isEmpty) return 'X';
+    return n[0].toUpperCase();
+  }
+
+  static String _cityCode(String name, String? explicit) {
+    final e = explicit?.trim();
+    if (e != null && e.isNotEmpty) return e.toUpperCase();
+    final n = name.trim();
+    if (n.length >= 2) return n.substring(0, 2).toUpperCase();
+    return n.isEmpty ? 'XX' : '${n[0].toUpperCase()}X';
+  }
+
   // -------------------------
   // CREATE COUNTRY
   // -------------------------
-  Future<AdminCountry> createCountry(String name) async {
+  Future<AdminCountry> createCountry(String name, {String? locationCode}) async {
     try {
-      final (res, code) = await _api.post(
+      final (res, statusCode) = await _api.post(
         _endpoint,
         query: _query,
         body: {
           "type": "country",
           "name": name,
-          "code": name.substring(0, 2).toUpperCase(),
+          "code": _countryCode(name, locationCode),
         },
       );
 
-      if (code == 200 || code == 201) {
-        return AdminCountry(id: res.data['id'], name: name);
+      if (statusCode == 200 || statusCode == 201) {
+        final id = _parseNewId(res.data);
+        if (id == 0) throw Exception("Error: missing id in ${res.data}");
+        return AdminCountry(id: id, name: name);
       } else {
         throw Exception("Error: ${res.data}");
       }
@@ -39,21 +73,27 @@ class AdminLocationRepository {
   // -------------------------
   // CREATE ZONE  (child of country)
   // -------------------------
-  Future<AdminZone> createZone(String name, int countryId) async {
+  Future<AdminZone> createZone(
+      String name,
+      int countryId, {
+        String? locationCode,
+      }) async {
     try {
-      final (res, code) = await _api.post(
+      final (res, statusCode) = await _api.post(
         _endpoint,
         query: _query,
         body: {
           "type": "zone",
           "name": name,
-          "code": name.substring(0, 1).toUpperCase(),
+          "code": _zoneOrStateCode(name, locationCode),
           "parent_id": countryId,
         },
       );
 
-      if (code == 200 || code == 201) {
-        return AdminZone(id: res.data['id'], name: name, parentId: countryId);
+      if (statusCode == 200 || statusCode == 201) {
+        final id = _parseNewId(res.data);
+        if (id == 0) throw Exception("Error: missing id in ${res.data}");
+        return AdminZone(id: id, name: name, parentId: countryId);
       } else {
         throw Exception("Error: ${res.data}");
       }
@@ -65,21 +105,27 @@ class AdminLocationRepository {
   // -------------------------
   // CREATE STATE (child of zone)
   // -------------------------
-  Future<AdminState> createState(String name, int zoneId) async {
+  Future<AdminState> createState(
+      String name,
+      int zoneId, {
+        String? locationCode,
+      }) async {
     try {
-      final (res, code) = await _api.post(
+      final (res, statusCode) = await _api.post(
         _endpoint,
         query: _query,
         body: {
           "type": "state",
           "name": name,
-          "code": name.substring(0, 1).toUpperCase(),
+          "code": _zoneOrStateCode(name, locationCode),
           "parent_id": zoneId,
         },
       );
 
-      if (code == 200 || code == 201) {
-        return AdminState(id: res.data['id'], name: name, countryId: zoneId);
+      if (statusCode == 200 || statusCode == 201) {
+        final id = _parseNewId(res.data);
+        if (id == 0) throw Exception("Error: missing id in ${res.data}");
+        return AdminState(id: id, name: name, countryId: zoneId);
       } else {
         throw Exception("Error: ${res.data}");
       }
@@ -91,22 +137,28 @@ class AdminLocationRepository {
   // -------------------------
   // CREATE CITY (child of state)
   // -------------------------
-  Future<AdminCity> createCity(String name, int stateId) async {
+  Future<AdminCity> createCity(
+      String name,
+      int stateId, {
+        String? locationCode,
+      }) async {
     try {
-      final (res, code) = await _api.post(
+      final (res, statusCode) = await _api.post(
         _endpoint,
         query: _query,
         body: {
           "type": "city",
           "name": name,
-          "code": name.substring(0, 2).toUpperCase(),
+          "code": _cityCode(name, locationCode),
           "parent_id": stateId,
         },
       );
 
-      if (code == 200 || code == 201) {
+      if (statusCode == 200 || statusCode == 201) {
+        final id = _parseNewId(res.data);
+        if (id == 0) throw Exception("Error: missing id in ${res.data}");
         return AdminCity(
-          id: res.data['id'],
+          id: id,
           name: name,
           countryId: 0,
           stateId: stateId,
@@ -129,9 +181,9 @@ class AdminLocationRepository {
         "id": id.toString()
       };
 
-      final (res, code) = await _api.delete(_endpoint, query: query);
+      final (res, statusCode) = await _api.delete(_endpoint, query: query);
 
-      if (code == 200) return true;
+      if (statusCode == 200) return true;
 
       throw Exception("Delete Failed: ${res.data}");
     } catch (e) {
