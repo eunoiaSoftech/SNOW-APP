@@ -92,6 +92,7 @@ class SnowRealEstateRepository {
     required String contact,
     String? website,
     required File aadharFile,
+    File? userPhoto,
   }) async {
     const routerEndpoint = 'user/register';
     const int maxAadharSize = 2 * 1024 * 1024; // 2MB
@@ -114,6 +115,11 @@ class SnowRealEstateRepository {
       'city': city.toString(),
       'contact': contact,
     });
+    if (userPhoto != null) {
+      formData.files.add(
+        MapEntry('user_photo', await MultipartFile.fromFile(userPhoto.path)),
+      );
+    }
 
     if (website != null && website.isNotEmpty) {
       formData.fields.add(MapEntry('website', website));

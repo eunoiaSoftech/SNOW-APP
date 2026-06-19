@@ -22,6 +22,7 @@ class VisitorFormPage extends StatefulWidget {
 class _VisitorFormPageState extends State<VisitorFormPage> {
   final _formKey = GlobalKey<FormState>();
   File? _aadharFile;
+  File? _userPhoto;
   final ImagePicker _picker = ImagePicker();
 
   final _fullNameController = TextEditingController();
@@ -65,6 +66,19 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
     }
 
     setState(() => _aadharFile = file);
+  }
+
+  Future<void> _pickUserPhoto() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _userPhoto = File(picked.path);
+    });
   }
 
   static const _businessTypeOptions = <Map<String, String>>[
@@ -145,6 +159,10 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
   }
 
   Future<void> _submit() async {
+    if (_userPhoto == null) {
+      context.showToast('Please upload user photo', bg: Colors.red);
+      return;
+    }
     if (_aadharFile == null) {
       context.showToast('Please upload Aadhaar card', bg: Colors.red);
       return;
@@ -193,7 +211,11 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
       'user_id': _selectedReferrerId,
     };
 
-    final res = await _auth.signup(body: body, aadharFile: _aadharFile);
+    final res = await _auth.signup(
+      body: body,
+      aadharFile: _aadharFile,
+      userPhoto: _userPhoto,
+    );
 
     if (!mounted) return;
 
@@ -461,7 +483,62 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
+
                         _buildFileUploadTile(),
+                        const SizedBox(height: 16),
+
+                    
+
+                        const Text(
+                          "User Photo",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        InkWell(
+                          onTap: _pickUserPhoto,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: _userPhoto == null
+                                    ? Colors.grey.shade400
+                                    : Colors.green,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              color: _userPhoto == null
+                                  ? Colors.grey.shade50
+                                  : Colors.green.withOpacity(0.05),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.person,
+                                  color: _userPhoto == null
+                                      ? const Color(0xFF5E9BC8)
+                                      : Colors.green,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _userPhoto == null
+                                        ? 'Upload User Photo'
+                                        : 'Photo selected ✔',
+                                    style: TextStyle(
+                                      color: _userPhoto == null
+                                          ? Colors.grey[700]
+                                          : Colors.green,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
 
                         const SizedBox(height: 16),
                         SwitchListTile(
@@ -528,8 +605,6 @@ class _VisitorFormPageState extends State<VisitorFormPage> {
       ],
     );
   }
-
-
 
   Widget _buildReferralPicker(BuildContext context) {
     return Column(
