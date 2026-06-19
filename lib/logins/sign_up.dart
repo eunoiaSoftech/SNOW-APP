@@ -51,6 +51,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   File? _aadharFile;
   final ImagePicker _picker = ImagePicker();
+  File? _userPhoto;
 
   @override
   void initState() {
@@ -110,6 +111,19 @@ class _SignUpPageState extends State<SignUpPage> {
     setState(() => _aadharFile = file);
   }
 
+  Future<void> _pickUserPhoto() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _userPhoto = File(picked.path);
+    });
+  }
+
   Future<void> _loadLookups() async {
     setState(() => _isLoadingLookups = true);
 
@@ -147,6 +161,11 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Future<void> _signUp() async {
+
+    if (_userPhoto == null) {
+      context.showToast('Please upload user photo', bg: Colors.red);
+      return;
+    }
     if (_aadharFile == null) {
       context.showToast('Please upload Aadhaar card', bg: Colors.red);
       return;
@@ -197,7 +216,7 @@ class _SignUpPageState extends State<SignUpPage> {
         'instagram_id': _instagramController.text.trim(),
     };
 
-    final res = await _auth.signup(body: body, aadharFile: _aadharFile);
+    final res = await _auth.signup(body: body, aadharFile: _aadharFile, userPhoto: _userPhoto);
 
     if (!mounted) return;
 
@@ -595,6 +614,62 @@ class _SignUpPageState extends State<SignUpPage> {
                                 decoration: _fieldDecoration('Instagram URL'),
                                 keyboardType: TextInputType.url,
                               ),
+                              const SizedBox(height: 16),
+
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'User Photo *',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              InkWell(
+                                onTap: _pickUserPhoto,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 14,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.grey.shade50,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.person,
+                                        color: Color(0xFF5E9BC8),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _userPhoto == null
+                                              ? 'Upload User Photo'
+                                              : 'Photo selected ✔',
+                                          style: TextStyle(
+                                            color: _userPhoto == null
+                                                ? Colors.grey
+                                                : Colors.green,
+                                          ),
+                                        ),
+                                      ),
+                                      if (_userPhoto != null)
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Colors.green,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
                               const SizedBox(height: 16),
 
                               Align(
